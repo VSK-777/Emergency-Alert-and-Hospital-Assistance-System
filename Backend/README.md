@@ -3,9 +3,12 @@
 **Project:** B.Tech Community Service Project (CSP)  
 **Institution:** Vasireddy Venkatadri Institute of Technology (VVIT)  
 **Department:** Computer Science and Engineering (Batch 8)  
-**Prepared by:** VSK  
+**Prepared by:** VSK (Reg. No: 24BQ1A054O)  
+**Project Guide:** Mr. G. Lakshmi Narayana (Assist. Prof)
 
 ---
+
+**Live Render API:** [https://emergency-alert-and-hospital-assistance.onrender.com](https://emergency-alert-and-hospital-assistance.onrender.com)  
 
 ## Architecture & Technology Stack
 - **Framework:** Spring Boot 3.3.4 (Java 21 LTS)
