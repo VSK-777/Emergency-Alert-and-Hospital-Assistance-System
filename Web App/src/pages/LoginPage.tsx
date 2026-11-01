@@ -138,11 +138,24 @@ export const LoginPage: React.FC = () => {
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setRegError(null);
+
+    const cleanPhone = regPhone.trim();
+    if (cleanPhone.includes('@')) {
+      setRegError('Invalid Mobile Phone: An email address was entered into the phone number field. Please enter a valid phone number (e.g. +91 98765 43210).');
+      return;
+    }
+
+    const phoneRegex = /^\+?[0-9\s\-()]{7,20}$/;
+    if (!phoneRegex.test(cleanPhone)) {
+      setRegError('Invalid Mobile Phone: Please enter a valid phone number with 7-20 digits (e.g. +91 98765 43210).');
+      return;
+    }
+
     try {
       await register({
         fullName: regFullName.trim(),
         email: regEmail.trim(),
-        phoneNumber: regPhone.trim(),
+        phoneNumber: cleanPhone,
         password: regPassword,
         role: regRole,
         bloodGroup: regBloodGroup.trim() || undefined,
@@ -517,6 +530,8 @@ export const LoginPage: React.FC = () => {
                     value={regPhone}
                     onChange={(e) => setRegPhone(e.target.value)}
                     placeholder="+91 98765 43210"
+                    maxLength={20}
+                    pattern="^\+?[0-9\s\-()]{7,20}$"
                     className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-2.5 text-slate-900 dark:text-white"
                     required
                     autoComplete="tel"

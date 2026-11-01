@@ -2,25 +2,32 @@ package net.vvit.csp.emergency.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import net.vvit.csp.emergency.model.UserRole;
 
 public class RegisterRequest {
     @NotBlank(message = "Email is required")
     @Email(message = "Must be a valid email format")
+    @Size(max = 120, message = "Email cannot exceed 120 characters")
     private String email;
 
     @NotBlank(message = "Password is required")
-    @Size(min = 6, message = "Password must be at least 6 characters")
+    @Size(min = 6, max = 100, message = "Password must be between 6 and 100 characters")
     private String password;
 
     @NotBlank(message = "Full name is required")
+    @Size(max = 150, message = "Full name cannot exceed 150 characters")
     private String fullName;
 
     @NotBlank(message = "Phone number is required")
+    @Size(max = 20, message = "Phone number cannot exceed 20 characters")
+    @Pattern(regexp = "^\\+?[0-9\\s\\-\\(\\)]{7,20}$", message = "Must be a valid mobile phone number (e.g. +91 98765 43210)")
     private String phoneNumber;
 
     private UserRole role = UserRole.CITIZEN;
+
+    @Size(max = 10, message = "Blood group cannot exceed 10 characters")
     private String bloodGroup;
     private String allergies;
     private String medicalConditions;

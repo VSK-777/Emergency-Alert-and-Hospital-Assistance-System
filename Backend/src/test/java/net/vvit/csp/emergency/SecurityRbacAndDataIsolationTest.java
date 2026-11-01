@@ -263,4 +263,24 @@ public class SecurityRbacAndDataIsolationTest {
         assertThat(created.getAllergies()).isNull();
         assertThat(created.getMedicalConditions()).isNull();
     }
+
+    @Test
+    @DisplayName("Registration with email in phone number field is rejected with 400 Bad Request")
+    void registrationWithEmailAsPhoneNumberRejected() throws Exception {
+        String invalidPayload = """
+                {
+                    "email": "test.valid@vvit.net",
+                    "password": "ValidPassword@123",
+                    "fullName": "Test User",
+                    "phoneNumber": "vajjhasaikrishna@gmail.com"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invalidPayload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.errors.phoneNumber").isNotEmpty());
+    }
 }
