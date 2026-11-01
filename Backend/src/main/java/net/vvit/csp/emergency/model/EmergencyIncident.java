@@ -48,6 +48,27 @@ public class EmergencyIncident {
     @JoinColumn(name = "assigned_responder_id")
     private Responder assignedResponder;
 
+    @Column(name = "hospital_acknowledgement", length = 30)
+    private String hospitalAcknowledgement = "PENDING";
+
+    @Column(name = "hospital_decline_reason", columnDefinition = "TEXT")
+    private String hospitalDeclineReason;
+
+    @Column(name = "hospital_preparation_status", length = 40)
+    private String hospitalPreparationStatus = "NOT_STARTED";
+
+    @Column(name = "responder_acceptance_status", length = 30)
+    private String responderAcceptanceStatus = "NOT_ASSIGNED";
+
+    @Column(name = "internal_notes", columnDefinition = "TEXT")
+    private String internalNotes;
+
+    @Column(name = "assigned_ambulance_id")
+    private Long assignedAmbulanceId;
+
+    @Column(name = "assigned_ambulance_plate", length = 50)
+    private String assignedAmbulancePlate;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -99,6 +120,27 @@ public class EmergencyIncident {
 
     public Responder getAssignedResponder() { return assignedResponder; }
     public void setAssignedResponder(Responder assignedResponder) { this.assignedResponder = assignedResponder; }
+
+    public String getHospitalAcknowledgement() { return hospitalAcknowledgement; }
+    public void setHospitalAcknowledgement(String hospitalAcknowledgement) { this.hospitalAcknowledgement = hospitalAcknowledgement; }
+
+    public String getHospitalDeclineReason() { return hospitalDeclineReason; }
+    public void setHospitalDeclineReason(String hospitalDeclineReason) { this.hospitalDeclineReason = hospitalDeclineReason; }
+
+    public String getHospitalPreparationStatus() { return hospitalPreparationStatus; }
+    public void setHospitalPreparationStatus(String hospitalPreparationStatus) { this.hospitalPreparationStatus = hospitalPreparationStatus; }
+
+    public String getResponderAcceptanceStatus() { return responderAcceptanceStatus; }
+    public void setResponderAcceptanceStatus(String responderAcceptanceStatus) { this.responderAcceptanceStatus = responderAcceptanceStatus; }
+
+    public String getInternalNotes() { return internalNotes; }
+    public void setInternalNotes(String internalNotes) { this.internalNotes = internalNotes; }
+
+    public Long getAssignedAmbulanceId() { return assignedAmbulanceId; }
+    public void setAssignedAmbulanceId(Long assignedAmbulanceId) { this.assignedAmbulanceId = assignedAmbulanceId; }
+
+    public String getAssignedAmbulancePlate() { return assignedAmbulancePlate; }
+    public void setAssignedAmbulancePlate(String assignedAmbulancePlate) { this.assignedAmbulancePlate = assignedAmbulancePlate; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

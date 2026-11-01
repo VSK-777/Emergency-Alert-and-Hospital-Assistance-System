@@ -9,6 +9,9 @@ export interface User {
   bloodGroup?: string;
   allergies?: string;
   medicalConditions?: string;
+  medications?: string;
+  isActive?: boolean;
+  hospitalId?: number;
 }
 
 export interface AuthResponse {
@@ -23,14 +26,27 @@ export interface AuthResponse {
 
 export type IncidentStatus = 
   | 'PENDING' 
+  | 'HOSPITAL_NOTIFIED'
+  | 'HOSPITAL_ACKNOWLEDGED'
+  | 'HOSPITAL_ACCEPTED'
+  | 'HOSPITAL_DECLINED'
+  | 'AMBULANCE_DISPATCHED'
+  | 'RESPONDER_ASSIGNED'
+  | 'RESPONDER_ACCEPTED'
   | 'ACKNOWLEDGED' 
   | 'ASSIGNED' 
   | 'DISPATCHED' 
+  | 'EN_ROUTE'
+  | 'ARRIVED'
+  | 'ASSISTANCE_STARTED'
+  | 'PATIENT_ADMITTED'
   | 'IN_PROGRESS' 
   | 'RESOLVED' 
   | 'CANCELLED';
 
 export type IncidentSource = 
+  | 'SMARTWATCH_SENSOR'
+  | 'MANUAL_SOS'
   | 'SMARTWATCH_AUTO' 
   | 'MOBILE_SOS' 
   | 'MANUAL_WEB' 
@@ -63,10 +79,15 @@ export interface EmergencyIncident {
   detectionScore?: number;
   assignedHospitalId?: number;
   assignedHospitalName?: string;
+  hospitalAcknowledgement?: string;
+  hospitalDeclineReason?: string;
+  hospitalPreparationStatus?: string;
   assignedResponderId?: number;
   assignedResponderName?: string;
+  responderAcceptanceStatus?: string;
   assignedAmbulanceId?: number;
-  assignedAmbulanceNumber?: string;
+  assignedAmbulancePlate?: string;
+  internalNotes?: string;
   detectionEvent?: DetectionEvent;
   createdAt: string;
   updatedAt?: string;
@@ -116,6 +137,9 @@ export interface Responder {
   name: string;
   phoneNumber?: string;
   specialization: string;
+  organization?: string;
+  verificationStatus?: string;
+  certificateDetails?: string;
   skills: string;
   isAvailable: boolean;
   latitude?: number;

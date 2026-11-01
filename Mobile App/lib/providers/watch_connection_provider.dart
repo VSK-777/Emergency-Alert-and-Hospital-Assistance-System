@@ -58,7 +58,7 @@ class WatchNotifier extends StateNotifier<WatchState> {
     ref
         .read(emergencyNotifierProvider.notifier)
         .startEmergencyCountdown(
-          source: 'SMARTWATCH_AUTO',
+          source: 'SMARTWATCH_SENSOR',
           reason:
               'Severe impact and sudden deceleration detected by Smartwatch IMU',
           score: 0.94,

@@ -8,7 +8,9 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  login: (email: string, password?: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  phoneLogin: (phoneNumber: string, verificationToken?: string, fullName?: string) => Promise<void>;
+  register: (userData: Partial<User> & { password: string }) => Promise<void>;
   logout: () => void;
   setUser: (user: User) => void;
   checkAuth: () => Promise<void>;
@@ -31,10 +33,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoading: false,
   error: null,
 
-  login: async (email: string, password = 'Password@123') => {
+  login: async (email: string, password: string) => {
     set({ isLoading: true, error: null });
     try {
-      const response: AuthResponse = await authApi.login(email, password);
+      const response: AuthResponse = await authApi.login(email.trim(), password);
       const user: User = {
         id: response.id,
         email: response.email,
@@ -54,8 +56,70 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error: null,
       });
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Invalid credentials. Please verify your email and password.';
+      const msg = err.response?.data?.message || 'Invalid email or password credentials.';
       set({ error: msg, isLoading: false, isAuthenticated: false });
+      throw new Error(msg);
+    }
+  },
+
+  phoneLogin: async (phoneNumber: string, verificationToken = 'VERIFIED_OTP', fullName?: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response: AuthResponse = await authApi.phoneLogin({
+        phoneNumber: phoneNumber.trim(),
+        verificationToken,
+        fullName,
+      });
+      const user: User = {
+        id: response.id,
+        email: response.email,
+        fullName: response.fullName,
+        phoneNumber: response.phoneNumber,
+        role: response.role,
+      };
+
+      localStorage.setItem('vvit_csp_token', response.token);
+      localStorage.setItem('vvit_csp_user', JSON.stringify(user));
+
+      set({
+        user,
+        token: response.token,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      });
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Phone verification failed.';
+      set({ error: msg, isLoading: false, isAuthenticated: false });
+      throw new Error(msg);
+    }
+  },
+
+  register: async (userData: Partial<User> & { password: string }) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response: AuthResponse = await authApi.register(userData);
+      const user: User = {
+        id: response.id,
+        email: response.email,
+        fullName: response.fullName,
+        phoneNumber: response.phoneNumber,
+        role: response.role,
+      };
+
+      localStorage.setItem('vvit_csp_token', response.token);
+      localStorage.setItem('vvit_csp_user', JSON.stringify(user));
+
+      set({
+        user,
+        token: response.token,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      });
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Registration failed.';
+      set({ error: msg, isLoading: false });
       throw new Error(msg);
     }
   },

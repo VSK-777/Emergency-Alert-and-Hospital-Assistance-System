@@ -17,6 +17,15 @@ public class Responder {
     @Column(nullable = false, length = 100)
     private String specialization;
 
+    @Column(length = 120)
+    private String organization = "VVIT NSS Unit";
+
+    @Column(name = "verification_status", length = 30)
+    private String verificationStatus = "VERIFIED";
+
+    @Column(name = "certificate_details", columnDefinition = "TEXT")
+    private String certificateDetails;
+
     @Column(columnDefinition = "TEXT")
     private String skills;
 
@@ -42,6 +51,15 @@ public class Responder {
 
     public String getSpecialization() { return specialization; }
     public void setSpecialization(String specialization) { this.specialization = specialization; }
+
+    public String getOrganization() { return organization; }
+    public void setOrganization(String organization) { this.organization = organization; }
+
+    public String getVerificationStatus() { return verificationStatus; }
+    public void setVerificationStatus(String verificationStatus) { this.verificationStatus = verificationStatus; }
+
+    public String getCertificateDetails() { return certificateDetails; }
+    public void setCertificateDetails(String certificateDetails) { this.certificateDetails = certificateDetails; }
 
     public String getSkills() { return skills; }
     public void setSkills(String skills) { this.skills = skills; }

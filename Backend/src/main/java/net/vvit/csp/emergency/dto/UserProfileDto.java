@@ -12,6 +12,9 @@ public class UserProfileDto {
     private String bloodGroup;
     private String allergies;
     private String medicalConditions;
+    private String medications;
+    private Boolean isActive = true;
+    private Long hospitalId;
 
     public UserProfileDto() {}
 
@@ -25,6 +28,9 @@ public class UserProfileDto {
         dto.setBloodGroup(user.getBloodGroup());
         dto.setAllergies(user.getAllergies());
         dto.setMedicalConditions(user.getMedicalConditions());
+        dto.setMedications(user.getMedications());
+        dto.setIsActive(user.getIsActive());
+        dto.setHospitalId(user.getHospitalId());
         return dto;
     }
 
@@ -51,4 +57,13 @@ public class UserProfileDto {
 
     public String getMedicalConditions() { return medicalConditions; }
     public void setMedicalConditions(String medicalConditions) { this.medicalConditions = medicalConditions; }
+
+    public String getMedications() { return medications; }
+    public void setMedications(String medications) { this.medications = medications; }
+
+    public Boolean getIsActive() { return isActive; }
+    public void setIsActive(Boolean active) { isActive = active; }
+
+    public Long getHospitalId() { return hospitalId; }
+    public void setHospitalId(Long hospitalId) { this.hospitalId = hospitalId; }
 }

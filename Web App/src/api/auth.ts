@@ -7,6 +7,11 @@ export const authApi = {
     return response.data;
   },
 
+  phoneLogin: async (payload: { phoneNumber: string; verificationToken?: string; fullName?: string }): Promise<AuthResponse> => {
+    const response = await api.post<AuthResponse>('/auth/phone-login', payload);
+    return response.data;
+  },
+
   register: async (userData: Partial<User> & { password: string }): Promise<AuthResponse> => {
     const response = await api.post<AuthResponse>('/auth/register', userData);
     return response.data;

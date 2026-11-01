@@ -35,6 +35,15 @@ public class User {
     @Column(name = "medical_conditions", columnDefinition = "TEXT")
     private String medicalConditions;
 
+    @Column(name = "medications", columnDefinition = "TEXT")
+    private String medications;
+
+    @Column(name = "is_active")
+    private Boolean isActive = true;
+
+    @Column(name = "hospital_id")
+    private Long hospitalId;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -84,6 +93,15 @@ public class User {
 
     public String getMedicalConditions() { return medicalConditions; }
     public void setMedicalConditions(String medicalConditions) { this.medicalConditions = medicalConditions; }
+
+    public String getMedications() { return medications; }
+    public void setMedications(String medications) { this.medications = medications; }
+
+    public Boolean getIsActive() { return isActive; }
+    public void setIsActive(Boolean active) { isActive = active; }
+
+    public Long getHospitalId() { return hospitalId; }
+    public void setHospitalId(Long hospitalId) { this.hospitalId = hospitalId; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

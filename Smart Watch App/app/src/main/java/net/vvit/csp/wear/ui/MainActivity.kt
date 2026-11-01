@@ -47,7 +47,6 @@ class MainActivity : Activity() {
     private lateinit var tvStatusDesc: TextView
     private lateinit var tvConnChip: TextView
     private lateinit var btnSos: Button
-    private lateinit var btnSimulate: Button
     private lateinit var btnHistory: Button
     private lateinit var btnDiagnostics: Button
     private lateinit var tvRecentEventTitle: TextView
@@ -223,39 +222,12 @@ class MainActivity : Activity() {
             LinearLayout.LayoutParams.MATCH_PARENT,
             dp(44f)
         ).apply {
-            setMargins(dp(10f), 0, dp(10f), dp(7f))
+            setMargins(dp(10f), 0, dp(10f), dp(10f))
         }
         TactileUi.attachTactileFeedback(btnSos) { triggerManualSos() }
         root.addView(btnSos, sosParams)
 
-        // 4. SECONDARY ACTION: 3D Raised Tactile SIMULATE FALL (TEST) Button
-        btnSimulate = Button(this).apply {
-            text = "SIMULATE FALL (TEST)"
-            textSize = 8.5f
-            setTypeface(Typeface.SANS_SERIF, Typeface.NORMAL)
-            setTextColor(Color.parseColor("#D1C4E9"))
-            letterSpacing = 0.03f
-            // 3D Beveled Muted Purple Surface
-            background = TactileUi.create3dButtonDrawable(
-                this@MainActivity,
-                topColor = Color.parseColor("#312042"),
-                bottomColor = Color.parseColor("#20142C"),
-                shadowColor = Color.parseColor("#100818"),
-                highlightStrokeColor = Color.parseColor("#40B388FF"),
-                cornerRadiusDp = 18f,
-                shadowHeightDp = 3f
-            )
-        }
-        val simParams = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            dp(35f)
-        ).apply {
-            setMargins(dp(14f), 0, dp(14f), dp(8f))
-        }
-        TactileUi.attachTactileFeedback(btnSimulate) { runSimulatedFallHarness() }
-        root.addView(btnSimulate, simParams)
-
-        // 5. Recent Activity Card
+        // 4. Recent Activity Card
         val recentCard = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER

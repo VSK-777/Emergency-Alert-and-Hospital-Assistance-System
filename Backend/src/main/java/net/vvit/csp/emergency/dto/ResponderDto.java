@@ -8,6 +8,9 @@ public class ResponderDto {
     private String name;
     private String phoneNumber;
     private String specialization;
+    private String organization;
+    private String verificationStatus;
+    private String certificateDetails;
     private String skills;
     private Boolean isAvailable;
     private Double latitude;
@@ -25,6 +28,9 @@ public class ResponderDto {
             dto.setPhoneNumber(responder.getUser().getPhoneNumber());
         }
         dto.setSpecialization(responder.getSpecialization());
+        dto.setOrganization(responder.getOrganization());
+        dto.setVerificationStatus(responder.getVerificationStatus());
+        dto.setCertificateDetails(responder.getCertificateDetails());
         dto.setSkills(responder.getSkills());
         dto.setIsAvailable(responder.getIsAvailable());
         dto.setLatitude(responder.getLatitude());
@@ -47,6 +53,15 @@ public class ResponderDto {
 
     public String getSpecialization() { return specialization; }
     public void setSpecialization(String specialization) { this.specialization = specialization; }
+
+    public String getOrganization() { return organization; }
+    public void setOrganization(String organization) { this.organization = organization; }
+
+    public String getVerificationStatus() { return verificationStatus; }
+    public void setVerificationStatus(String verificationStatus) { this.verificationStatus = verificationStatus; }
+
+    public String getCertificateDetails() { return certificateDetails; }
+    public void setCertificateDetails(String certificateDetails) { this.certificateDetails = certificateDetails; }
 
     public String getSkills() { return skills; }
     public void setSkills(String skills) { this.skills = skills; }

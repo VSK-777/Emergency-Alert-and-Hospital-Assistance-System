@@ -24,6 +24,13 @@ public class IncidentResponse {
     private String assignedHospitalName;
     private Long assignedResponderId;
     private String assignedResponderName;
+    private String hospitalAcknowledgement;
+    private String hospitalDeclineReason;
+    private String hospitalPreparationStatus;
+    private String responderAcceptanceStatus;
+    private String internalNotes;
+    private Long assignedAmbulanceId;
+    private String assignedAmbulancePlate;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -46,6 +53,13 @@ public class IncidentResponse {
         dto.setAccuracyMeters(incident.getAccuracyMeters());
         dto.setDetectionReason(incident.getDetectionReason());
         dto.setDetectionScore(incident.getDetectionScore());
+        dto.setHospitalAcknowledgement(incident.getHospitalAcknowledgement());
+        dto.setHospitalDeclineReason(incident.getHospitalDeclineReason());
+        dto.setHospitalPreparationStatus(incident.getHospitalPreparationStatus());
+        dto.setResponderAcceptanceStatus(incident.getResponderAcceptanceStatus());
+        dto.setInternalNotes(incident.getInternalNotes());
+        dto.setAssignedAmbulanceId(incident.getAssignedAmbulanceId());
+        dto.setAssignedAmbulancePlate(incident.getAssignedAmbulancePlate());
         if (incident.getAssignedHospital() != null) {
             dto.setAssignedHospitalId(incident.getAssignedHospital().getId());
             dto.setAssignedHospitalName(incident.getAssignedHospital().getName());
@@ -111,6 +125,27 @@ public class IncidentResponse {
 
     public String getAssignedResponderName() { return assignedResponderName; }
     public void setAssignedResponderName(String assignedResponderName) { this.assignedResponderName = assignedResponderName; }
+
+    public String getHospitalAcknowledgement() { return hospitalAcknowledgement; }
+    public void setHospitalAcknowledgement(String hospitalAcknowledgement) { this.hospitalAcknowledgement = hospitalAcknowledgement; }
+
+    public String getHospitalDeclineReason() { return hospitalDeclineReason; }
+    public void setHospitalDeclineReason(String hospitalDeclineReason) { this.hospitalDeclineReason = hospitalDeclineReason; }
+
+    public String getHospitalPreparationStatus() { return hospitalPreparationStatus; }
+    public void setHospitalPreparationStatus(String hospitalPreparationStatus) { this.hospitalPreparationStatus = hospitalPreparationStatus; }
+
+    public String getResponderAcceptanceStatus() { return responderAcceptanceStatus; }
+    public void setResponderAcceptanceStatus(String responderAcceptanceStatus) { this.responderAcceptanceStatus = responderAcceptanceStatus; }
+
+    public String getInternalNotes() { return internalNotes; }
+    public void setInternalNotes(String internalNotes) { this.internalNotes = internalNotes; }
+
+    public Long getAssignedAmbulanceId() { return assignedAmbulanceId; }
+    public void setAssignedAmbulanceId(Long assignedAmbulanceId) { this.assignedAmbulanceId = assignedAmbulanceId; }
+
+    public String getAssignedAmbulancePlate() { return assignedAmbulancePlate; }
+    public void setAssignedAmbulancePlate(String assignedAmbulancePlate) { this.assignedAmbulancePlate = assignedAmbulancePlate; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

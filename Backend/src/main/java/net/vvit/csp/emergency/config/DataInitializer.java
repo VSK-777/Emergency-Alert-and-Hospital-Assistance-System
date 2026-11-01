@@ -110,6 +110,9 @@ public class DataInitializer implements CommandLineRunner {
         h1.setAvailableAmbulances(6);
         h1 = hospitalRepo.save(h1);
 
+        hospitalAdmin.setHospitalId(h1.getId());
+        userRepo.save(hospitalAdmin);
+
         Hospital h2 = new Hospital();
         h2.setName("Manipal Hospital Vijayawada");
         h2.setAddress("Near Kanuru, Tadepalli, Guntur Dist, AP");
@@ -147,6 +150,9 @@ public class DataInitializer implements CommandLineRunner {
         Responder resp = new Responder();
         resp.setUser(responderUser);
         resp.setSpecialization("Certified Emergency First Responder");
+        resp.setOrganization("VVIT NSS Unit");
+        resp.setVerificationStatus("VERIFIED");
+        resp.setCertificateDetails("CPR Certified (Red Cross), Advanced First Aid");
         resp.setSkills("CPR, Bleeding Control, Defibrillator, Immobilization");
         resp.setIsAvailable(true);
         resp.setLatitude(16.3520);
@@ -157,6 +163,9 @@ public class DataInitializer implements CommandLineRunner {
         Responder resp2 = new Responder();
         resp2.setUser(responderUser2);
         resp2.setSpecialization("Youth Red Cross Medical Volunteer");
+        resp2.setOrganization("Youth Red Cross");
+        resp2.setVerificationStatus("VERIFIED");
+        resp2.setCertificateDetails("BLS Certified, Triage Specialist");
         resp2.setSkills("BLS, First Aid, Triage Support, Oxygen Admin");
         resp2.setIsAvailable(true);
         resp2.setLatitude(16.3585);
@@ -168,8 +177,11 @@ public class DataInitializer implements CommandLineRunner {
         EmergencyIncident incident = new EmergencyIncident();
         incident.setId("inc-seed-001");
         incident.setUser(patient);
-        incident.setSource(IncidentSource.SMARTWATCH_AUTO);
-        incident.setStatus(IncidentStatus.DISPATCHED);
+        incident.setSource(IncidentSource.SMARTWATCH_SENSOR);
+        incident.setStatus(IncidentStatus.HOSPITAL_ACKNOWLEDGED);
+        incident.setHospitalAcknowledgement("ACKNOWLEDGED");
+        incident.setHospitalPreparationStatus("PREPARATION_STARTED");
+        incident.setResponderAcceptanceStatus("ACCEPTED");
         incident.setLatitude(16.3533);
         incident.setLongitude(80.5238);
         incident.setAccuracyMeters(4.5);

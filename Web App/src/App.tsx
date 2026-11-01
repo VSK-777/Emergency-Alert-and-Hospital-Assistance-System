@@ -4,6 +4,9 @@ import { useAuthStore } from './store/authStore';
 import { MainLayout } from './layouts/MainLayout';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { HospitalDashboardPage } from './pages/HospitalDashboardPage';
+import { ResponderDashboardPage } from './pages/ResponderDashboardPage';
+import { CitizenDashboardPage } from './pages/CitizenDashboardPage';
 import { LiveEmergenciesPage } from './pages/LiveEmergenciesPage';
 import { HospitalsPage } from './pages/HospitalsPage';
 import { AmbulancesPage } from './pages/AmbulancesPage';
@@ -20,6 +23,23 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     return <Navigate to="/login" replace />;
   }
   return <>{children}</>;
+};
+
+// Dynamically routes to the correct dashboard based on backend-authenticated user role
+const DashboardRouter: React.FC = () => {
+  const { user } = useAuthStore();
+  if (!user) return <DashboardPage />;
+  switch (user.role) {
+    case 'HOSPITAL_STAFF':
+      return <HospitalDashboardPage />;
+    case 'RESPONDER':
+      return <ResponderDashboardPage />;
+    case 'CITIZEN':
+      return <CitizenDashboardPage />;
+    case 'ADMIN':
+    default:
+      return <DashboardPage />;
+  }
 };
 
 export const App: React.FC = () => {
@@ -43,7 +63,16 @@ export const App: React.FC = () => {
             </ProtectedRoute>
           }
         >
-          <Route path="/" element={<DashboardPage />} />
+          {/* Main Role-Based Dynamic Dashboard */}
+          <Route path="/" element={<DashboardRouter />} />
+
+          {/* Role Dedicated Route Shortcuts */}
+          <Route path="/admin" element={<DashboardPage />} />
+          <Route path="/hospital" element={<HospitalDashboardPage />} />
+          <Route path="/responder" element={<ResponderDashboardPage />} />
+          <Route path="/citizen" element={<CitizenDashboardPage />} />
+
+          {/* Core Ecosystem Operations */}
           <Route path="/emergencies" element={<LiveEmergenciesPage />} />
           <Route path="/hospitals" element={<HospitalsPage />} />
           <Route path="/ambulances" element={<AmbulancesPage />} />

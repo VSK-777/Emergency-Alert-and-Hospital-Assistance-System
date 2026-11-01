@@ -42,7 +42,10 @@ public class AuthService {
             throw new DuplicateResourceException("An account with email " + request.getEmail() + " already exists.");
         }
 
-        UserRole role = request.getRole() != null ? request.getRole() : UserRole.CITIZEN;
+        if (request.getRole() == UserRole.ADMIN) {
+            throw new BadRequestException("System administrator accounts cannot be self-registered through public signup.");
+        }
+        UserRole role = (request.getRole() != null) ? request.getRole() : UserRole.CITIZEN;
         User user = new User(
                 request.getEmail().toLowerCase().trim(),
                 passwordEncoder.encode(request.getPassword()),

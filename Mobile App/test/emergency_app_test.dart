@@ -161,7 +161,7 @@ void main() {
 
     final emergencyState = container.read(emergencyNotifierProvider);
     expect(emergencyState.isCountdownActive, true);
-    expect(emergencyState.activeIncident?.source, 'SMARTWATCH_AUTO');
+    expect(emergencyState.activeIncident?.source, 'SMARTWATCH_SENSOR');
     expect(
       emergencyState.activeIncident?.detectionReason,
       contains('Severe impact'),

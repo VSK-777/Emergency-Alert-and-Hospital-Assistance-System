@@ -371,7 +371,7 @@ class HomeScreen extends ConsumerWidget {
                       ref
                           .read(emergencyNotifierProvider.notifier)
                           .startEmergencyCountdown(
-                            source: 'MOBILE_SOS',
+                            source: 'MANUAL_SOS',
                             reason:
                                 'Manual SOS: ${emergencyState.selectedCategory}',
                             category: emergencyState.selectedCategory,

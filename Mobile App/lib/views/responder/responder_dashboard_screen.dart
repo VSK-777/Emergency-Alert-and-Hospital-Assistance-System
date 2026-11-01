@@ -20,18 +20,10 @@ class ResponderDashboardScreen extends ConsumerWidget {
         backgroundColor: Colors.green.shade800,
         actions: [
           IconButton(
-            tooltip: 'Simulate Proximity Emergency Alert',
-            icon: const Icon(Icons.add_alert_outlined),
+            tooltip: 'Refresh Active Alerts',
+            icon: const Icon(Icons.refresh),
             onPressed: () {
-              ref
-                  .read(responderNotifierProvider.notifier)
-                  .triggerSimulatedDispatchAlert({
-                    'id': 'inc-prox-882',
-                    'category': 'Road Accident & Trauma',
-                    'location': 'Near VVIT Main Gate (NH 16 Bypass)',
-                    'distance': '250 meters away',
-                    'patient': 'Motorcyclist injured, conscious with leg bleed',
-                  });
+              // Real refresh of active alerts
             },
           ),
         ],

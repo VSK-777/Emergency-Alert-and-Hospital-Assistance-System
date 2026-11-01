@@ -66,13 +66,19 @@ public class LiveEmergencyBroadcastService {
      * Broadcasts newly created or updated emergency incident to all connected web and phone apps.
      */
     public void broadcastEmergencyAlert(EmergencyIncident incident) {
+        broadcastIncident(IncidentResponse.fromEntity(incident));
+    }
+
+    /**
+     * Broadcasts newly created or updated emergency incident payload to all connected clients.
+     */
+    public void broadcastIncident(IncidentResponse payload) {
         if (emitters.isEmpty()) {
-            log.info("No active SSE subscribers to broadcast incident {}", incident.getId());
+            log.info("No active SSE subscribers to broadcast incident {}", payload.getId());
             return;
         }
 
-        IncidentResponse payload = IncidentResponse.fromEntity(incident);
-        log.info("Broadcasting emergency alert {} to {} connected clients", incident.getId(), emitters.size());
+        log.info("Broadcasting emergency alert {} to {} connected clients", payload.getId(), emitters.size());
 
         for (SseEmitter emitter : emitters) {
             try {
