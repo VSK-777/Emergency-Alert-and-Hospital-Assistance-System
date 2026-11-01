@@ -59,7 +59,7 @@ React Web App (Vite SaaS) ──────────────────
 
 ## 3. Repository Architecture
 
-In accordance with deployment requirements, the version-controlled repository tracks the core cloud application modules (`Backend/` and `Web App/`):
+The version-controlled repository tracks the full emergency assistance ecosystem:
 
 ```
 emergency-alert-and-hospital-assistance-system/
@@ -91,11 +91,27 @@ emergency-alert-and-hospital-assistance-system/
 |   |-- vite.config.ts              # Vite bundler configuration
 |   `-- package.json                # NPM build scripts and dependencies
 |
+|-- Mobile App/                     # Flutter Cross-Platform Mobile Client (Dart)
+|   |-- lib/
+|   |   |-- core/                   # Storage, networking, synchronization services
+|   |   |-- models/                 # Incidents, triage, contacts, responders, hospitals
+|   |   |-- providers/              # State management & reactive view models
+|   |   `-- views/                  # Screens (SOS, first-aid, map, medical profile, expenses)
+|   `-- pubspec.yaml                # Flutter dependencies and assets
+|
+|-- Smart Watch App/                # Native Wear OS Smartwatch Application (Kotlin)
+|   |-- app/src/main/
+|   |   |-- java/.../wear/
+|   |   |   |-- detector/           # FallDetector, SensorPipeline, MotionTelemetry
+|   |   |   |-- service/            # Background AccidentMonitorService
+|   |   |   |-- comm/               # PhoneSyncManager & WatchPayload serialization
+|   |   |   `-- ui/                 # CountdownActivity, TactileUi, MainActivity
+|   |   `-- AndroidManifest.xml     # Wear OS hardware sensor permissions
+|   `-- build.gradle.kts            # Android Gradle build configuration
+|
 |-- render.yaml                     # Render Infrastructure-as-Code deployment blueprint
 `-- README.md                       # Comprehensive platform documentation
 ```
-
-*Note: Companion client modules (`Mobile App/` and `Smart Watch App/`) are maintained locally for hardware testing and sensor calibration.*
 
 ---
 
