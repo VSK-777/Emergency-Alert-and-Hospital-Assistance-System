@@ -14,6 +14,7 @@ import net.vvit.csp.emergency.service.AuthService;
 import net.vvit.csp.emergency.service.LiveEmergencyBroadcastService;
 import net.vvit.csp.emergency.service.ResponderService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -57,6 +58,7 @@ public class ResponderController {
     }
 
     @GetMapping("/me")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RESPONDER')")
     @Operation(summary = "Get current authenticated responder's profile, verification status, and active mission")
     public ResponseEntity<Map<String, Object>> getMyProfile() {
         User user = authService.getCurrentAuthenticatedUser();
@@ -90,6 +92,7 @@ public class ResponderController {
     }
 
     @GetMapping("/nearby-emergencies")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RESPONDER')")
     @Operation(summary = "Get pending eligible emergencies nearby that require responder assistance")
     public ResponseEntity<List<IncidentResponse>> getNearbyEmergencies() {
         List<EmergencyIncident> eligible = incidentRepository.findAllByOrderByCreatedAtDesc().stream()
@@ -101,6 +104,7 @@ public class ResponderController {
     }
 
     @PutMapping("/availability")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RESPONDER')")
     @Operation(summary = "Update responder availability and live coordinates")
     public ResponseEntity<ResponderDto> updateAvailability(
             @RequestParam(required = false) Boolean isAvailable,
@@ -112,6 +116,7 @@ public class ResponderController {
     }
 
     @PostMapping("/assignments/{incidentId}/claim")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RESPONDER')")
     @Transactional
     @Operation(summary = "Atomically accept and claim an emergency assignment")
     public ResponseEntity<IncidentResponse> claimAssignment(@PathVariable String incidentId) {
@@ -148,6 +153,7 @@ public class ResponderController {
     }
 
     @PostMapping("/assignments/{incidentId}/status")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RESPONDER')")
     @Transactional
     @Operation(summary = "Update responder mission progress: EN_ROUTE, ARRIVED, ASSISTANCE_STARTED, COMPLETED, UNABLE_TO_ASSIST")
     public ResponseEntity<IncidentResponse> updateMissionStatus(
@@ -190,6 +196,7 @@ public class ResponderController {
     }
 
     @PostMapping("/assignments/{incidentId}/decline")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RESPONDER')")
     @Transactional
     @Operation(summary = "Decline an emergency request with optional reason")
     public ResponseEntity<Map<String, Object>> declineAssignment(

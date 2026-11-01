@@ -24,6 +24,9 @@ public class UserDevice {
     @Column(name = "fcm_token", length = 255)
     private String fcmToken;
 
+    @Column(name = "auth_token_hash", length = 255)
+    private String authTokenHash;
+
     @Column(name = "is_active")
     private Boolean isActive = true;
 
@@ -49,6 +52,9 @@ public class UserDevice {
 
     public String getFcmToken() { return fcmToken; }
     public void setFcmToken(String fcmToken) { this.fcmToken = fcmToken; }
+
+    public String getAuthTokenHash() { return authTokenHash; }
+    public void setAuthTokenHash(String authTokenHash) { this.authTokenHash = authTokenHash; }
 
     public Boolean getIsActive() { return isActive; }
     public void setIsActive(Boolean active) { isActive = active; }

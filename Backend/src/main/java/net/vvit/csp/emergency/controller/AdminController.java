@@ -15,6 +15,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/admin")
+@PreAuthorize("hasRole('ADMIN')")
 @Tag(name = "System Administration", description = "System-wide metrics, governance, user and partner verification")
 public class AdminController {
 

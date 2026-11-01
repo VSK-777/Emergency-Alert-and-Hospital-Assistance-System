@@ -7,8 +7,14 @@ import net.vvit.csp.emergency.dto.IncidentStatusUpdateRequest;
 import net.vvit.csp.emergency.exception.ResourceNotFoundException;
 import net.vvit.csp.emergency.model.*;
 import net.vvit.csp.emergency.repository.*;
+import net.vvit.csp.emergency.security.EmergencyRateLimiter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,6 +26,8 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class EmergencyService {
 
+    private static final Logger log = LoggerFactory.getLogger(EmergencyService.class);
+
     private final EmergencyIncidentRepository incidentRepo;
     private final DetectionEventRepository detectionEventRepo;
     private final HospitalRepository hospitalRepo;
@@ -27,6 +35,8 @@ public class EmergencyService {
     private final SyncRecordRepository syncRecordRepo;
     private final NotificationService notificationService;
     private final LiveEmergencyBroadcastService broadcastService;
+    private final DeviceAuthService deviceAuthService;
+    private final EmergencyRateLimiter rateLimiter;
 
     public EmergencyService(EmergencyIncidentRepository incidentRepo,
                             DetectionEventRepository detectionEventRepo,
@@ -34,7 +44,9 @@ public class EmergencyService {
                             ResponderRepository responderRepo,
                             SyncRecordRepository syncRecordRepo,
                             NotificationService notificationService,
-                            LiveEmergencyBroadcastService broadcastService) {
+                            LiveEmergencyBroadcastService broadcastService,
+                            DeviceAuthService deviceAuthService,
+                            EmergencyRateLimiter rateLimiter) {
         this.incidentRepo = incidentRepo;
         this.detectionEventRepo = detectionEventRepo;
         this.hospitalRepo = hospitalRepo;
@@ -42,28 +54,68 @@ public class EmergencyService {
         this.syncRecordRepo = syncRecordRepo;
         this.notificationService = notificationService;
         this.broadcastService = broadcastService;
+        this.deviceAuthService = deviceAuthService;
+        this.rateLimiter = rateLimiter;
     }
 
     @Transactional
     public IncidentResponse createIncident(IncidentCreateRequest request, User user) {
-        // 1. Idempotency Check
+        return createIncident(request, user, null, null, null);
+    }
+
+    @Transactional
+    public IncidentResponse createIncident(IncidentCreateRequest request, User user, String clientIp, String deviceId, String deviceToken) {
+        // 1. IP-Based Rate Limiting Check
+        if (clientIp != null && !rateLimiter.allowRequest(clientIp)) {
+            log.warn("Rate limit triggered on emergency creation from IP: {}", clientIp);
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Emergency creation rate limit exceeded. Please wait before retrying.");
+        }
+
+        // 2. Per-Device Authentication (Smartwatch & Companion Device)
+        String effectiveDeviceId = (deviceId != null && !deviceId.isBlank()) ? deviceId : request.getDeviceIdentifier();
+        String effectiveDeviceToken = (deviceToken != null && !deviceToken.isBlank()) ? deviceToken : request.getDeviceToken();
+
+        if (user == null && effectiveDeviceId != null && effectiveDeviceToken != null) {
+            Optional<UserDevice> authenticatedDevice = deviceAuthService.authenticateDevice(effectiveDeviceId, effectiveDeviceToken);
+            if (authenticatedDevice.isPresent()) {
+                user = authenticatedDevice.get().getUser();
+                log.info("Emergency incident authenticated via enrolled device: {} for citizen: {}", effectiveDeviceId, user.getEmail());
+            } else {
+                log.warn("Device authentication failed for deviceId: {}. Proceeding as unverified emergency.", effectiveDeviceId);
+            }
+        }
+
+        // 3. Idempotency Check
         if (request.getIdempotencyKey() != null && !request.getIdempotencyKey().isBlank()) {
             Optional<SyncRecord> existingSync = syncRecordRepo.findByIdempotencyKey(request.getIdempotencyKey());
             if (existingSync.isPresent()) {
                 EmergencyIncident existingIncident = incidentRepo.findById(existingSync.get().getIncidentId()).orElse(null);
                 if (existingIncident != null) {
+                    log.info("Idempotent duplicate emergency ignored for key: {}", request.getIdempotencyKey());
                     return IncidentResponse.fromEntity(existingIncident);
                 }
             }
         }
 
-        // 2. Client ID check
+        // 4. Client ID Check
         String incidentId = (request.getId() != null && !request.getId().isBlank())
                 ? request.getId()
                 : UUID.randomUUID().toString();
 
         if (incidentRepo.existsById(incidentId)) {
+            log.info("Client ID duplicate emergency returned for ID: {}", incidentId);
             return IncidentResponse.fromEntity(incidentRepo.findById(incidentId).get());
+        }
+
+        // 5. Replay Protection & Timestamp Window
+        LocalDateTime incidentTime = LocalDateTime.now();
+        if (request.getLocationTimestamp() != null) {
+            LocalDateTime now = LocalDateTime.now();
+            if (request.getLocationTimestamp().isBefore(now.minusHours(2)) || request.getLocationTimestamp().isAfter(now.plusMinutes(10))) {
+                log.warn("Suspicious emergency timestamp detected: {}. Server time: {}. Flagging replay anomaly.", request.getLocationTimestamp(), now);
+            } else {
+                incidentTime = request.getLocationTimestamp();
+            }
         }
 
         EmergencyIncident incident = new EmergencyIncident();
@@ -74,11 +126,11 @@ public class EmergencyService {
         incident.setLatitude(request.getLatitude());
         incident.setLongitude(request.getLongitude());
         incident.setAccuracyMeters(request.getAccuracyMeters());
-        incident.setLocationTimestamp(LocalDateTime.now());
+        incident.setLocationTimestamp(incidentTime);
         incident.setDetectionReason(request.getDetectionReason() != null ? request.getDetectionReason() : "SOS triggered");
         incident.setDetectionScore(request.getDetectionScore() != null ? request.getDetectionScore() : 1.0);
 
-        // 3. Auto-assign nearest active hospital
+        // 6. Auto-assign nearest active hospital
         List<Hospital> activeHospitals = hospitalRepo.findByIsActiveTrue();
         if (!activeHospitals.isEmpty()) {
             Hospital nearest = activeHospitals.stream().min((h1, h2) -> {
@@ -91,7 +143,7 @@ public class EmergencyService {
 
         EmergencyIncident saved = incidentRepo.save(incident);
 
-        // 4. Save detection event if included (e.g. from Smartwatch)
+        // 7. Save detection event if included (e.g. from Smartwatch)
         if (request.getDetectionEvent() != null) {
             DetectionEventDto eventDto = request.getDetectionEvent();
             DetectionEvent event = new DetectionEvent();
@@ -104,7 +156,7 @@ public class EmergencyService {
             detectionEventRepo.save(event);
         }
 
-        // 5. Save Idempotency Sync Record
+        // 8. Save Idempotency Sync Record
         if (request.getIdempotencyKey() != null && !request.getIdempotencyKey().isBlank()) {
             syncRecordRepo.save(new SyncRecord(
                     request.getIdempotencyKey(),
@@ -115,10 +167,10 @@ public class EmergencyService {
             ));
         }
 
-        // 6. Fanout emergency notifications
+        // 9. Fanout emergency notifications
         notificationService.dispatchEmergencyAlerts(saved);
 
-        // 7. Live broadcast to connected Web & Mobile devices via SSE
+        // 10. Live broadcast to connected Web & Mobile devices via SSE (with patient isolation)
         broadcastService.broadcastEmergencyAlert(saved);
 
         return IncidentResponse.fromEntity(saved);
@@ -127,6 +179,18 @@ public class EmergencyService {
     public IncidentResponse getIncident(String id) {
         EmergencyIncident incident = incidentRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Emergency incident not found with ID: " + id));
+        return IncidentResponse.fromEntity(incident);
+    }
+
+    public IncidentResponse getIncident(String id, User user) {
+        EmergencyIncident incident = incidentRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Emergency incident not found with ID: " + id));
+
+        if (user != null && user.getRole() == UserRole.CITIZEN) {
+            if (incident.getUser() == null || !incident.getUser().getId().equals(user.getId())) {
+                throw new AccessDeniedException("Access denied: You do not have permission to view other citizens' emergency incidents.");
+            }
+        }
         return IncidentResponse.fromEntity(incident);
     }
 
@@ -149,10 +213,54 @@ public class EmergencyService {
                 .collect(Collectors.toList());
     }
 
+    public List<IncidentResponse> listActiveIncidentsForUser(User user) {
+        List<EmergencyIncident> allActive = incidentRepo.findAllByOrderByCreatedAtDesc().stream()
+                .filter(i -> i.getStatus() != IncidentStatus.RESOLVED && i.getStatus() != IncidentStatus.CANCELLED)
+                .toList();
+
+        if (user.getRole() == UserRole.ADMIN) {
+            return allActive.stream().map(IncidentResponse::fromEntity).toList();
+        }
+
+        if (user.getRole() == UserRole.HOSPITAL_STAFF) {
+            return allActive.stream()
+                    .filter(i -> i.getAssignedHospital() == null
+                            || user.getHospitalId() == null
+                            || (i.getAssignedHospital() != null && i.getAssignedHospital().getId().equals(user.getHospitalId())))
+                    .map(IncidentResponse::fromEntity)
+                    .toList();
+        }
+
+        if (user.getRole() == UserRole.RESPONDER) {
+            return allActive.stream()
+                    .filter(i -> i.getAssignedResponder() == null
+                            || (i.getAssignedResponder() != null && i.getAssignedResponder().getUser() != null && i.getAssignedResponder().getUser().getId().equals(user.getId())))
+                    .map(IncidentResponse::fromEntity)
+                    .toList();
+        }
+
+        // CITIZEN: STRICT PATIENT ISOLATION
+        return allActive.stream()
+                .filter(i -> i.getUser() != null && i.getUser().getId().equals(user.getId()))
+                .map(IncidentResponse::fromEntity)
+                .toList();
+    }
+
     @Transactional
     public IncidentResponse updateStatus(String id, IncidentStatusUpdateRequest request, User user) {
         EmergencyIncident incident = incidentRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Emergency incident not found with ID: " + id));
+
+        if (user.getRole() == UserRole.CITIZEN) {
+            throw new AccessDeniedException("Access denied: Citizens cannot modify incident status or dispatch assignments.");
+        }
+
+        if (user.getRole() == UserRole.HOSPITAL_STAFF) {
+            if (incident.getAssignedHospital() != null && user.getHospitalId() != null
+                    && !incident.getAssignedHospital().getId().equals(user.getHospitalId())) {
+                throw new AccessDeniedException("Access denied: Incident is assigned to a different hospital.");
+            }
+        }
 
         incident.setStatus(request.getStatus());
         if (request.getStatus() == IncidentStatus.RESOLVED) {
@@ -172,6 +280,7 @@ public class EmergencyService {
         }
 
         EmergencyIncident updated = incidentRepo.save(incident);
+        broadcastService.broadcastIncident(IncidentResponse.fromEntity(updated));
         return IncidentResponse.fromEntity(updated);
     }
 
@@ -180,9 +289,16 @@ public class EmergencyService {
         EmergencyIncident incident = incidentRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Emergency incident not found with ID: " + id));
 
+        if (user != null && user.getRole() == UserRole.CITIZEN) {
+            if (incident.getUser() == null || !incident.getUser().getId().equals(user.getId())) {
+                throw new AccessDeniedException("Access denied: You cannot cancel incidents belonging to other citizens.");
+            }
+        }
+
         incident.setStatus(IncidentStatus.CANCELLED);
         incident.setResolvedAt(LocalDateTime.now());
         EmergencyIncident updated = incidentRepo.save(incident);
+        broadcastService.broadcastIncident(IncidentResponse.fromEntity(updated));
         return IncidentResponse.fromEntity(updated);
     }
 }

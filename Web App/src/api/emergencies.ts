@@ -40,7 +40,18 @@ export const emergencyApi = {
     return response.data;
   },
 
-  createSseSource: (): EventSource => {
-    return new EventSource(`${API_BASE_URL}/emergencies/stream`);
+  getStreamTicket: async (): Promise<string> => {
+    const response = await api.post<{ ticket: string }>('/emergencies/stream-ticket');
+    return response.data.ticket;
+  },
+
+  createSseSource: async (): Promise<EventSource> => {
+    try {
+      const ticket = await emergencyApi.getStreamTicket();
+      return new EventSource(`${API_BASE_URL}/emergencies/stream?ticket=${encodeURIComponent(ticket)}`);
+    } catch {
+      const token = localStorage.getItem('token') || '';
+      return new EventSource(`${API_BASE_URL}/emergencies/stream?token=${encodeURIComponent(token)}`);
+    }
   },
 };

@@ -70,7 +70,6 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/api-docs/**",
                                 "/api/v1/emergencies/stream",
-                                "/api/v1/emergencies/active",
                                 "/error"
                         ).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/emergencies").permitAll()

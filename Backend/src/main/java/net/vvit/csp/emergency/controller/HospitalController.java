@@ -18,6 +18,7 @@ import net.vvit.csp.emergency.service.HospitalService;
 import net.vvit.csp.emergency.service.LiveEmergencyBroadcastService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -60,6 +61,7 @@ public class HospitalController {
     }
 
     @GetMapping("/my")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HOSPITAL_STAFF')")
     @Operation(summary = "Get the assigned hospital for the currently authenticated hospital staff")
     public ResponseEntity<HospitalDto> getMyHospital() {
         User user = authService.getCurrentAuthenticatedUser();
@@ -85,6 +87,7 @@ public class HospitalController {
     }
 
     @GetMapping("/{id}/emergencies")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HOSPITAL_STAFF')")
     @Operation(summary = "Get all incoming and active emergencies assigned to this hospital")
     public ResponseEntity<List<IncidentResponse>> getHospitalEmergencies(@PathVariable Long id) {
         List<EmergencyIncident> incidents = incidentRepository.findAllByOrderByCreatedAtDesc().stream()
@@ -94,6 +97,7 @@ public class HospitalController {
     }
 
     @PostMapping("/{id}/emergencies/{incidentId}/acknowledge")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HOSPITAL_STAFF')")
     @Operation(summary = "Hospital staff acknowledgement: ACKNOWLEDGE, ACCEPT, or DECLINE with reason")
     public ResponseEntity<IncidentResponse> acknowledgeIncident(
             @PathVariable Long id,
@@ -134,6 +138,7 @@ public class HospitalController {
     }
 
     @PostMapping("/{id}/emergencies/{incidentId}/preparation")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HOSPITAL_STAFF')")
     @Operation(summary = "Update patient preparation status: PREPARATION_STARTED, PATIENT_EXPECTED, PATIENT_ARRIVED, PATIENT_ADMITTED")
     public ResponseEntity<IncidentResponse> updatePreparation(
             @PathVariable Long id,
@@ -168,6 +173,7 @@ public class HospitalController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Register new partner hospital in the network")
     public ResponseEntity<Hospital> createHospital(@RequestBody Hospital hospital) {
         hospital.setIsActive(true);
@@ -176,6 +182,7 @@ public class HospitalController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HOSPITAL_STAFF')")
     @Operation(summary = "Update hospital capacity, ICU availability, or ambulances")
     public ResponseEntity<Hospital> updateHospital(@PathVariable Long id, @RequestBody Hospital updateData) {
         Hospital hospital = hospitalRepository.findById(id)

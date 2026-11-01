@@ -2,6 +2,7 @@ package net.vvit.csp.emergency.service;
 
 import net.vvit.csp.emergency.dto.IncidentResponse;
 import net.vvit.csp.emergency.model.EmergencyIncident;
+import net.vvit.csp.emergency.model.UserRole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -14,40 +15,47 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * Real-time Server-Sent Events (SSE) broadcaster for emergency incidents.
  * Pushes live emergency notifications to connected Web and Mobile clients
- * whenever an incident is reported from Smartwatch, Mobile SOS, or manual triggers.
+ * with patient data isolation and role-aware filtering.
  */
 @Service
 public class LiveEmergencyBroadcastService {
 
     private static final Logger log = LoggerFactory.getLogger(LiveEmergencyBroadcastService.class);
 
+    public record ClientSubscriber(SseEmitter emitter, Long userId, UserRole userRole) {}
+
     // Concurrent thread-safe list of active subscriber emitters
-    private final List<SseEmitter> emitters = new CopyOnWriteArrayList<>();
+    private final List<ClientSubscriber> subscribers = new CopyOnWriteArrayList<>();
+
+    public SseEmitter registerClient() {
+        return registerClient(null, null);
+    }
 
     /**
-     * Registers a new Web or Phone client for live emergency push alerts.
+     * Registers an authenticated Web or Mobile client for live emergency push alerts.
      */
-    public SseEmitter registerClient() {
+    public SseEmitter registerClient(Long userId, UserRole userRole) {
         // 30-minute timeout for client connection
         SseEmitter emitter = new SseEmitter(1800_000L);
+        ClientSubscriber subscriber = new ClientSubscriber(emitter, userId, userRole);
 
-        emitters.add(emitter);
-        log.info("New client registered for live emergency alerts. Active subscribers: {}", emitters.size());
+        subscribers.add(subscriber);
+        log.info("Registered SSE subscriber (User ID: {}, Role: {}). Total active: {}", userId, userRole, subscribers.size());
 
         emitter.onCompletion(() -> {
-            emitters.remove(emitter);
-            log.info("Client alert stream completed. Active subscribers: {}", emitters.size());
+            subscribers.remove(subscriber);
+            log.info("SSE stream completed for user {}. Active: {}", userId, subscribers.size());
         });
 
         emitter.onTimeout(() -> {
             emitter.complete();
-            emitters.remove(emitter);
-            log.info("Client alert stream timed out. Active subscribers: {}", emitters.size());
+            subscribers.remove(subscriber);
+            log.info("SSE stream timed out for user {}. Active: {}", userId, subscribers.size());
         });
 
         emitter.onError(ex -> {
-            emitters.remove(emitter);
-            log.warn("Client alert stream error: {}. Active subscribers: {}", ex.getMessage(), emitters.size());
+            subscribers.remove(subscriber);
+            log.warn("SSE stream error for user {}: {}. Active: {}", userId, ex.getMessage(), subscribers.size());
         });
 
         // Send initial connection heartbeat event
@@ -56,7 +64,7 @@ public class LiveEmergencyBroadcastService {
                     .name("CONNECTED")
                     .data("Connected to VVIT CSP Emergency Live Alert Dispatch Stream"));
         } catch (IOException e) {
-            emitters.remove(emitter);
+            subscribers.remove(subscriber);
         }
 
         return emitter;
@@ -70,24 +78,31 @@ public class LiveEmergencyBroadcastService {
     }
 
     /**
-     * Broadcasts newly created or updated emergency incident payload to all connected clients.
+     * Broadcasts newly created or updated emergency incident payload with role-based privacy isolation.
      */
     public void broadcastIncident(IncidentResponse payload) {
-        if (emitters.isEmpty()) {
+        if (subscribers.isEmpty()) {
             log.info("No active SSE subscribers to broadcast incident {}", payload.getId());
             return;
         }
 
-        log.info("Broadcasting emergency alert {} to {} connected clients", payload.getId(), emitters.size());
+        log.info("Broadcasting emergency alert {} to {} connected clients", payload.getId(), subscribers.size());
 
-        for (SseEmitter emitter : emitters) {
+        for (ClientSubscriber sub : subscribers) {
+            // Patient privacy filter: Citizens only receive their own incident alerts
+            if (sub.userRole() == UserRole.CITIZEN) {
+                if (payload.getUserId() == null || !payload.getUserId().equals(sub.userId())) {
+                    continue; // Do not broadcast other patients' trauma incidents to citizen clients
+                }
+            }
+
             try {
-                emitter.send(SseEmitter.event()
+                sub.emitter().send(SseEmitter.event()
                         .name("EMERGENCY_ALERT")
                         .data(payload));
             } catch (Exception ex) {
-                emitters.remove(emitter);
-                log.warn("Failed to dispatch alert to an emitter: {}", ex.getMessage());
+                subscribers.remove(sub);
+                log.warn("Failed to dispatch alert to subscriber: {}", ex.getMessage());
             }
         }
     }

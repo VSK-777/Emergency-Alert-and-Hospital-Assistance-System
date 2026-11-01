@@ -16,7 +16,7 @@ interface EmergencyState {
   fetchAllIncidents: () => Promise<void>;
   setSelectedIncident: (incident: EmergencyIncident | null) => void;
   selectIncidentById: (id: string) => Promise<void>;
-  initSseStream: () => void;
+  initSseStream: () => Promise<void>;
   closeSseStream: () => void;
   toggleSound: () => void;
   updateStatus: (id: string, status: IncidentStatus, hospitalId?: number, responderId?: number) => Promise<void>;
@@ -90,7 +90,7 @@ export const useEmergencyStore = create<EmergencyState>((set, get) => ({
     }
   },
 
-  initSseStream: () => {
+  initSseStream: async () => {
     const current = get().eventSource;
     if (current) {
       current.close();
@@ -99,7 +99,7 @@ export const useEmergencyStore = create<EmergencyState>((set, get) => ({
     set({ sseStatus: 'CONNECTING' });
 
     try {
-      const es = emergencyApi.createSseSource();
+      const es = await emergencyApi.createSseSource();
 
       es.onopen = () => {
         set({ sseStatus: 'CONNECTED' });

@@ -2,12 +2,19 @@ package net.vvit.csp.emergency.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import net.vvit.csp.emergency.dto.DeviceEnrollmentRequest;
+import net.vvit.csp.emergency.dto.DeviceEnrollmentResponse;
 import net.vvit.csp.emergency.model.AuditLog;
 import net.vvit.csp.emergency.model.DetectionEvent;
+import net.vvit.csp.emergency.model.User;
 import net.vvit.csp.emergency.model.UserDevice;
 import net.vvit.csp.emergency.repository.AuditLogRepository;
 import net.vvit.csp.emergency.repository.DetectionEventRepository;
 import net.vvit.csp.emergency.repository.DeviceRepository;
+import net.vvit.csp.emergency.service.AuthService;
+import net.vvit.csp.emergency.service.DeviceAuthService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,13 +31,36 @@ public class DeviceController {
     private final DeviceRepository deviceRepository;
     private final DetectionEventRepository detectionEventRepository;
     private final AuditLogRepository auditLogRepository;
+    private final AuthService authService;
+    private final DeviceAuthService deviceAuthService;
 
     public DeviceController(DeviceRepository deviceRepository,
                             DetectionEventRepository detectionEventRepository,
-                            AuditLogRepository auditLogRepository) {
+                            AuditLogRepository auditLogRepository,
+                            AuthService authService,
+                            DeviceAuthService deviceAuthService) {
         this.deviceRepository = deviceRepository;
         this.detectionEventRepository = detectionEventRepository;
         this.auditLogRepository = auditLogRepository;
+        this.authService = authService;
+        this.deviceAuthService = deviceAuthService;
+    }
+
+    @PostMapping("/enroll")
+    @Operation(summary = "Enroll a new wearable smartwatch or client device and issue unique authentication token")
+    public ResponseEntity<DeviceEnrollmentResponse> enrollDevice(
+            @Valid @RequestBody DeviceEnrollmentRequest request
+    ) {
+        User user = authService.getCurrentAuthenticatedUser();
+        DeviceEnrollmentResponse response = deviceAuthService.enrollDevice(request, user);
+        auditLogRepository.save(new AuditLog(
+                "DEVICE_ENROLLED",
+                "DEVICE",
+                response.getId().toString(),
+                user.getEmail(),
+                "Enrolled device " + request.getDeviceIdentifier() + " (" + request.getDeviceType() + ")"
+        ));
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping

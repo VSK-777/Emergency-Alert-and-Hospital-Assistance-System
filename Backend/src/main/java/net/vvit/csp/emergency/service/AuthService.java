@@ -132,4 +132,12 @@ public class AuthService {
         }
         return principal.getUser();
     }
+
+    public User getUserByEmail(String email) {
+        if (email == null) {
+            throw new BadRequestException("Email cannot be null");
+        }
+        return userRepository.findByEmail(email.toLowerCase().trim())
+                .orElseThrow(() -> new BadRequestException("User not found with email: " + email));
+    }
 }
