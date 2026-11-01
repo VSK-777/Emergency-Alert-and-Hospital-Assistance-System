@@ -46,11 +46,20 @@ export type IncidentStatus =
 
 export type IncidentSource = 
   | 'SMARTWATCH_SENSOR'
+  | 'MOBILE_MANUAL_SOS'
   | 'MANUAL_SOS'
   | 'SMARTWATCH_AUTO' 
   | 'MOBILE_SOS' 
   | 'MANUAL_WEB' 
   | 'FALL_DETECTION';
+
+export interface EmergencyContact {
+  id: number;
+  name: string;
+  relationship: string;
+  phoneNumber: string;
+  isPrimary?: boolean;
+}
 
 export interface DetectionEvent {
   id?: number;

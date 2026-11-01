@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useEmergencyStore } from '../store/emergencyStore';
 import { Badge } from '../components/common/Badge';
 import { EmergencyDetailModal } from '../components/emergencies/EmergencyDetailModal';
-import { CreateEmergencyModal } from '../components/emergencies/CreateEmergencyModal';
 import type { IncidentStatus, IncidentSource, EmergencyIncident } from '../types';
 import {
   AlertTriangle,
@@ -14,7 +13,6 @@ import {
   Watch,
   Smartphone,
   Eye,
-  PlusCircle,
   RefreshCw,
 } from 'lucide-react';
 
@@ -31,7 +29,6 @@ export const LiveEmergenciesPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [sourceFilter, setSourceFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSosModalOpen, setIsSosModalOpen] = useState(false);
 
   useEffect(() => {
     fetchAllIncidents();
@@ -77,14 +74,6 @@ export const LiveEmergenciesPage: React.FC = () => {
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
-          </button>
-
-          <button
-            onClick={() => setIsSosModalOpen(true)}
-            className="flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-red-700 active:scale-95 transition-all"
-          >
-            <PlusCircle className="h-4 w-4" />
-            Dispatch SOS
           </button>
         </div>
       </div>
@@ -245,12 +234,6 @@ export const LiveEmergenciesPage: React.FC = () => {
         incident={selectedIncident}
         isOpen={!!selectedIncident}
         onClose={() => setSelectedIncident(null)}
-      />
-
-      {/* SOS Modal */}
-      <CreateEmergencyModal
-        isOpen={isSosModalOpen}
-        onClose={() => setIsSosModalOpen(false)}
       />
     </div>
   );

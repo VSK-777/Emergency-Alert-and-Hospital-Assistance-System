@@ -13,6 +13,7 @@ interface AuthState {
   sendOtp: (phoneNumber: string) => Promise<{ success: boolean; message: string; devOtp?: string }>;
   verifyOtp: (phoneNumber: string, otp: string, fullName?: string) => Promise<void>;
   register: (userData: Partial<User> & { password: string }) => Promise<void>;
+  updateProfile: (userData: Partial<User>) => Promise<User>;
   logout: () => void;
   setUser: (user: User) => void;
   checkAuth: () => Promise<void>;
@@ -39,7 +40,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response: AuthResponse = await authApi.login(email.trim(), password);
-      const user: User = {
+      localStorage.setItem('vvit_csp_token', response.token);
+
+      let user: User = {
         id: response.id,
         email: response.email,
         fullName: response.fullName,
@@ -47,7 +50,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         role: response.role,
       };
 
-      localStorage.setItem('vvit_csp_token', response.token);
+      try {
+        const fullProfile = await authApi.getProfile();
+        user = { ...user, ...fullProfile };
+      } catch {
+        // Fallback to base user if profile endpoint fails
+      }
+
       localStorage.setItem('vvit_csp_user', JSON.stringify(user));
 
       set({
@@ -72,7 +81,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         verificationToken,
         fullName,
       });
-      const user: User = {
+      localStorage.setItem('vvit_csp_token', response.token);
+
+      let user: User = {
         id: response.id,
         email: response.email,
         fullName: response.fullName,
@@ -80,7 +91,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         role: response.role,
       };
 
-      localStorage.setItem('vvit_csp_token', response.token);
+      try {
+        const fullProfile = await authApi.getProfile();
+        user = { ...user, ...fullProfile };
+      } catch {
+        // Fallback to base user
+      }
+
       localStorage.setItem('vvit_csp_user', JSON.stringify(user));
 
       set({
@@ -118,7 +135,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         otp: otp.trim(),
         fullName,
       });
-      const user: User = {
+      localStorage.setItem('vvit_csp_token', response.token);
+
+      let user: User = {
         id: response.id,
         email: response.email,
         fullName: response.fullName,
@@ -126,7 +145,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         role: response.role,
       };
 
-      localStorage.setItem('vvit_csp_token', response.token);
+      try {
+        const fullProfile = await authApi.getProfile();
+        user = { ...user, ...fullProfile };
+      } catch {
+        // Fallback to base user
+      }
+
       localStorage.setItem('vvit_csp_user', JSON.stringify(user));
 
       set({
@@ -147,15 +172,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response: AuthResponse = await authApi.register(userData);
-      const user: User = {
+      localStorage.setItem('vvit_csp_token', response.token);
+
+      let user: User = {
         id: response.id,
         email: response.email,
         fullName: response.fullName,
         phoneNumber: response.phoneNumber,
         role: response.role,
+        bloodGroup: userData.bloodGroup,
+        allergies: userData.allergies,
+        medicalConditions: userData.medicalConditions,
       };
 
-      localStorage.setItem('vvit_csp_token', response.token);
+      try {
+        const fullProfile = await authApi.getProfile();
+        user = { ...user, ...fullProfile };
+      } catch {
+        // Fallback
+      }
+
       localStorage.setItem('vvit_csp_user', JSON.stringify(user));
 
       set({
@@ -167,6 +203,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Registration failed.';
+      set({ error: msg, isLoading: false });
+      throw new Error(msg);
+    }
+  },
+
+  updateProfile: async (userData: Partial<User>) => {
+    set({ isLoading: true, error: null });
+    try {
+      const updated = await authApi.updateProfile(userData);
+      const currentUser = get().user;
+      const mergedUser = { ...currentUser, ...updated };
+      localStorage.setItem('vvit_csp_user', JSON.stringify(mergedUser));
+      set({ user: mergedUser, isLoading: false });
+      return mergedUser;
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Failed to update profile.';
       set({ error: msg, isLoading: false });
       throw new Error(msg);
     }

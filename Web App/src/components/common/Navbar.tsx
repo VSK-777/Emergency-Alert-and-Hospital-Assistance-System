@@ -18,9 +18,9 @@ import {
   Shield,
   Activity,
   User as UserIcon,
+  Watch,
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { CreateEmergencyModal } from '../emergencies/CreateEmergencyModal';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuthStore();
@@ -29,7 +29,6 @@ export const Navbar: React.FC = () => {
   const { theme, toggleTheme } = useThemeStore();
   const navigate = useNavigate();
   const location = useLocation();
-  const [isSosModalOpen, setIsSosModalOpen] = useState(false);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -126,39 +125,39 @@ export const Navbar: React.FC = () => {
             </span>
           </div>
 
-          {/* Role-Specific Action Control */}
+          {/* Role-Adapted Status & Notification Badges (No website emergency initiation) */}
           {user?.role === 'CITIZEN' ? (
-            <button
-              onClick={() => setIsSosModalOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-red-700 active:scale-95 transition-all"
+            <div
+              title="Paired Wear OS Smartwatch Sensor Status"
+              className="flex items-center gap-1.5 rounded-lg border border-purple-200 dark:border-purple-800/60 bg-purple-50 dark:bg-purple-950/40 px-2.5 py-1 text-xs font-semibold text-purple-700 dark:text-purple-300"
             >
-              <AlertTriangle className="h-3.5 w-3.5" />
-              <span>DISPATCH SOS</span>
-            </button>
+              <Watch className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+              <span className="hidden sm:inline">Watch Monitoring</span>
+              <span className="sm:hidden">Watch</span>
+            </div>
           ) : user?.role === 'ADMIN' ? (
-            <button
-              onClick={() => setIsSosModalOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-red-700 active:scale-95 transition-all"
+            <div
+              title="Live Network Incidents Monitored"
+              className="flex items-center gap-1.5 rounded-lg border border-blue-200 dark:border-blue-800/60 bg-blue-50 dark:bg-blue-950/40 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:text-blue-300"
             >
-              <AlertTriangle className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">CREATE ALERT</span>
-              <span className="sm:hidden">ALERT</span>
-            </button>
+              <Activity className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+              <span>Grid Alerts: {activeIncidents.length}</span>
+            </div>
           ) : user?.role === 'HOSPITAL_STAFF' ? (
             <button
-              onClick={() => navigate('/emergencies')}
-              className="flex items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-sky-700 active:scale-95 transition-all"
+              onClick={() => navigate('/hospital')}
+              className="flex items-center gap-1.5 rounded-lg border border-sky-200 dark:border-sky-800/60 bg-sky-50 dark:bg-sky-950/40 px-3 py-1.5 text-xs font-bold text-sky-700 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/40 transition-colors"
             >
-              <Building2 className="h-3.5 w-3.5" />
-              <span>INCOMING ({activeIncidents.length})</span>
+              <Building2 className="h-3.5 w-3.5 text-sky-600" />
+              <span>Incoming Triage ({activeIncidents.length})</span>
             </button>
           ) : user?.role === 'RESPONDER' ? (
             <button
-              onClick={() => navigate('/emergencies')}
-              className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 active:scale-95 transition-all"
+              onClick={() => navigate('/responder')}
+              className="flex items-center gap-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
             >
-              <HeartHandshake className="h-3.5 w-3.5" />
-              <span>NEARBY ({activeIncidents.length})</span>
+              <HeartHandshake className="h-3.5 w-3.5 text-emerald-600" />
+              <span>Nearby Alerts ({activeIncidents.length})</span>
             </button>
           ) : null}
 
@@ -231,12 +230,6 @@ export const Navbar: React.FC = () => {
           )}
         </div>
       </header>
-
-      {/* SOS Modal */}
-      <CreateEmergencyModal
-        isOpen={isSosModalOpen}
-        onClose={() => setIsSosModalOpen(false)}
-      />
     </>
   );
 };

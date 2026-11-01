@@ -52,6 +52,7 @@ export const Badge: React.FC<BadgeProps> = ({ status = 'PENDING', className = ''
       case 'SMARTWATCH_SENSOR':
       case 'SMARTWATCH_AUTO':
         return 'bg-red-50 text-red-800 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-600/40 font-bold';
+      case 'MOBILE_MANUAL_SOS':
       case 'MANUAL_SOS':
       case 'MOBILE_SOS':
         return 'bg-orange-50 text-orange-800 border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-600/40 font-bold';

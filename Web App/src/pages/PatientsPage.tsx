@@ -1,51 +1,133 @@
 import React, { useEffect, useState } from 'react';
 import { patientApi } from '../api/patients';
+import { contactApi } from '../api/contacts';
 import { useAuthStore } from '../store/authStore';
-import type { User, MedicalExpense, ExpenseStatus } from '../types';
+import type { User, MedicalExpense, ExpenseStatus, EmergencyContact } from '../types';
 import { Modal } from '../components/common/Modal';
 import { Badge } from '../components/common/Badge';
 import {
   Users,
   Heart,
-  AlertCircle,
   Phone,
   FileText,
   CreditCard,
   PlusCircle,
-  Shield,
-  Download,
-  CheckCircle,
   Search,
   ShieldCheck,
   Printer,
-  Calendar,
-  Sparkles,
+  Trash2,
+  Edit3,
+  UserPlus,
+  Activity,
 } from 'lucide-react';
 
 export const PatientsPage: React.FC = () => {
-  const { user } = useAuthStore();
+  const { user, updateProfile } = useAuthStore();
   const [patients, setPatients] = useState<User[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<User | null>(null);
   const [expenses, setExpenses] = useState<MedicalExpense[]>([]);
+  const [contacts, setContacts] = useState<EmergencyContact[]>([]);
   const [isExpensesModalOpen, setIsExpensesModalOpen] = useState(false);
   const [isIdCardOpen, setIsIdCardOpen] = useState(false);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // New expense form
+  // Citizen voluntary profile & contact management states
+  const [isEditMedicalOpen, setIsEditMedicalOpen] = useState(false);
+  const [editBloodGroup, setEditBloodGroup] = useState(user?.bloodGroup || '');
+  const [editAllergies, setEditAllergies] = useState(user?.allergies || '');
+  const [editConditions, setEditConditions] = useState(user?.medicalConditions || '');
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+
+  const [isAddContactOpen, setIsAddContactOpen] = useState(false);
+  const [contactName, setContactName] = useState('');
+  const [contactRelation, setContactRelation] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [isAddingContact, setIsAddingContact] = useState(false);
+
+  // New expense form (Staff/Admin)
   const [expenseDesc, setExpenseDesc] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('1200.00');
   const [expenseCategory, setExpenseCategory] = useState<'AMBULANCE' | 'EMERGENCY_ICU' | 'MEDICATION'>('AMBULANCE');
 
   const isCitizen = user?.role === 'CITIZEN';
 
+  // Sync edit form with user store
+  useEffect(() => {
+    if (user) {
+      setEditBloodGroup(user.bloodGroup || '');
+      setEditAllergies(user.allergies || '');
+      setEditConditions(user.medicalConditions || '');
+    }
+  }, [user]);
+
+  // Load data based on role
   useEffect(() => {
     if (!isCitizen) {
       patientApi.getPatients('CITIZEN').then(setPatients).catch(console.error);
     } else {
       patientApi.getMyExpenses().then(setExpenses).catch(console.error);
+      loadContacts();
     }
   }, [isCitizen]);
+
+  const loadContacts = async () => {
+    try {
+      const data = await contactApi.getContacts();
+      setContacts(data);
+    } catch (err) {
+      console.error('Failed to load emergency contacts:', err);
+    }
+  };
+
+  const handleUpdateMedicalProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsUpdatingProfile(true);
+    try {
+      await updateProfile({
+        bloodGroup: editBloodGroup.trim() ? editBloodGroup.trim() : undefined,
+        allergies: editAllergies.trim() ? editAllergies.trim() : undefined,
+        medicalConditions: editConditions.trim() ? editConditions.trim() : undefined,
+      });
+      setIsEditMedicalOpen(false);
+    } catch (err) {
+      console.error('Failed to update medical profile:', err);
+    } finally {
+      setIsUpdatingProfile(false);
+    }
+  };
+
+  const handleAddContact = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!contactName.trim() || !contactPhone.trim()) return;
+    setIsAddingContact(true);
+    try {
+      await contactApi.addContact({
+        name: contactName.trim(),
+        relationship: contactRelation.trim() || 'Emergency Contact',
+        phoneNumber: contactPhone.trim(),
+        isPrimary: contacts.length === 0,
+      });
+      setContactName('');
+      setContactRelation('');
+      setContactPhone('');
+      setIsAddContactOpen(false);
+      await loadContacts();
+    } catch (err) {
+      console.error('Failed to add contact:', err);
+    } finally {
+      setIsAddingContact(false);
+    }
+  };
+
+  const handleDeleteContact = async (id: number) => {
+    try {
+      await contactApi.deleteContact(id);
+      await loadContacts();
+    } catch (err) {
+      console.error('Failed to delete contact:', err);
+    }
+  };
 
   const openExpensesModal = async (patient: User) => {
     setSelectedPatient(patient);
@@ -81,16 +163,6 @@ export const PatientsPage: React.FC = () => {
     }
   };
 
-  const handleUpdateExpenseStatus = async (id: number, status: ExpenseStatus) => {
-    try {
-      await patientApi.updateExpenseStatus(id, status);
-      const data = await patientApi.getMyExpenses();
-      setExpenses(data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   const filteredPatients = patients.filter((p) => {
     return (
       searchQuery.trim() === '' ||
@@ -101,7 +173,7 @@ export const PatientsPage: React.FC = () => {
     );
   });
 
-  // CITIZEN VIEW: Display strictly their own Medical ID & Transparent Care Records
+  // CITIZEN VIEW: Display strictly verified / user-provided Medical ID & Emergency Contacts
   if (isCitizen) {
     return (
       <div className="space-y-6">
@@ -113,17 +185,26 @@ export const PatientsPage: React.FC = () => {
               My Digital Medical ID & Emergency Health Dossier
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Personal emergency medical parameters, pre-existing conditions, allergies, and transparent care costs
+              Personal verified emergency medical parameters, pre-existing conditions, allergies, and transparent care costs
             </p>
           </div>
 
-          <button
-            onClick={() => window.print()}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 shadow-xs transition-colors"
-          >
-            <Printer className="h-3.5 w-3.5" />
-            Print Emergency ID Card
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsEditMedicalOpen(true)}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 shadow-xs transition-colors"
+            >
+              <Edit3 className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+              Update Medical Profile
+            </button>
+            <button
+              onClick={() => window.print()}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 shadow-xs transition-colors"
+            >
+              <Printer className="h-3.5 w-3.5" />
+              Print Emergency ID Card
+            </button>
+          </div>
         </div>
 
         {/* Digital ID Card Display */}
@@ -132,20 +213,20 @@ export const PatientsPage: React.FC = () => {
             <div className="rounded-3xl border border-red-200 dark:border-red-900/40 bg-gradient-to-br from-red-50/50 via-white to-red-50/20 dark:from-red-950/20 dark:via-slate-900 dark:to-slate-900 p-6 shadow-sm space-y-5 transition-colors">
               <div className="flex items-start justify-between border-b border-red-100 dark:border-red-900/30 pb-4">
                 <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-2xl bg-red-600 text-white flex items-center justify-center font-black text-base shadow-xs">
-                    {user?.bloodGroup || 'O+'}
+                  <div className="h-12 w-12 rounded-2xl bg-red-600 text-white flex items-center justify-center font-black text-sm shadow-xs">
+                    {user?.bloodGroup || <Activity className="h-6 w-6" />}
                   </div>
                   <div>
                     <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                      {user?.fullName || 'Sai Krishna VSK'}
+                      {user?.fullName || 'Citizen User'}
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                      {user?.phoneNumber || '+91 98765 43210'}
+                      {user?.phoneNumber || 'Phone not provided'}
                     </p>
                   </div>
                 </div>
                 <span className="rounded-full bg-red-100 dark:bg-red-950/80 border border-red-200 dark:border-red-800 px-2.5 py-1 text-[10px] font-bold text-red-700 dark:text-red-300 uppercase">
-                  Blood Group: {user?.bloodGroup || 'O+'}
+                  Blood Group: {user?.bloodGroup ? user.bloodGroup : 'Not provided.'}
                 </span>
               </div>
 
@@ -154,26 +235,64 @@ export const PatientsPage: React.FC = () => {
                   <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
                     Known Allergies
                   </span>
-                  <span className="text-rose-600 dark:text-rose-400 font-bold">
-                    {user?.allergies || 'Penicillin'}
+                  <span className={user?.allergies ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-500 dark:text-slate-400 italic'}>
+                    {user?.allergies ? user.allergies : 'Not provided.'}
                   </span>
                 </div>
                 <div className="p-3 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
                   <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
                     Chronic Conditions
                   </span>
-                  <span className="text-slate-800 dark:text-slate-200 font-medium">
-                    {user?.medicalConditions || 'Asthma (Mild)'}
+                  <span className={user?.medicalConditions ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-500 dark:text-slate-400 italic'}>
+                    {user?.medicalConditions ? user.medicalConditions : 'Not provided.'}
                   </span>
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-1.5 text-xs">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">
-                  Primary Emergency Contact
-                </span>
-                <p className="font-bold text-slate-900 dark:text-white">Bhargav T (Brother)</p>
-                <p className="text-slate-500 font-mono">+91 98765 43220 · Immediate Notification</p>
+              {/* Emergency Contacts Section */}
+              <div className="p-3.5 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-bold text-slate-400">
+                    Emergency Contacts
+                  </span>
+                  <button
+                    onClick={() => setIsAddContactOpen(true)}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    <UserPlus className="h-3 w-3" />
+                    Add Contact
+                  </button>
+                </div>
+
+                {contacts.length === 0 ? (
+                  <p className="text-slate-500 dark:text-slate-400 italic py-1">
+                    No contacts added.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {contacts.map((contact) => (
+                      <div
+                        key={contact.id}
+                        className="flex items-center justify-between rounded-lg bg-slate-50 dark:bg-slate-900/80 px-2.5 py-1.5 border border-slate-100 dark:border-slate-800"
+                      >
+                        <div>
+                          <p className="font-bold text-slate-900 dark:text-white">
+                            {contact.name}{' '}
+                            <span className="text-slate-500 font-normal">({contact.relationship})</span>
+                          </p>
+                          <p className="text-[11px] text-slate-500 font-mono">{contact.phoneNumber}</p>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteContact(contact.id)}
+                          title="Remove contact"
+                          className="rounded p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-[11px] text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
@@ -233,6 +352,150 @@ export const PatientsPage: React.FC = () => {
             )}
           </div>
         </div>
+
+        {/* Edit Medical Profile Modal */}
+        <Modal
+          isOpen={isEditMedicalOpen}
+          onClose={() => setIsEditMedicalOpen(false)}
+          title="Update Medical Profile"
+          subtitle="Voluntarily record your verified emergency medical parameters"
+          maxWidth="md"
+        >
+          <form onSubmit={handleUpdateMedicalProfile} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Blood Group
+              </label>
+              <select
+                value={editBloodGroup}
+                onChange={(e) => setEditBloodGroup(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
+              >
+                <option value="">Not provided</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Known Allergies
+              </label>
+              <input
+                type="text"
+                value={editAllergies}
+                onChange={(e) => setEditAllergies(e.target.value)}
+                placeholder="e.g. Penicillin, Peanuts (leave empty if none)"
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Chronic Medical Conditions
+              </label>
+              <input
+                type="text"
+                value={editConditions}
+                onChange={(e) => setEditConditions(e.target.value)}
+                placeholder="e.g. Hypertension, Diabetes (leave empty if none)"
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsEditMedicalOpen(false)}
+                className="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isUpdatingProfile}
+                className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {isUpdatingProfile ? 'Saving...' : 'Save Profile'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+
+        {/* Add Emergency Contact Modal */}
+        <Modal
+          isOpen={isAddContactOpen}
+          onClose={() => setIsAddContactOpen(false)}
+          title="Add Emergency Contact"
+          subtitle="Contacts will receive immediate SMS/call alerts during detected accidents"
+          maxWidth="md"
+        >
+          <form onSubmit={handleAddContact} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Full Name *
+              </label>
+              <input
+                type="text"
+                value={contactName}
+                onChange={(e) => setContactName(e.target.value)}
+                placeholder="e.g. Ramesh Kumar"
+                required
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Relationship
+              </label>
+              <input
+                type="text"
+                value={contactRelation}
+                onChange={(e) => setContactRelation(e.target.value)}
+                placeholder="e.g. Brother, Parent, Spouse"
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Phone Number *
+              </label>
+              <input
+                type="tel"
+                value={contactPhone}
+                onChange={(e) => setContactPhone(e.target.value)}
+                placeholder="+91 98765 43210"
+                required
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsAddContactOpen(false)}
+                className="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isAddingContact}
+                className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {isAddingContact ? 'Adding...' : 'Add Contact'}
+              </button>
+            </div>
+          </form>
+        </Modal>
       </div>
     );
   }
@@ -276,8 +539,8 @@ export const PatientsPage: React.FC = () => {
           >
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400 border border-blue-200 dark:border-blue-800/40 font-bold">
-                  {patient.bloodGroup || 'O+'}
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400 border border-blue-200 dark:border-blue-800/40 font-bold text-xs">
+                  {patient.bloodGroup ? patient.bloodGroup : 'N/A'}
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
@@ -293,12 +556,16 @@ export const PatientsPage: React.FC = () => {
 
             <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300 pt-2 border-t border-slate-100 dark:border-slate-800">
               <div className="flex justify-between">
+                <span className="text-slate-400">Blood Group:</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{patient.bloodGroup || 'Not provided'}</span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-slate-400">Allergies:</span>
-                <span className="text-rose-600 dark:text-rose-400 font-semibold">{patient.allergies || 'None'}</span>
+                <span className="text-rose-600 dark:text-rose-400 font-semibold">{patient.allergies || 'Not recorded'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Conditions:</span>
-                <span className="font-medium text-slate-800 dark:text-slate-200">{patient.medicalConditions || 'Healthy'}</span>
+                <span className="font-medium text-slate-800 dark:text-slate-200">{patient.medicalConditions || 'None recorded'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Account:</span>
@@ -342,17 +609,21 @@ export const PatientsPage: React.FC = () => {
                 <h4 className="text-base font-bold text-slate-900 dark:text-white">
                   {selectedPatient.fullName}
                 </h4>
-                <p className="text-xs text-slate-500 font-mono">{selectedPatient.phoneNumber}</p>
+                <p className="text-xs text-slate-500 font-mono">{selectedPatient.phoneNumber || 'Phone unlisted'}</p>
               </div>
-              <div className="h-10 w-10 rounded-xl bg-red-600 text-white flex items-center justify-center font-bold">
-                {selectedPatient.bloodGroup || 'O+'}
+              <div className="h-10 w-10 rounded-xl bg-red-600 text-white flex items-center justify-center font-bold text-xs">
+                {selectedPatient.bloodGroup || 'N/A'}
               </div>
             </div>
 
             <div className="space-y-2 text-xs">
               <div>
+                <span className="text-slate-400">Blood Group:</span>{' '}
+                <span className="font-semibold text-slate-900 dark:text-white">{selectedPatient.bloodGroup || 'Not provided'}</span>
+              </div>
+              <div>
                 <span className="text-slate-400">Allergies:</span>{' '}
-                <span className="text-rose-600 font-bold">{selectedPatient.allergies || 'None'}</span>
+                <span className="text-rose-600 font-bold">{selectedPatient.allergies || 'Not recorded'}</span>
               </div>
               <div>
                 <span className="text-slate-400">Medical Conditions:</span>{' '}

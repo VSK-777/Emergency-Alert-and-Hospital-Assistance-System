@@ -56,6 +56,35 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        // Enforce removal of unverified medical information and emergency contacts for patient.vsk@vvit.net
+        userRepo.findByEmail("patient.vsk@vvit.net").ifPresent(user -> {
+            boolean changed = false;
+            if (user.getBloodGroup() != null) { user.setBloodGroup(null); changed = true; }
+            if (user.getAllergies() != null) { user.setAllergies(null); changed = true; }
+            if (user.getMedicalConditions() != null) { user.setMedicalConditions(null); changed = true; }
+            if (changed) {
+                userRepo.save(user);
+                log.info("Cleared unverified medical information for user {}", user.getEmail());
+            }
+
+            // Remove any unverified emergency contacts associated with this user
+            java.util.List<EmergencyContact> contacts = contactRepo.findByUserId(user.getId());
+            if (!contacts.isEmpty()) {
+                contactRepo.deleteAll(contacts);
+                log.info("Removed {} unverified emergency contacts for user {}", contacts.size(), user.getEmail());
+            }
+
+            // Resolve any seed incidents so citizen active queue is clean
+            java.util.List<EmergencyIncident> userIncidents = incidentRepo.findByUserIdOrderByCreatedAtDesc(user.getId());
+            for (EmergencyIncident inc : userIncidents) {
+                if (inc.getId().startsWith("inc-seed") && inc.getStatus() != IncidentStatus.RESOLVED && inc.getStatus() != IncidentStatus.CANCELLED) {
+                    inc.setStatus(IncidentStatus.RESOLVED);
+                    incidentRepo.save(inc);
+                    log.info("Marked seed incident {} as RESOLVED for user {}", inc.getId(), user.getEmail());
+                }
+            }
+        });
+
         if (userRepo.count() > 0) {
             log.info("Database already contains data, checking supplemental seed records...");
             seedSupplementalRecordsIfMissing();
@@ -68,9 +97,9 @@ public class DataInitializer implements CommandLineRunner {
 
         // 1. Seed Users
         User patient = new User("patient.vsk@vvit.net", encodedPassword, "Sai Krishna VSK", "+919876543210", UserRole.CITIZEN);
-        patient.setBloodGroup("O+");
-        patient.setAllergies("Penicillin");
-        patient.setMedicalConditions("Asthma (Mild)");
+        patient.setBloodGroup(null);
+        patient.setAllergies(null);
+        patient.setMedicalConditions(null);
         patient = userRepo.save(patient);
 
         User patient2 = new User("lakshmi.narayana@vvit.net", encodedPassword, "G. Lakshmi Narayana (Faculty Guide)", "+919876543299", UserRole.CITIZEN);
@@ -92,11 +121,8 @@ public class DataInitializer implements CommandLineRunner {
         User systemAdmin = new User("admin@vvit.net", encodedPassword, "CSP System Administrator", "+919876543212", UserRole.ADMIN);
         userRepo.save(systemAdmin);
 
-        // 2. Seed Emergency Contacts
-        EmergencyContact contact1 = new EmergencyContact(patient, "Bhargav T (Guardian)", "Brother", "+919876543220", true);
-        EmergencyContact contact2 = new EmergencyContact(patient, "Teja Y (Emergency Contact)", "Friend", "+919876543221", false);
-        contactRepo.save(contact1);
-        contactRepo.save(contact2);
+        // 2. Emergency Contacts: Kept clean with zero unverified/assumed contacts.
+        // Users can add verified personal emergency contacts voluntary through the UI.
 
         // 3. Seed Hospitals around VVIT Nambur / Guntur / Mangalagiri
         Hospital h1 = new Hospital();
@@ -178,7 +204,7 @@ public class DataInitializer implements CommandLineRunner {
         incident.setId("inc-seed-001");
         incident.setUser(patient);
         incident.setSource(IncidentSource.SMARTWATCH_SENSOR);
-        incident.setStatus(IncidentStatus.HOSPITAL_ACKNOWLEDGED);
+        incident.setStatus(IncidentStatus.RESOLVED);
         incident.setHospitalAcknowledgement("ACKNOWLEDGED");
         incident.setHospitalPreparationStatus("PREPARATION_STARTED");
         incident.setResponderAcceptanceStatus("ACCEPTED");

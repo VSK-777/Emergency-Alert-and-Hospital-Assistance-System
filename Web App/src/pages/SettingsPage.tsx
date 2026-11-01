@@ -22,13 +22,21 @@ import {
 export const SettingsPage: React.FC = () => {
   const { user, setUser } = useAuthStore();
 
-  const [fullName, setFullName] = useState(user?.fullName || 'Sai Krishna VSK');
-  const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || '+91 98765 43210');
-  const [bloodGroup, setBloodGroup] = useState(user?.bloodGroup || 'O+');
-  const [allergies, setAllergies] = useState(user?.allergies || 'Penicillin');
-  const [medicalConditions, setMedicalConditions] = useState(
-    user?.medicalConditions || 'Asthma (Mild)'
-  );
+  const [fullName, setFullName] = useState(user?.fullName || '');
+  const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || '');
+  const [bloodGroup, setBloodGroup] = useState(user?.bloodGroup || '');
+  const [allergies, setAllergies] = useState(user?.allergies || '');
+  const [medicalConditions, setMedicalConditions] = useState(user?.medicalConditions || '');
+
+  React.useEffect(() => {
+    if (user) {
+      setFullName(user.fullName || '');
+      setPhoneNumber(user.phoneNumber || '');
+      setBloodGroup(user.bloodGroup || '');
+      setAllergies(user.allergies || '');
+      setMedicalConditions(user.medicalConditions || '');
+    }
+  }, [user]);
 
   const [isSaving, setIsSaving] = useState(false);
   const [savedFeedback, setSavedFeedback] = useState(false);
@@ -128,6 +136,7 @@ export const SettingsPage: React.FC = () => {
                   onChange={(e) => setBloodGroup(e.target.value)}
                   className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs text-slate-900 dark:text-white font-bold"
                 >
+                  <option value="">Not provided</option>
                   <option value="A+">A+ (A Positive)</option>
                   <option value="A-">A- (A Negative)</option>
                   <option value="B+">B+ (B Positive)</option>
