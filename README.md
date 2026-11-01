@@ -1,6 +1,6 @@
 # Emergency Alert and Hospital Assistance System
 
-### Offline-First Smartwatch Accident Detection + Flutter Mobile Application + Java Spring Boot Backend
+### Full-Stack Web Platform: Java Spring Boot Backend + React TypeScript Frontend
 
 **Official Project Name:** Emergency Alert and Hospital Assistance System  
 **Project Type:** Community Service Project (CSP)  
@@ -8,8 +8,12 @@
 **Institution:** Vasireddy Venkatadri Institute of Technology (VVIT), Guntur, Andhra Pradesh  
 **Department:** Computer Science and Engineering  
 **Batch:** 8  
-**Prepared by:** VSK  
+**Prepared by:** VSK (Reg. No: 23BQ1A05AG)  
 **Project Guide:** Mr. G. Lakshmi Narayana (Assist. Prof)  
+
+**Live Production Deployments:**
+- **Web App (Vercel):** [https://emergency-alert-and-hospital-assist.vercel.app](https://emergency-alert-and-hospital-assist.vercel.app)
+- **Backend API (Render):** [https://emergency-alert-and-hospital-assistance.onrender.com](https://emergency-alert-and-hospital-assistance.onrender.com)
 
 ---
 
@@ -17,47 +21,43 @@
 
 During acute medical crises and vehicular accidents, victims experience severe communication delays connecting with transport teams and receiving hospitals. Emergency departments frequently receive trauma patients with zero advance preparation of surgical equipment, intensive care units, and cross-matched blood units.
 
-The **Emergency Alert and Hospital Assistance System** provides a unified, offline-first digital coordination platform connecting:
-$$\text{Patient (Smartwatch / Mobile)} \longrightarrow \text{First Responders} \longrightarrow \text{Hospital Triage & Doctors}$$
-
-This implementation extends the original CSP architecture with **smartwatch-based accident detection** and **comprehensive offline-first capabilities**. The core accident detection, emergency countdown, false-alarm mitigation, and first-aid guidance operate **100% locally on-device without internet connectivity**.
+The **Emergency Alert and Hospital Assistance System** provides a centralized emergency dispatch and hospital assistance grid connecting:
+$$\text{Citizen / Patient} \longleftrightarrow \text{First Responders} \longleftrightarrow \text{Hospital Triage & Staff} \longleftrightarrow \text{System Administrator}$$
 
 ---
 
-## 2. System Architecture & Component Mapping
+## 2. Repository Architecture
 
 ```
-Emergency Alert and Hospital Assistance System/
-|-- Smart Watch App/                # Native Wear OS Smartwatch Application (Kotlin)
-|   |-- app/src/main/java/.../wear/
-|   |   |-- detector/               # Real-time IMU fall/accident detection pipeline
-|   |   |-- storage/                # Durable on-watch incident storage (survives reboot)
-|   |   |-- comm/                   # Wearable DataClient / MessageClient sync protocol
-|   |   `-- ui/                     # Wear OS countdown screen & false-alarm cancellation
-|   |-- app/src/test/...            # Automated unit tests for FallDetector pipeline
-|   `-- README.md
-|
-|-- Mobile App/                     # Flutter Mobile Application (Dart)
-|   |-- lib/
-|   |   |-- core/                   # Theme, ApiClient, LocalStore, SyncService
-|   |   |-- models/                 # Incidents, Hospitals, Contacts, FirstAid, Expenses
-|   |   |-- providers/              # Riverpod state managers (Auth, Emergency, Watch)
-|   |   |-- router/                 # go_router declarative navigation
-|   |   `-- views/                  # Home, SOS, First Aid, Map, Hospitals, Expenses, Watch
-|   |-- assets/first_aid.json       # Authoritative offline life support knowledge base
-|   |-- test/                       # Flutter unit and widget test suite
-|   `-- README.md
-|
-|-- Backend/                        # Java Spring Boot Modular Monolith (Java 21)
+emergency-alert-and-hospital-assistance-system/
+|-- Backend/                        # Java Spring Boot Backend API (Java 21)
 |   |-- src/main/java/.../emergency/
-|   |   |-- controller/             # REST APIs under /api/v1 (Auth, Emergencies, Sync, AI)
-|   |   |-- service/                # Business logic, proximity engine, notification fanout
+|   |   |-- controller/             # REST APIs under /api/v1 (Admin, Auth, Emergencies, Hospitals, Responders)
+|   |   |-- service/                # Business logic, proximity engine, real-time STOMP WebSocket broadcast
 |   |   |-- repository/             # Spring Data JPA repositories
 |   |   |-- model/                  # Normalized entity models
 |   |   |-- security/               # Spring Security + stateless JWT authentication
 |   |   `-- config/                 # OpenAPI/Swagger UI, CORS, and DataInitializer
-|   |-- src/test/...                # Spring Boot Test, MockMvc, and JPA integration tests
-|   |-- pom.xml                     # Maven project specification
+|   |-- Dockerfile                  # Container definition for Render deployment
+|   `-- pom.xml                     # Maven build specification
+|
+|-- Web App/                        # React + TypeScript + Vite Frontend Application
+|   |-- src/
+|   |   |-- api/                    # Axios API clients with JWT interceptors
+|   |   |-- components/             # Reusable UI components, Modals, Navbar, Sidebar
+|   |   |-- layouts/                # MainLayout with role-tailored navigation
+|   |   |-- pages/                  # Four dedicated role dashboards (Admin, Hospital, Responder, Citizen)
+|   |   |-- store/                  # Zustand state stores (Auth, Emergency, Notification, Hospital)
+|   |   `-- types/                  # TypeScript interfaces & domain enums
+|   |-- public/                     # Favicons (SVG, ICO, PNG) and PWA manifest.json
+|   |-- vercel.json                 # Vercel SPA routing and reverse-proxy configuration
+|   |-- vite.config.ts              # Vite bundler configuration
+|   `-- package.json                # Dependencies and build scripts
+|
+|-- render.yaml                     # Render Infrastructure-as-Code blueprint
+|-- README.md                       # Project documentation
+`-- .gitignore                      # Git exclusion rules
+```
 |   |-- .env.example                # Safe environment variable configuration template
 |   `-- README.md
 |

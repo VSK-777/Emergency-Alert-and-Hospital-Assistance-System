@@ -119,3 +119,11 @@ build/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Exclude Mobile App, Smart Watch App, and auxiliary assets from GitHub repository
+Mobile App/
+Smart Watch App/
+database/
+docs/
+scripts/
+
