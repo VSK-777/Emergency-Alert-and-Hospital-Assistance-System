@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useEmergencyStore } from '../store/emergencyStore';
+import { useAuthStore } from '../store/authStore';
 import { Badge } from '../components/common/Badge';
 import { EmergencyDetailModal } from '../components/emergencies/EmergencyDetailModal';
 import type { IncidentStatus, IncidentSource, EmergencyIncident } from '../types';
@@ -25,6 +26,8 @@ export const LiveEmergenciesPage: React.FC = () => {
     updateStatus,
     isLoading,
   } = useEmergencyStore();
+  const { user } = useAuthStore();
+  const isCitizen = user?.role === 'CITIZEN';
 
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [sourceFilter, setSourceFilter] = useState<string>('ALL');
@@ -59,10 +62,12 @@ export const LiveEmergenciesPage: React.FC = () => {
         <div>
           <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
             <Radio className="h-5 w-5 text-red-600 dark:text-red-500 animate-pulse" />
-            Live Emergency Incident Registry
+            {isCitizen ? 'My Emergency Incidents & Live Alert Status' : 'Live Emergency Incident Registry'}
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Real-time feed of all incoming smartwatch accident alerts and manual SOS requests
+            {isCitizen
+              ? 'Real-time feed and response status of your personal emergency alerts and SOS activations'
+              : 'Real-time feed of all incoming smartwatch accident alerts and manual SOS requests'}
           </p>
         </div>
 

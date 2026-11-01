@@ -1,10 +1,12 @@
 package net.vvit.csp.emergency.config;
 
+import jakarta.servlet.http.HttpServletResponse;
 import net.vvit.csp.emergency.security.CustomUserDetailsService;
 import net.vvit.csp.emergency.security.JwtAuthFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -62,6 +64,18 @@ public class SecurityConfig {
                         headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable);
                     }
                 })
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                            response.getWriter().write("{\"status\":401,\"message\":\"Authentication required or token expired. Please sign in again.\"}");
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                            response.getWriter().write("{\"status\":403,\"message\":\"Access denied: insufficient privileges.\"}");
+                        })
+                )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
@@ -73,6 +87,7 @@ public class SecurityConfig {
                                 "/api/v1/emergencies/stream",
                                 "/error"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/hospitals", "/api/v1/hospitals/*").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/emergencies").permitAll()
                         .requestMatchers("/h2-console/**").access((authentication, context) ->
                                 new AuthorizationDecision(isDevProfile()))

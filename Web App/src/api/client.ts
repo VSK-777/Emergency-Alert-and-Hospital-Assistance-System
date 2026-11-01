@@ -31,10 +31,12 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      const isAuthEndpoint = error.config?.url?.includes('/auth/');
       // Clear token if unauthorized, but avoid redirect loops
-      if (window.location.pathname !== '/login') {
+      if (!isAuthEndpoint && window.location.pathname !== '/login') {
         localStorage.removeItem('vvit_csp_token');
         localStorage.removeItem('vvit_csp_user');
+        window.location.href = '/login';
       }
     }
     return Promise.reject(error);

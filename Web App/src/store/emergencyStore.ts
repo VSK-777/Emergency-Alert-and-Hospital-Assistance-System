@@ -69,10 +69,22 @@ export const useEmergencyStore = create<EmergencyState>((set, get) => ({
   fetchAllIncidents: async () => {
     set({ isLoading: true });
     try {
-      const all = await emergencyApi.getAllIncidents();
-      set({ allIncidents: all, isLoading: false });
+      const storedUser = localStorage.getItem('vvit_csp_user');
+      let role: string | null = null;
+      if (storedUser) {
+        try {
+          role = JSON.parse(storedUser).role;
+        } catch {
+          // ignore json parse error
+        }
+      }
+      const isCitizen = role === 'CITIZEN';
+      const incidents = isCitizen
+        ? await emergencyApi.getMyIncidents()
+        : await emergencyApi.getAllIncidents();
+      set({ allIncidents: incidents, isLoading: false });
     } catch (err) {
-      console.error('Failed to load all emergencies:', err);
+      console.error('Failed to load incidents:', err);
       set({ isLoading: false });
     }
   },
@@ -144,7 +156,19 @@ export const useEmergencyStore = create<EmergencyState>((set, get) => ({
       });
 
       es.onerror = () => {
-        set({ sseStatus: 'DISCONNECTED' });
+        // Native EventSource automatically retries with the stale, consumed single-use ticket URL, causing HTTP 401s.
+        // Explicitly close the disconnected stream and request a fresh ticket on subsequent reconnect.
+        es.close();
+        set({ sseStatus: 'DISCONNECTED', eventSource: null });
+
+        if (localStorage.getItem('vvit_csp_token')) {
+          setTimeout(() => {
+            const currentEs = get().eventSource;
+            if (!currentEs && localStorage.getItem('vvit_csp_token')) {
+              get().initSseStream();
+            }
+          }, 6000);
+        }
       };
 
       set({ eventSource: es });
