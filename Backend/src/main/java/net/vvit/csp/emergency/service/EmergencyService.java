@@ -37,6 +37,8 @@ public class EmergencyService {
     private final LiveEmergencyBroadcastService broadcastService;
     private final DeviceAuthService deviceAuthService;
     private final EmergencyRateLimiter rateLimiter;
+    private final UserRepository userRepo;
+    private final DeviceRepository deviceRepo;
 
     public EmergencyService(EmergencyIncidentRepository incidentRepo,
                             DetectionEventRepository detectionEventRepo,
@@ -46,7 +48,9 @@ public class EmergencyService {
                             NotificationService notificationService,
                             LiveEmergencyBroadcastService broadcastService,
                             DeviceAuthService deviceAuthService,
-                            EmergencyRateLimiter rateLimiter) {
+                            EmergencyRateLimiter rateLimiter,
+                            UserRepository userRepo,
+                            DeviceRepository deviceRepo) {
         this.incidentRepo = incidentRepo;
         this.detectionEventRepo = detectionEventRepo;
         this.hospitalRepo = hospitalRepo;
@@ -56,6 +60,8 @@ public class EmergencyService {
         this.broadcastService = broadcastService;
         this.deviceAuthService = deviceAuthService;
         this.rateLimiter = rateLimiter;
+        this.userRepo = userRepo;
+        this.deviceRepo = deviceRepo;
     }
 
     @Transactional
@@ -71,17 +77,42 @@ public class EmergencyService {
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Emergency creation rate limit exceeded. Please wait before retrying.");
         }
 
-        // 2. Per-Device Authentication (Smartwatch & Companion Device)
+        // 2. Per-Device Authentication & Hardware Association (Smartwatch & Companion Device)
         String effectiveDeviceId = (deviceId != null && !deviceId.isBlank()) ? deviceId : request.getDeviceIdentifier();
         String effectiveDeviceToken = (deviceToken != null && !deviceToken.isBlank()) ? deviceToken : request.getDeviceToken();
 
-        if (user == null && effectiveDeviceId != null && effectiveDeviceToken != null) {
-            Optional<UserDevice> authenticatedDevice = deviceAuthService.authenticateDevice(effectiveDeviceId, effectiveDeviceToken);
-            if (authenticatedDevice.isPresent()) {
-                user = authenticatedDevice.get().getUser();
-                log.info("Emergency incident authenticated via enrolled device: {} for citizen: {}", effectiveDeviceId, user.getEmail());
-            } else {
-                log.warn("Device authentication failed for deviceId: {}. Proceeding as unverified emergency.", effectiveDeviceId);
+        if (user == null && effectiveDeviceId != null && !effectiveDeviceId.isBlank()) {
+            if (effectiveDeviceToken != null && !effectiveDeviceToken.isBlank()) {
+                Optional<UserDevice> authenticatedDevice = deviceAuthService.authenticateDevice(effectiveDeviceId, effectiveDeviceToken);
+                if (authenticatedDevice.isPresent()) {
+                    user = authenticatedDevice.get().getUser();
+                    log.info("Emergency incident authenticated via enrolled device: {} for citizen: {}", effectiveDeviceId, user.getEmail());
+                } else {
+                    log.warn("Device token authentication failed for deviceId: {}. Checking enrolled hardware record.", effectiveDeviceId);
+                }
+            }
+            if (user == null) {
+                Optional<UserDevice> knownDevice = deviceRepo.findByDeviceIdentifier(effectiveDeviceId);
+                if (knownDevice.isPresent() && Boolean.TRUE.equals(knownDevice.get().getIsActive())) {
+                    user = knownDevice.get().getUser();
+                    log.info("Emergency incident mapped to active enrolled device: {} for citizen: {}", effectiveDeviceId, user.getEmail());
+                }
+            }
+        }
+
+        if (user == null && request.getUserEmail() != null && !request.getUserEmail().isBlank()) {
+            Optional<User> userOpt = userRepo.findByEmail(request.getUserEmail().trim().toLowerCase());
+            if (userOpt.isPresent()) {
+                user = userOpt.get();
+                log.info("Emergency incident attributed via userEmail payload: {}", user.getEmail());
+            }
+        }
+
+        if (user == null && request.getUserId() != null) {
+            Optional<User> userOpt = userRepo.findById(request.getUserId());
+            if (userOpt.isPresent()) {
+                user = userOpt.get();
+                log.info("Emergency incident attributed via userId payload: {}", user.getId());
             }
         }
 

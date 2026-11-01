@@ -125,6 +125,10 @@ database/
 docs/
 scripts/
 
+# Local companion platforms
+Mobile App/
+Smart Watch App/
+
 # Workspace Agent Guidelines
 AGENTS.md
 

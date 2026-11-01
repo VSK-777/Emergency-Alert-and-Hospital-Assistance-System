@@ -30,12 +30,20 @@ public class IncidentCreateRequest {
     // Optional per-device credentials for enrolled smartwatch / companion mobile device
     private String deviceIdentifier;
     private String deviceToken;
+    private String userEmail;
+    private Long userId;
     private LocalDateTime locationTimestamp;
 
     public IncidentCreateRequest() {}
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
+
+    public String getUserEmail() { return userEmail; }
+    public void setUserEmail(String userEmail) { this.userEmail = userEmail; }
+
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
 
     public IncidentSource getSource() { return source; }
     public void setSource(IncidentSource source) { this.source = source; }
