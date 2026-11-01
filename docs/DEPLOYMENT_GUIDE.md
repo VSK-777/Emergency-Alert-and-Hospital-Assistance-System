@@ -65,7 +65,7 @@
 3. Choose **Build and deploy from a Git repository**, and connect your GitHub repo:
    `https://github.com/VSK-777/Emergency-Alert-and-Hospital-Assistance-System`
 4. Configure the Web Service settings:
-   - **Name:** `emergency-assistance-backend`
+   - **Name:** `emergency-alert-and-hospital-assistance-backend`
    - **Region:** Any (e.g., `Singapore`, `Frankfurt`, or `Oregon`)
    - **Branch:** `main`
    - **Root Directory:** `Backend`
@@ -77,9 +77,9 @@
    - `APP_JWT_SECRET` = `404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970`
 6. Click **Create Web Service**.
 7. Wait 2–3 minutes for the Docker container to build. Once deployed, Render will provide a public URL:
-   `https://<your-service-name>.onrender.com`
+   `https://emergency-alert-and-hospital-assistance-backend.onrender.com`
 8. Verify the backend is live by opening:
-   `https://<your-service-name>.onrender.com/swagger-ui.html`
+   `https://emergency-alert-and-hospital-assistance-backend.onrender.com/swagger-ui.html`
 
 ---
 
@@ -103,7 +103,7 @@ A live preview deployment has already been triggered:
    - **Output Directory:** `dist`
 5. Expand **Environment Variables** and add:
    - **Key:** `VITE_API_BASE_URL`
-   - **Value:** `https://<your-service-name>.onrender.com` (from Step 1)
+   - **Value:** `https://emergency-alert-and-hospital-assistance-backend.onrender.com` (from Step 1)
 6. Click **Deploy**.
 7. Vercel will build and assign your production domain:
    `https://emergency-alert-and-hospital-assistance-system.vercel.app`

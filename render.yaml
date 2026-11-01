@@ -1,7 +1,7 @@
 services:
   # Emergency Alert and Hospital Assistance System - Java Spring Boot Backend
   - type: web
-    name: emergency-assistance-backend
+    name: emergency-alert-and-hospital-assistance-backend
     runtime: docker
     dockerfilePath: ./Backend/Dockerfile
     dockerContext: ./Backend
