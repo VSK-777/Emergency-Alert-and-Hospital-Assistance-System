@@ -8,7 +8,7 @@
 **Institution:** Vasireddy Venkatadri Institute of Technology (VVIT), Guntur, Andhra Pradesh  
 **Department:** Computer Science and Engineering  
 **Batch:** 8  
-**Prepared by:** VSK (Reg. No: 23BQ1A05AG)  
+**Prepared by:** VSK (Reg. No: 24BQ1A054O)  
 **Project Guide:** Mr. G. Lakshmi Narayana (Assist. Prof)  
 
 **Live Production Deployments:**
