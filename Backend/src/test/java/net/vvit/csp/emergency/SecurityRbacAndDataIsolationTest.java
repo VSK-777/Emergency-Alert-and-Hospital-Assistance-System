@@ -17,13 +17,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -45,6 +51,9 @@ public class SecurityRbacAndDataIsolationTest {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     private User citizenA;
     private User citizenB;
@@ -177,5 +186,81 @@ public class SecurityRbacAndDataIsolationTest {
         mockMvc.perform(get("/api/v1/responders/nearby-emergencies")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenResponder))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("CORS preflight from Vercel deployed origin returns 200 OK with correct Access-Control headers")
+    void optionsPreflightFromVercelOriginSucceeds() throws Exception {
+        mockMvc.perform(options("/api/v1/auth/register")
+                        .header(HttpHeaders.ORIGIN, "https://emergency-alert-and-hospital-assist.vercel.app")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "Content-Type,Authorization"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "https://emergency-alert-and-hospital-assist.vercel.app"))
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true"))
+                .andExpect(header().exists(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS));
+    }
+
+    @Test
+    @DisplayName("CORS preflight from unauthorized origin does not return allow-origin header")
+    void optionsPreflightFromUnauthorizedOriginFails() throws Exception {
+        mockMvc.perform(options("/api/v1/auth/register")
+                        .header(HttpHeaders.ORIGIN, "https://unauthorized-malicious-domain.com")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST"))
+                .andExpect(header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN));
+    }
+
+    @Test
+    @DisplayName("Registration with blank mandatory fields returns 400 Bad Request with field errors")
+    void registrationWithInvalidDataReturnsStructuredErrors() throws Exception {
+        String invalidPayload = """
+                {
+                    "email": "not-an-email",
+                    "password": "123",
+                    "fullName": "",
+                    "phoneNumber": ""
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invalidPayload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.errors").isMap())
+                .andExpect(jsonPath("$.errors.email").isNotEmpty())
+                .andExpect(jsonPath("$.errors.password").isNotEmpty())
+                .andExpect(jsonPath("$.errors.fullName").isNotEmpty())
+                .andExpect(jsonPath("$.errors.phoneNumber").isNotEmpty());
+    }
+
+    @Test
+    @DisplayName("Registration with optional medical fields blank stores genuine null values without inventing data")
+    void registrationWithOptionalFieldsBlankLeavesNull() throws Exception {
+        String uniqueEmail = "genuine.user." + System.currentTimeMillis() + "@vvit.net";
+        String validPayload = """
+                {
+                    "email": "%s",
+                    "password": "ValidPassword@123",
+                    "fullName": "Genuine Citizen",
+                    "phoneNumber": "+919876500123",
+                    "role": "CITIZEN",
+                    "bloodGroup": "",
+                    "allergies": "",
+                    "medicalConditions": ""
+                }
+                """.formatted(uniqueEmail);
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validPayload))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.token").isNotEmpty())
+                .andExpect(jsonPath("$.email").value(uniqueEmail));
+
+        User created = userRepository.findByEmail(uniqueEmail).orElseThrow();
+        assertThat(created.getBloodGroup()).isNull();
+        assertThat(created.getAllergies()).isNull();
+        assertThat(created.getMedicalConditions()).isNull();
     }
 }

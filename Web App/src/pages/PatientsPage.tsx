@@ -363,10 +363,12 @@ export const PatientsPage: React.FC = () => {
         >
           <form onSubmit={handleUpdateMedicalProfile} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="editBloodGroup" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                 Blood Group
               </label>
               <select
+                id="editBloodGroup"
+                name="bloodGroup"
                 value={editBloodGroup}
                 onChange={(e) => setEditBloodGroup(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
@@ -384,10 +386,12 @@ export const PatientsPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="editAllergies" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                 Known Allergies
               </label>
               <input
+                id="editAllergies"
+                name="allergies"
                 type="text"
                 value={editAllergies}
                 onChange={(e) => setEditAllergies(e.target.value)}
@@ -397,10 +401,12 @@ export const PatientsPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="editConditions" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                 Chronic Medical Conditions
               </label>
               <input
+                id="editConditions"
+                name="medicalConditions"
                 type="text"
                 value={editConditions}
                 onChange={(e) => setEditConditions(e.target.value)}
@@ -438,10 +444,12 @@ export const PatientsPage: React.FC = () => {
         >
           <form onSubmit={handleAddContact} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="contactName" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                 Full Name *
               </label>
               <input
+                id="contactName"
+                name="contactName"
                 type="text"
                 value={contactName}
                 onChange={(e) => setContactName(e.target.value)}
@@ -452,10 +460,12 @@ export const PatientsPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="contactRelation" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                 Relationship
               </label>
               <input
+                id="contactRelation"
+                name="contactRelation"
                 type="text"
                 value={contactRelation}
                 onChange={(e) => setContactRelation(e.target.value)}
@@ -465,10 +475,12 @@ export const PatientsPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <label htmlFor="contactPhone" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                 Phone Number *
               </label>
               <input
+                id="contactPhone"
+                name="contactPhone"
                 type="tel"
                 value={contactPhone}
                 onChange={(e) => setContactPhone(e.target.value)}
@@ -699,10 +711,12 @@ export const PatientsPage: React.FC = () => {
       >
         <form onSubmit={handleAddExpense} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+            <label htmlFor="expenseCategory" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
               Category
             </label>
             <select
+              id="expenseCategory"
+              name="category"
               value={expenseCategory}
               onChange={(e) => setExpenseCategory(e.target.value as any)}
               className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs text-slate-900 dark:text-white"
@@ -714,10 +728,12 @@ export const PatientsPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+            <label htmlFor="expenseDesc" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
               Description
             </label>
             <input
+              id="expenseDesc"
+              name="description"
               type="text"
               value={expenseDesc}
               onChange={(e) => setExpenseDesc(e.target.value)}
@@ -728,10 +744,12 @@ export const PatientsPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+            <label htmlFor="expenseAmount" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
               Amount (INR)
             </label>
             <input
+              id="expenseAmount"
+              name="amount"
               type="number"
               step="any"
               value={expenseAmount}

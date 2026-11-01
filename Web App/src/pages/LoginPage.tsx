@@ -57,7 +57,7 @@ export const LoginPage: React.FC = () => {
   const [regPhone, setRegPhone] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regRole, setRegRole] = useState<UserRole>('CITIZEN');
-  const [regBloodGroup, setRegBloodGroup] = useState('O+');
+  const [regBloodGroup, setRegBloodGroup] = useState('');
   const [regAllergies, setRegAllergies] = useState('');
   const [regConditions, setRegConditions] = useState('');
   const [regError, setRegError] = useState<string | null>(null);
@@ -145,9 +145,9 @@ export const LoginPage: React.FC = () => {
         phoneNumber: regPhone.trim(),
         password: regPassword,
         role: regRole,
-        bloodGroup: regBloodGroup,
-        allergies: regAllergies.trim(),
-        medicalConditions: regConditions.trim(),
+        bloodGroup: regBloodGroup.trim() || undefined,
+        allergies: regAllergies.trim() || undefined,
+        medicalConditions: regConditions.trim() || undefined,
       });
       setRegSuccess(true);
       setTimeout(() => {
@@ -231,12 +231,14 @@ export const LoginPage: React.FC = () => {
           {authMethod === 'email' ? (
             <form onSubmit={handleEmailSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                <label htmlFor="loginEmail" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                   Email Address
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
                   <input
+                    id="loginEmail"
+                    name="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -249,12 +251,14 @@ export const LoginPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                <label htmlFor="loginPassword" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                   Password
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
                   <input
+                    id="loginPassword"
+                    name="password"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -288,18 +292,21 @@ export const LoginPage: React.FC = () => {
               {!otpSent ? (
                 <form onSubmit={handleSendOtp} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                    <label htmlFor="loginPhone" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                       Citizen Mobile Number
                     </label>
                     <div className="relative">
                       <Phone className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
                       <input
+                        id="loginPhone"
+                        name="phoneNumber"
                         type="tel"
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
                         placeholder="+91 98765 43210"
                         className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pl-10 pr-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none"
                         required
+                        autoComplete="tel"
                       />
                     </div>
                   </div>
@@ -364,10 +371,12 @@ export const LoginPage: React.FC = () => {
                   )}
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                    <label htmlFor="loginOtp" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                       6-Digit Security Code
                     </label>
                     <input
+                      id="loginOtp"
+                      name="otpCode"
                       type="text"
                       maxLength={6}
                       value={otpCode}
@@ -375,6 +384,7 @@ export const LoginPage: React.FC = () => {
                       placeholder="e.g. 524103"
                       className="w-full text-center tracking-widest font-mono text-base rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-2.5 text-slate-900 dark:text-white"
                       required
+                      autoComplete="one-time-code"
                     />
                   </div>
 
@@ -463,57 +473,82 @@ export const LoginPage: React.FC = () => {
 
             <form onSubmit={handleRegisterSubmit} className="space-y-3.5 text-xs">
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Full Name</label>
+                <label htmlFor="regFullName" className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Full Name <span className="text-rose-500">*</span>
+                </label>
                 <input
+                  id="regFullName"
+                  name="fullName"
                   type="text"
                   value={regFullName}
                   onChange={(e) => setRegFullName(e.target.value)}
                   placeholder="e.g. Sai Krishna VSK"
                   className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-2.5 text-slate-900 dark:text-white"
                   required
+                  autoComplete="name"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Email Address</label>
+                  <label htmlFor="regEmail" className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Email Address <span className="text-rose-500">*</span>
+                  </label>
                   <input
+                    id="regEmail"
+                    name="email"
                     type="email"
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
                     placeholder="user@vvit.net"
                     className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-2.5 text-slate-900 dark:text-white"
                     required
+                    autoComplete="email"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Mobile Phone</label>
+                  <label htmlFor="regPhone" className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Mobile Phone <span className="text-rose-500">*</span>
+                  </label>
                   <input
+                    id="regPhone"
+                    name="phoneNumber"
                     type="tel"
                     value={regPhone}
                     onChange={(e) => setRegPhone(e.target.value)}
                     placeholder="+91 98765 43210"
                     className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-2.5 text-slate-900 dark:text-white"
                     required
+                    autoComplete="tel"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Account Password</label>
+                  <label htmlFor="regPassword" className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Account Password <span className="text-rose-500">*</span>
+                  </label>
                   <input
+                    id="regPassword"
+                    name="password"
                     type="password"
                     value={regPassword}
                     onChange={(e) => setRegPassword(e.target.value)}
-                    placeholder="Secure password"
+                    placeholder="At least 6 characters"
                     className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-2.5 text-slate-900 dark:text-white"
                     required
+                    minLength={6}
+                    autoComplete="new-password"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Role Type</label>
+                  <label htmlFor="regRole" className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Role Type <span className="text-rose-500">*</span>
+                  </label>
                   <select
+                    id="regRole"
+                    name="role"
                     value={regRole}
                     onChange={(e) => setRegRole(e.target.value as any)}
                     className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-2.5 text-slate-900 dark:text-white font-semibold"
@@ -526,12 +561,17 @@ export const LoginPage: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Blood Group</label>
+                  <label htmlFor="regBloodGroup" className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Blood Group <span className="text-[10px] font-normal text-slate-500">(Optional)</span>
+                  </label>
                   <select
+                    id="regBloodGroup"
+                    name="bloodGroup"
                     value={regBloodGroup}
                     onChange={(e) => setRegBloodGroup(e.target.value)}
                     className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-2.5 text-slate-900 dark:text-white font-bold"
                   >
+                    <option value="">Select Blood Group (Optional / Unknown)</option>
                     <option value="O+">O+ (O Positive)</option>
                     <option value="O-">O- (O Negative)</option>
                     <option value="A+">A+ (A Positive)</option>
@@ -543,8 +583,12 @@ export const LoginPage: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Known Allergies</label>
+                  <label htmlFor="regAllergies" className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Known Allergies <span className="text-[10px] font-normal text-slate-500">(Optional)</span>
+                  </label>
                   <input
+                    id="regAllergies"
+                    name="allergies"
                     type="text"
                     value={regAllergies}
                     onChange={(e) => setRegAllergies(e.target.value)}
@@ -555,8 +599,12 @@ export const LoginPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Chronic Conditions</label>
+                <label htmlFor="regConditions" className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Chronic Conditions <span className="text-[10px] font-normal text-slate-500">(Optional)</span>
+                </label>
                 <input
+                  id="regConditions"
+                  name="medicalConditions"
                   type="text"
                   value={regConditions}
                   onChange={(e) => setRegConditions(e.target.value)}

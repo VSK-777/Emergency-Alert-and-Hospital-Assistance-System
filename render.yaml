@@ -23,6 +23,6 @@ services:
       - key: APP_JWT_EXPIRATION_MS
         value: 86400000
       - key: APP_CORS_ALLOWED_ORIGINS
-        value: https://emergency-alert-and-hospital-assistance-system.vercel.app
+        value: https://emergency-alert-and-hospital-assist.vercel.app,https://emergency-alert-and-hospital-assistance-system.vercel.app
       - key: GEMINI_API_KEY
         sync: false

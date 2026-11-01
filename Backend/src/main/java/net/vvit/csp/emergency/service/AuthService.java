@@ -56,9 +56,9 @@ public class AuthService {
                 request.getPhoneNumber().trim(),
                 role
         );
-        user.setBloodGroup(request.getBloodGroup());
-        user.setAllergies(request.getAllergies());
-        user.setMedicalConditions(request.getMedicalConditions());
+        user.setBloodGroup((request.getBloodGroup() != null && !request.getBloodGroup().isBlank()) ? request.getBloodGroup().trim() : null);
+        user.setAllergies((request.getAllergies() != null && !request.getAllergies().isBlank()) ? request.getAllergies().trim() : null);
+        user.setMedicalConditions((request.getMedicalConditions() != null && !request.getMedicalConditions().isBlank()) ? request.getMedicalConditions().trim() : null);
 
         User savedUser = userRepository.save(user);
         UserPrincipal principal = new UserPrincipal(savedUser);

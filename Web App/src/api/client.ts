@@ -1,7 +1,11 @@
 import axios from 'axios';
 
-const envUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
-export const API_BASE_URL = envUrl
+// Prefer same-origin relative base URL '/api/v1' for web production (Vercel edge rewrite)
+// and development (Vite server proxy) to eliminate browser CORS preflight overhead.
+const envUrl = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '');
+const forceDirect = import.meta.env.VITE_FORCE_DIRECT_API === 'true';
+
+export const API_BASE_URL = (forceDirect && envUrl)
   ? (envUrl.endsWith('/api/v1') ? envUrl : `${envUrl}/api/v1`)
   : '/api/v1';
 

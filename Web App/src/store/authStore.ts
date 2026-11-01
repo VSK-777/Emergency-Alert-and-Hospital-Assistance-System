@@ -202,7 +202,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error: null,
       });
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Registration failed.';
+      let msg = err.response?.data?.message || 'Registration failed.';
+      if (err.response?.data?.errors && typeof err.response.data.errors === 'object') {
+        const fieldErrors = Object.entries(err.response.data.errors)
+          .map(([field, errText]) => `${field}: ${errText}`)
+          .join(', ');
+        if (fieldErrors) {
+          msg = `${msg} (${fieldErrors})`;
+        }
+      }
       set({ error: msg, isLoading: false });
       throw new Error(msg);
     }
