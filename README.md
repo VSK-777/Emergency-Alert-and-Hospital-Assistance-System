@@ -196,6 +196,19 @@ npm run dev
 ```
 - Local Web Platform: `http://localhost:5173`
 
+### 3. Launching the Mobile App (Flutter)
+```bash
+cd "Mobile App"
+flutter pub get
+flutter run
+```
+
+### 4. Building the Smartwatch App (Wear OS)
+```bash
+cd "Smart Watch App"
+.\gradlew.bat assembleDebug
+```
+
 ---
 
 ## 7. Safety, Simulation & Project Scope

@@ -4,10 +4,12 @@
 **Institution:** Vasireddy Venkatadri Institute of Technology (VVIT)  
 **Department:** Computer Science and Engineering (Batch 8)  
 **Prepared by:** VSK (Reg. No: 24BQ1A054O)  
-**Project Guide:** Mr. G. Lakshmi Narayana (Assist. Prof)  
+**Project Guide:** Mr. G. Lakshmi Narayana (Assistant Professor)  
 
-**Live Production API:** [https://emergency-alert-and-hospital-assistance.onrender.com](https://emergency-alert-and-hospital-assistance.onrender.com)  
-**Swagger UI:** [https://emergency-alert-and-hospital-assistance.onrender.com/swagger-ui.html](https://emergency-alert-and-hospital-assistance.onrender.com/swagger-ui.html)  
+**Live Production Deployments:**
+- **Web App (Vercel):** [https://emergency-alert-and-hospital-assistance-system.vercel.app](https://emergency-alert-and-hospital-assistance-system.vercel.app)
+- **Backend API (Render):** [https://emergency-alert-and-hospital-assistance.onrender.com](https://emergency-alert-and-hospital-assistance.onrender.com)
+- **Swagger UI:** [https://emergency-alert-and-hospital-assistance.onrender.com/swagger-ui.html](https://emergency-alert-and-hospital-assistance.onrender.com/swagger-ui.html)  
 
 ---
 

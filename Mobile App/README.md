@@ -1,70 +1,121 @@
-# Emergency Alert and Hospital Assistance System - Flutter Mobile App
+# Emergency Alert and Hospital Assistance System — Flutter Mobile App
 
-**Project:** B.Tech Community Service Project (CSP)  
-**Institution:** Vasireddy Venkatadri Institute of Technology (VVIT)  
-**Department:** Computer Science and Engineering (Batch 8)  
+### Cross-Platform Emergency Assistance & Citizen Companion Application
+
+**Official Project Name:** Emergency Alert and Hospital Assistance System  
+**Project Type:** Community Service Project (CSP)  
+**Academic Programme:** Bachelor of Technology (B.Tech)  
+**Institution:** Vasireddy Venkatadri Institute of Technology (VVIT), Guntur, Andhra Pradesh  
+**Department:** Computer Science and Engineering  
+**Batch:** Batch 8  
 **Prepared by:** VSK (Reg. No: 24BQ1A054O)  
-**Project Guide:** Mr. G. Lakshmi Narayana (Assist. Prof)
+**Project Guide:** Mr. G. Lakshmi Narayana (Assistant Professor)  
+
+**Live Production Deployments:**
+- **Web App (Vercel):** [https://emergency-alert-and-hospital-assistance-system.vercel.app](https://emergency-alert-and-hospital-assistance-system.vercel.app)
+- **Backend API (Render):** [https://emergency-alert-and-hospital-assistance.onrender.com](https://emergency-alert-and-hospital-assistance.onrender.com)
+- **Swagger UI:** [https://emergency-alert-and-hospital-assistance.onrender.com/swagger-ui.html](https://emergency-alert-and-hospital-assistance.onrender.com/swagger-ui.html)
 
 ---
 
-## Architecture & Technology Stack
-- **Framework:** Flutter 3.44.8 (Dart 3.12.2)
+## 1. Overview & Architecture
+
+The **Emergency Alert and Hospital Assistance System Mobile App** serves as the citizen's primary field companion. Engineered in Flutter (Dart), it provides an offline-first emergency response pipeline, an interactive first-aid reference guide, and automatic synchronization with the Spring Boot backend on Render.
+
+```
+Smartwatch (Wear OS) ──Bluetooth/WiFi──> Mobile App (Flutter) ──HTTPS──> Spring Boot API
+                                                 │
+                                                 └──Local Persistence (Offline Buffer)
+```
+
+- **Framework:** Flutter 3.x (Dart 3.x)
 - **State Management:** Riverpod 2.6
-- **Routing:** go_router 14.8
-- **Networking:** Dio 5.11 with automatic JWT interceptor and connectivity detection
+- **Routing:** `go_router` 14.8
+- **Networking:** Dio 5.11 with automatic JWT interceptors and connectivity detection
 - **Local Persistence & Security:**
-  - `flutter_secure_storage` for JWT tokens
-  - `shared_preferences` for offline pending emergency incidents queue, cached emergency contacts, and cached medical profiles
-- **Mapping:** OpenStreetMap (`flutter_map` 7.0 + `latlong2`) with offline fallback coordinates for VVIT / Guntur / Vijayawada region
-- **Offline First Aid:** Curated, authoritative first-aid knowledge base (`assets/first_aid.json`) based on Red Cross and WHO guidelines
+  - `flutter_secure_storage` for encrypted JWT credentials
+  - `shared_preferences` for offline pending emergency incident queues, cached emergency contacts, and medical profiles
+- **Mapping:** OpenStreetMap (`flutter_map` 7.0 + `latlong2`) with fallback coordinates for VVIT / Guntur / Vijayawada trauma network
+- **Offline First Aid:** Authoritative emergency first-aid knowledge base (`assets/first_aid.json`) complying with Red Cross and WHO guidelines
 - **Wear OS Integration:** Real-time sensor telemetry listener and test replay harness for smartwatch accident detection
 
 ---
 
-## Features
-1. **Offline-First Emergency SOS:**
-   - Big tap target with high-visibility emergency red theme.
-   - 10-second animated countdown.
-   - Prominent **"I'M OK — CANCEL ALERT"** button to eliminate false alarms.
-   - Immediate manual override dispatch option.
-2. **Offline Local Incident Persistence:**
-   - Every incident is durably saved to device storage before any network request is attempted.
-   - Survives app restarts.
-   - Displays clear status indicators: `"Saved locally"`, `"Sending"`, `"Delivered"`, `"Acknowledged"`, or `"Failed"`.
-3. **Automatic & Idempotent Sync Service:**
-   - Detects when network connectivity returns.
-   - Batches unsynced incidents to `/api/v1/sync` using unique idempotency keys.
-   - Deduplicates replays without creating duplicate incidents on server.
-4. **Offline First-Aid Guide:**
-   - Instant access to emergency protocols for 10 critical scenarios (Cardiac Arrest, Bleeding, Road Accidents, Burns, Choking, Seizures, Fractures, Electric Shock, Unconsciousness).
-   - Authoritative attribution and crucial safety warnings.
-5. **Hospital Proximity Discovery:**
-   - Displays nearby participating trauma centers with distances.
-   - Shows emergency beds, available ICUs, and ambulances.
-6. **Smartwatch Hub & Telemetry Replay:**
-   - Real-time connection status with Wear OS.
-   - IMU sensor stream monitoring.
-   - One-tap "Simulate Wear OS Accident Spike" test trigger.
+## 2. Core Capabilities
+
+### 1. Offline-First Emergency SOS
+- High-visibility emergency red user interface with high-contrast tactile tap targets.
+- 10-second animated safety countdown with audible and haptic feedback.
+- Prominent **"I'M OK — CANCEL ALERT"** trigger to prevent false dispatches.
+- Immediate manual emergency dispatch override.
+
+### 2. Durable Local Storage & Sync Engine
+- Every incident is persisted to local device storage prior to network transmission.
+- Survives device reboots and low-battery shutdowns.
+- Background `SyncService` detects network restoration and dispatches buffered incidents via `/api/v1/sync` using unique idempotency keys to eliminate server duplication.
+
+### 3. Curated Emergency First-Aid Directory
+- Instant offline access to life-saving step-by-step instructions for 10 critical trauma scenarios:
+  1. CPR / Cardiac Arrest
+  2. Severe Bleeding & Hemorrhage
+  3. Road Traffic Accidents
+  4. Burns & Scalds
+  5. Choking & Airway Obstruction
+  6. Seizures & Epilepsy
+  7. Fractures & Spinal Trauma
+  8. Electric Shock
+  9. Heat Stroke & Hypothermia
+  10. Poisoning & Chemical Exposure
+
+### 4. Real-Time Hospital Discovery
+- Haversine-based proximity listing of nearby participating emergency centers.
+- Real-time visibility into available ICU beds, trauma facilities, and ambulance fleets.
+
+### 5. Smartwatch Hub & Sensor Telemetry
+- Active connection health indicator with the paired Wear OS smartwatch.
+- Real-time IMU sensor monitoring (accelerometer G-force magnitude and gyroscope angular velocity).
+- One-tap `"Simulate Wear OS Accident Spike"` test harness for validation without physical hazard.
 
 ---
 
-## Running the Mobile Application
+## 3. Directory Structure
 
-### Fetch Dependencies
+```
+Mobile App/
+|-- android/                        # Android platform project & Gradle build
+|-- ios/                            # iOS platform project & Xcode workspace
+|-- assets/                         # Curated emergency first-aid guides & icon assets
+|-- lib/
+|   |-- core/
+|   |   |-- constants/              # ApiEndpoints configuration (Render production URL)
+|   |   |-- network/                # Dio client with JWT interceptor & retry policies
+|   |   |-- storage/                # LocalStore persistent caching engine
+|   |   |-- sync/                   # Background idempotency sync engine
+|   |   `-- theme/                  # High-contrast clinical and emergency styling
+|   |-- models/                     # Incident, triage, hospital, user, and expense data models
+|   |-- providers/                  # Riverpod state notifiers & view models
+|   |-- router/                     # Navigation route definitions
+|   |-- views/                      # Application screens (Home, SOS, Map, Profile, Hospitals, Triage)
+|   `-- main.dart                   # Application entry point
+|-- pubspec.yaml                    # Package dependencies and asset declarations
+`-- README.md                       # Mobile client documentation
+```
+
+---
+
+## 4. Running the Mobile Application
+
+### Step 1: Install Dependencies
 ```bash
+cd "Mobile App"
 flutter pub get
 ```
 
-### Run Automated Unit and Widget Tests
+### Step 2: Launch on Target Device
 ```bash
-flutter test
-```
+# Run on connected Android device or emulator:
+flutter run
 
-### Run on Android Emulator or Physical Device
-```bash
-# Target Android Pixel_9_Pro emulator
-flutter run -d emulator-5554
-# Target Windows Desktop
+# Run on Windows Desktop:
 flutter run -d windows
 ```
