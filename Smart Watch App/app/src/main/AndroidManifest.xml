@@ -17,8 +17,9 @@
 
     <application
         android:allowBackup="true"
-        android:icon="@android:drawable/ic_dialog_alert"
-        android:label="VVIT Watch Emergency"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="VVIT CSP Watch"
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
         android:theme="@android:style/Theme.DeviceDefault">

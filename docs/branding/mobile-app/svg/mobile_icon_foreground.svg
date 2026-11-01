@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="mFgFrame" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#334155" />
+      <stop offset="50%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#1E293B" />
+    </linearGradient>
+    <radialGradient id="mFgScreen" cx="50%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#0F2448" />
+      <stop offset="60%" stop-color="#0A1832" />
+      <stop offset="100%" stop-color="#040C1A" />
+    </radialGradient>
+    <filter id="mFgGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Smartphone Frame (Scaled safely inside adaptive bounds: W 180, H 290) -->
+  <rect x="166" y="111" width="180" height="290" rx="30" fill="url(#mFgFrame)" stroke="#60A5FA" stroke-width="2.5" />
+  <rect x="174" y="119" width="164" height="274" rx="22" fill="url(#mFgScreen)" stroke="#3B82F6" stroke-opacity="0.3" stroke-width="1.5" />
+
+  <!-- Dynamic Island -->
+  <rect x="232" y="127" width="48" height="8" rx="4" fill="#000000" opacity="0.9" />
+
+  <!-- Emergency Cross -->
+  <path d="M 244,185 L 268,185 Q 271,185 271,188 L 271,206 L 289,206 Q 292,206 292,209 L 292,225 Q 292,228 289,228 L 271,228 L 271,246 Q 271,249 268,249 L 244,249 Q 241,249 241,246 L 241,228 L 223,228 Q 220,228 220,225 L 220,209 Q 220,206 223,206 L 241,206 L 241,188 Q 241,185 244,185 Z"
+        fill="#D32F2F" stroke="#FFFFFF" stroke-width="2" filter="url(#mFgGlow)" />
+  <circle cx="256" cy="217" r="5.5" fill="#FFFFFF" />
+
+  <!-- ECG Line -->
+  <path d="M 178,280 L 208,280 L 219,262 L 230,305 L 247,165 L 265,340 L 280,245 L 292,292 L 304,280 L 334,280" 
+        fill="none" stroke="#EF4444" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" opacity="0.35" />
+  <path d="M 178,280 L 208,280 L 219,262 L 230,305 L 247,165 L 265,340 L 280,245 L 292,292 L 304,280 L 334,280" 
+        fill="none" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#mFgGlow)" />
+  <circle cx="247" cy="165" r="5" fill="#FFFFFF" stroke="#3B82F6" stroke-width="2" />
+  <rect x="232" y="381" width="48" height="3" rx="1.5" fill="#94A3B8" opacity="0.6" />
+</svg>

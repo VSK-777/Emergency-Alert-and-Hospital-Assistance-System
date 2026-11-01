@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Watch Bezel Outline -->
+  <circle cx="256" cy="256" r="128" fill="none" stroke="#FFFFFF" stroke-width="12" />
+  <path d="M 384,242 C 390,242 394,246 394,251 L 394,261 C 394,266 390,270 384,270 Z" fill="#FFFFFF" />
+  <!-- Medical Cross -->
+  <path d="M 246,200 L 266,200 L 266,216 L 282,216 L 282,236 L 266,236 L 266,252 L 246,252 L 246,236 L 230,236 L 230,216 L 246,216 Z" fill="#FFFFFF" opacity="0.6" />
+  <!-- ECG Line -->
+  <path d="M 168,266 L 204,266 L 216,250 L 226,286 L 244,182 L 262,324 L 276,242 L 288,278 L 298,266 L 344,266" 
+        fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="244" cy="182" r="5" fill="#FFFFFF" />
+</svg>
