@@ -21,6 +21,7 @@ import {
   Timer,
   ExternalLink,
   Radio,
+  Eye,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -52,7 +53,7 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Top Banner with Quick Actions */}
+      {/* Top Coordination Header with Quick Actions */}
       <QuickActionsBar />
 
       {/* KPI Stat Cards Grid */}
@@ -75,7 +76,7 @@ export const DashboardPage: React.FC = () => {
         <StatCard
           title="Available ICUs"
           value={totalIcus}
-          subtitle="Across 4 hospitals"
+          subtitle="Across network"
           icon={Building2}
           color="blue"
         />
@@ -96,7 +97,7 @@ export const DashboardPage: React.FC = () => {
         <StatCard
           title="Avg Response Time"
           value="4.2m"
-          subtitle="AI-optimized dispatch"
+          subtitle="AI-assisted dispatch"
           icon={Timer}
           color="blue"
           trend={{ value: '-1.4 min', isPositive: true }}
@@ -107,10 +108,12 @@ export const DashboardPage: React.FC = () => {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Radio className="h-4 w-4 text-red-500 animate-pulse" />
-            <h3 className="text-sm font-bold text-white">Live Regional Dispatch Map (VVIT & Surrounding Network)</h3>
+            <Radio className="h-4 w-4 text-red-600 dark:text-red-500 animate-pulse" />
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+              Live Regional Dispatch Map (VVIT & Surrounding Network)
+            </h3>
           </div>
-          <span className="text-xs text-slate-400">Click marker for rapid coordination popup</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">Click marker for rapid coordination popup</span>
         </div>
 
         <LiveEmergencyMap
@@ -118,7 +121,7 @@ export const DashboardPage: React.FC = () => {
           hospitals={hospitals}
           ambulances={ambulances}
           responders={responders}
-          height="460px"
+          height="440px"
           onSelectIncident={(inc) => setSelectedIncident(inc)}
         />
       </div>
@@ -130,20 +133,20 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {/* Active Incidents Table */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-md">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs transition-colors">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-red-600 animate-pulse" />
               Active Emergency Dispatch Queue ({activeIncidents.length})
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               Live updates received via Server-Sent Events (SSE) telemetry feed
             </p>
           </div>
           <Link
             to="/emergencies"
-            className="flex items-center gap-1 text-xs font-semibold text-red-400 hover:text-red-300"
+            className="flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
           >
             <span>View All Records</span>
             <ExternalLink className="h-3.5 w-3.5" />
@@ -151,13 +154,15 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {activeIncidents.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-800 p-8 text-center">
-            <p className="text-xs text-slate-400">All emergency corridors clear. No active alerts reported.</p>
+          <div className="rounded-xl border border-dashed border-slate-200 dark:border-slate-800 p-8 text-center bg-slate-50 dark:bg-slate-950/40">
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              All emergency corridors clear. No active alerts reported.
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-800 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              <thead className="border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 <tr>
                   <th className="pb-3 pl-2">Incident ID</th>
                   <th className="pb-3">Source</th>
@@ -168,34 +173,39 @@ export const DashboardPage: React.FC = () => {
                   <th className="pb-3 text-right pr-2">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 font-medium">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
                 {activeIncidents.map((incident) => (
-                  <tr key={incident.id} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3 pl-2 font-mono font-bold text-white">
+                  <tr key={incident.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                    <td className="py-3.5 pl-2 font-mono font-bold text-slate-900 dark:text-white">
                       {incident.id.substring(0, 12)}
                     </td>
-                    <td className="py-3">
+                    <td className="py-3.5">
                       <Badge status={incident.source} variant="source" />
                     </td>
-                    <td className="py-3">
-                      <p className="font-semibold text-white">{incident.patientName || 'Sai Krishna VSK'}</p>
-                      <p className="text-[10px] text-slate-400">Blood: {incident.bloodGroup || 'O+'}</p>
+                    <td className="py-3.5">
+                      <div className="font-semibold text-slate-800 dark:text-slate-200">
+                        {incident.patientName || 'Citizen User'}
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-mono">
+                        {incident.patientPhone || 'Phone unlisted'}
+                      </div>
                     </td>
-                    <td className="py-3 max-w-[200px] truncate text-slate-300">
+                    <td className="py-3.5 max-w-xs truncate text-slate-600 dark:text-slate-300">
                       {incident.detectionReason}
                     </td>
-                    <td className="py-3 text-slate-300">
-                      {incident.assignedHospitalName || 'AIIMS Mangalagiri'}
+                    <td className="py-3.5 font-semibold text-blue-600 dark:text-sky-400">
+                      {incident.assignedHospitalName || 'Unassigned'}
                     </td>
-                    <td className="py-3">
+                    <td className="py-3.5">
                       <Badge status={incident.status} />
                     </td>
-                    <td className="py-3 text-right pr-2">
+                    <td className="py-3.5 text-right pr-2">
                       <button
                         onClick={() => setSelectedIncident(incident)}
-                        className="rounded-lg bg-red-600/20 border border-red-500/40 px-3 py-1 text-[11px] font-bold text-red-300 hover:bg-red-600 hover:text-white transition-colors"
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-xs transition-colors"
                       >
-                        Inspect & Coordinate
+                        <Eye className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                        <span>Inspect</span>
                       </button>
                     </td>
                   </tr>

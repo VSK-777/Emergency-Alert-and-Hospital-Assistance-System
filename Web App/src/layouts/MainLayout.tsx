@@ -17,12 +17,12 @@ export const MainLayout: React.FC = () => {
   }, [initSseStream, closeSseStream]);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-950 font-sans text-slate-100">
-      {/* Sidebar */}
+    <div className="flex h-screen w-screen overflow-hidden bg-[#F5F7FA] dark:bg-slate-950 font-sans text-slate-800 dark:text-slate-100 antialiased transition-colors">
+      {/* Dynamic Role-Based Sidebar */}
       <Sidebar />
 
       {/* Main Content Area */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden min-w-0">
         {/* Top Navbar */}
         <Navbar />
 
@@ -34,7 +34,7 @@ export const MainLayout: React.FC = () => {
         </main>
       </div>
 
-      {/* Global Real-time Notification Drawer */}
+      {/* Global Real-time Notification Center */}
       <NotificationDrawer />
     </div>
   );

@@ -25,15 +25,18 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final OtpService otpService;
 
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        JwtService jwtService,
-                       AuthenticationManager authenticationManager) {
+                       AuthenticationManager authenticationManager,
+                       OtpService otpService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
+        this.otpService = otpService;
     }
 
     @Transactional
@@ -74,6 +77,27 @@ public class AuthService {
         String token = jwtService.generateToken(principal, user.getId(), user.getRole().name());
 
         return new AuthResponse(token, user.getId(), user.getEmail(), user.getFullName(), user.getPhoneNumber(), user.getRole());
+    }
+
+    public String generateOtp(String phoneNumber) {
+        return otpService.generateAndSendOtp(phoneNumber);
+    }
+
+    @Transactional
+    public AuthResponse verifyOtpAndLogin(String phoneNumber, String otp, String fullName, UserRole role) {
+        if (phoneNumber == null || phoneNumber.isBlank()) {
+            throw new BadRequestException("Phone number is required.");
+        }
+        if (otp == null || otp.isBlank()) {
+            throw new BadRequestException("OTP code is required.");
+        }
+
+        boolean isValid = otpService.verifyOtp(phoneNumber, otp);
+        if (!isValid) {
+            throw new BadRequestException("Invalid OTP code. Please enter the correct 6-digit code.");
+        }
+
+        return phoneLogin(phoneNumber, "VERIFIED_OTP_" + otp, fullName, role);
     }
 
     @Transactional

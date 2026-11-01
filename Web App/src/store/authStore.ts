@@ -10,6 +10,8 @@ interface AuthState {
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
   phoneLogin: (phoneNumber: string, verificationToken?: string, fullName?: string) => Promise<void>;
+  sendOtp: (phoneNumber: string) => Promise<{ success: boolean; message: string; devOtp?: string }>;
+  verifyOtp: (phoneNumber: string, otp: string, fullName?: string) => Promise<void>;
   register: (userData: Partial<User> & { password: string }) => Promise<void>;
   logout: () => void;
   setUser: (user: User) => void;
@@ -90,6 +92,52 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Phone verification failed.';
+      set({ error: msg, isLoading: false, isAuthenticated: false });
+      throw new Error(msg);
+    }
+  },
+
+  sendOtp: async (phoneNumber: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await authApi.sendOtp(phoneNumber.trim());
+      set({ isLoading: false });
+      return { success: res.success, message: res.message, devOtp: res.devOtp };
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Failed to dispatch OTP.';
+      set({ error: msg, isLoading: false });
+      throw new Error(msg);
+    }
+  },
+
+  verifyOtp: async (phoneNumber: string, otp: string, fullName?: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response: AuthResponse = await authApi.verifyOtp({
+        phoneNumber: phoneNumber.trim(),
+        otp: otp.trim(),
+        fullName,
+      });
+      const user: User = {
+        id: response.id,
+        email: response.email,
+        fullName: response.fullName,
+        phoneNumber: response.phoneNumber,
+        role: response.role,
+      };
+
+      localStorage.setItem('vvit_csp_token', response.token);
+      localStorage.setItem('vvit_csp_user', JSON.stringify(user));
+
+      set({
+        user,
+        token: response.token,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      });
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Invalid OTP code.';
       set({ error: msg, isLoading: false, isAuthenticated: false });
       throw new Error(msg);
     }

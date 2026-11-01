@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { aiApi } from '../api/ai';
+import { useAuthStore } from '../store/authStore';
 import type { AiTriageResponse } from '../types';
 import { Badge } from '../components/common/Badge';
 import {
@@ -14,15 +15,22 @@ import {
   Building2,
   FileCheck,
   ShieldAlert,
+  ShieldCheck,
+  Info,
+  CheckCircle2,
 } from 'lucide-react';
 
 export const AiTriagePage: React.FC = () => {
-  const [symptoms, setSymptoms] = useState(
-    'Patient suffered high-velocity motorcycle impact. G-force 3.85G registered on Wear OS watch. Unresponsive with irregular pulse.'
-  );
+  const { user } = useAuthStore();
+  const isCitizen = user?.role === 'CITIZEN';
+
+  // Form states
+  const [symptoms, setSymptoms] = useState('');
   const [emergencyType, setEmergencyType] = useState('FALL_IMPACT');
   const [patientProfile, setPatientProfile] = useState(
-    'Age 21, Male, Blood Group: O+, Allergies: Penicillin, History: Mild Asthma'
+    `Blood Group: ${user?.bloodGroup || 'O+'}, Allergies: ${user?.allergies || 'None'}, History: ${
+      user?.medicalConditions || 'Healthy'
+    }`
   );
 
   const [isLoading, setIsLoading] = useState(false);
@@ -31,10 +39,11 @@ export const AiTriagePage: React.FC = () => {
 
   const handleEvaluate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!symptoms.trim()) return;
     setIsLoading(true);
     try {
       const response = await aiApi.generateTriage({
-        query: symptoms,
+        query: symptoms.trim(),
         emergencyType,
         patientMedicalNotes: patientProfile,
       });
@@ -53,10 +62,10 @@ EMERGENCY MEDICAL HANDOFF DOSSIER
 ==============================================
 Institution: Vasireddy Venkatadri Institute of Technology (VVIT) CSP
 Emergency Alert and Hospital Assistance System
-Prepared By: VSK · Guide: Mr. G. Lakshmi Narayana
+Prepared By: VSK (Reg. No: 24BQ1A054O) · Guide: Mr. G. Lakshmi Narayana
 
 TRIAGE ASSESSMENT: ${result.triageLevel}
-AI Source: ${result.providerSource}
+AI Engine: ${result.providerSource}
 Evaluation Timestamp: ${new Date().toLocaleString()}
 
 PATIENT PROFILE:
@@ -78,16 +87,200 @@ ${result.hospitalPrepRecommendations.map((p, i) => `[ ] ${p}`).join('\n')}
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // CITIZEN VIEW: Friendly First-Aid Assistant
+  if (isCitizen) {
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              AI Emergency & First-Aid Assistant
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Immediate safety guidance, CPR assistance, and first-responder recommendations
+            </p>
+          </div>
+
+          <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-3 py-1 text-xs font-semibold">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            <span>Emergency Guidance Ready</span>
+          </div>
+        </div>
+
+        {/* Safety Disclaimer Banner */}
+        <div className="rounded-xl border border-amber-200 dark:border-amber-800/80 bg-amber-50 dark:bg-amber-950/30 p-3.5 text-xs text-amber-900 dark:text-amber-300 flex items-start gap-2.5">
+          <Info className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+          <p className="leading-relaxed">
+            <strong>Important Safety Notice:</strong> This AI assistant provides immediate first-aid guidance for emergencies. If someone is unconscious, bleeding profusely, or having difficulty breathing, call emergency services immediately or press the red <strong>DISPATCH SOS</strong> button.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Input Form */}
+          <div className="lg:col-span-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-4">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <HeartPulse className="h-4 w-4 text-red-600 dark:text-red-400" />
+              Describe the Emergency Condition
+            </h3>
+
+            <form onSubmit={handleEvaluate} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Emergency Category
+                </label>
+                <select
+                  value={emergencyType}
+                  onChange={(e) => setEmergencyType(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs text-slate-900 dark:text-white"
+                >
+                  <option value="FALL_IMPACT">Accident Fall / Impact</option>
+                  <option value="BLEEDING">Severe Bleeding / Cut</option>
+                  <option value="FRACTURE">Suspected Fracture / Bone Injury</option>
+                  <option value="BURNS">Heat Burns / Scalds</option>
+                  <option value="BREATHING_DISTRESS">Breathing Difficulty / Asthma Attack</option>
+                  <option value="CHOKING">Choking / Airway Obstruction</option>
+                  <option value="CARDIAC_DISTRESS">Chest Pain / Unresponsiveness</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  What is happening right now?
+                </label>
+                <textarea
+                  rows={4}
+                  value={symptoms}
+                  onChange={(e) => setSymptoms(e.target.value)}
+                  placeholder="e.g. Person slipped and fell, cannot stand up on left leg, complaining of intense knee pain but fully conscious."
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:border-purple-500 focus:outline-none"
+                  required
+                />
+              </div>
+
+              {/* Quick Preset Buttons */}
+              <div>
+                <span className="block text-[11px] font-semibold text-slate-400 mb-1.5">Common emergency presets:</span>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmergencyType('BLEEDING');
+                      setSymptoms('Deep laceration on forearm from broken glass, active bleeding, person is seated and conscious.');
+                    }}
+                    className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2.5 py-1 text-[11px] text-slate-700 dark:text-slate-300 hover:bg-slate-100"
+                  >
+                    Deep Bleeding
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmergencyType('BURNS');
+                      setSymptoms('Hot oil burn on hands, skin is red and blistering, urgent cooling advice needed.');
+                    }}
+                    className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2.5 py-1 text-[11px] text-slate-700 dark:text-slate-300 hover:bg-slate-100"
+                  >
+                    Heat Burn
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmergencyType('CHOKING');
+                      setSymptoms('Adult person is choking on food, unable to speak or cough effectively, clutching throat.');
+                    }}
+                    className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2.5 py-1 text-[11px] text-slate-700 dark:text-slate-300 hover:bg-slate-100"
+                  >
+                    Choking Adult
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-purple-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-purple-700 active:scale-95 disabled:opacity-50 transition-all"
+              >
+                <Sparkles className="h-4 w-4" />
+                <span>{isLoading ? 'Analyzing Safety Guidelines...' : 'Get Immediate First-Aid Steps'}</span>
+              </button>
+            </form>
+          </div>
+
+          {/* Result Output */}
+          <div className="lg:col-span-7 space-y-4">
+            {result ? (
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xs space-y-5 transition-colors">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Triage Severity:</span>
+                    <Badge status={result.triageLevel} variant="triage" />
+                  </div>
+                  <span className="text-[11px] font-semibold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800 px-2.5 py-0.5 rounded-full">
+                    {result.providerSource}
+                  </span>
+                </div>
+
+                <div>
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Situation Assessment
+                  </h4>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white leading-relaxed">
+                    {result.summary}
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    Immediate Step-by-Step Actions
+                  </h4>
+                  <div className="space-y-2">
+                    {result.immediateActionSteps.map((step, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 text-xs"
+                      >
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-purple-600 text-white font-bold text-[10px]">
+                          {idx + 1}
+                        </span>
+                        <p className="text-slate-800 dark:text-slate-200 font-medium leading-normal">{step}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 text-[11px] text-slate-500">
+                  <span>AI First-Aid Guidance is provided for immediate stabilization and does not replace medical diagnosis.</span>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-12 text-center bg-white dark:bg-slate-900 h-full flex flex-col items-center justify-center">
+                <div className="rounded-full bg-purple-50 text-purple-600 dark:bg-purple-950/50 dark:text-purple-400 p-4 mb-3 border border-purple-200 dark:border-purple-800/40">
+                  <Sparkles className="h-6 w-6" />
+                </div>
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Emergency Guidance Ready</h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mt-1">
+                  Select an emergency category or describe symptoms on the left to receive immediate, structured first-aid guidance.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // CLINICAL VIEW FOR ADMIN / HOSPITAL STAFF
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-purple-400" />
+          <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400" />
             Gemini AI Clinical Triage & Handoff Assistant
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Intelligent severity triage, first-responder protocol generator, and emergency department preparation reports
           </p>
         </div>
@@ -95,156 +288,139 @@ ${result.hospitalPrepRecommendations.map((p, i) => `[ ] ${p}`).join('\n')}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Input Form */}
-        <div className="lg:col-span-5 rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-md space-y-4">
-          <h3 className="text-sm font-bold text-white flex items-center gap-2">
-            <Stethoscope className="h-4 w-4 text-purple-400" />
-            Emergency Incident Parameters
+        <div className="lg:col-span-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-4">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Stethoscope className="h-4 w-4 text-purple-600" />
+            Clinical Intake Parameters
           </h3>
 
           <form onSubmit={handleEvaluate} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
-                Emergency Type / Mechanism
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Emergency Category
               </label>
               <select
                 value={emergencyType}
                 onChange={(e) => setEmergencyType(e.target.value)}
-                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-white focus:border-purple-500 focus:outline-none"
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs text-slate-900 dark:text-white"
               >
-                <option value="FALL_IMPACT">High-Impact Fall / Accident (Smartwatch IMU)</option>
-                <option value="MOBILE_SOS">Manual Distress SOS (Mobile App)</option>
-                <option value="CARDIAC_DISTRESS">Suspected Cardiac Event / Loss of Consciousness</option>
-                <option value="ROAD_ACCIDENT">Vehicular Collision / Trauma</option>
+                <option value="FALL_IMPACT">Wear OS Sensor Accident Impact</option>
+                <option value="TRAUMA_VEHICULAR">High Velocity Collision</option>
+                <option value="CARDIAC_ARREST">Cardiac Arrest / Arrhythmia</option>
+                <option value="SEVERE_RESPIRATORY">Respiratory Distress / Anaphylaxis</option>
+                <option value="NEUROLOGICAL_STROKE">Suspected Acute Stroke / Seizure</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
-                Patient Medical Profile & Known Conditions
-              </label>
-              <textarea
-                rows={2}
-                value={patientProfile}
-                onChange={(e) => setPatientProfile(e.target.value)}
-                placeholder="Age, blood group, allergies, pre-existing illnesses..."
-                className="w-full rounded-xl border border-slate-800 bg-slate-950 p-3 text-xs text-white placeholder-slate-600 focus:border-purple-500 focus:outline-none"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
-                Clinical Symptoms & Biomechanical Observations
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Clinical Observation & Symptoms
               </label>
               <textarea
                 rows={4}
                 value={symptoms}
                 onChange={(e) => setSymptoms(e.target.value)}
-                placeholder="Describe victim vitals, trauma evidence, sensor impact G-force..."
-                className="w-full rounded-xl border border-slate-800 bg-slate-950 p-3 text-xs text-white placeholder-slate-600 focus:border-purple-500 focus:outline-none"
+                placeholder="Enter verified telemetry observations, victim consciousness, pulse rate, bleeding severity..."
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:border-purple-500 focus:outline-none"
                 required
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Patient Medical Profile Notes
+              </label>
+              <input
+                type="text"
+                value={patientProfile}
+                onChange={(e) => setPatientProfile(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs text-slate-900 dark:text-white"
               />
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-purple-600 py-2.5 text-xs font-bold text-white shadow-lg shadow-purple-600/30 hover:bg-purple-500 active:scale-95 disabled:opacity-50 transition-all"
+              className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-purple-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-purple-700 active:scale-95 disabled:opacity-50 transition-all"
             >
               <Sparkles className="h-4 w-4" />
-              {isLoading ? 'Running Gemini AI Clinical Triage...' : 'Generate AI Triage Evaluation'}
+              <span>{isLoading ? 'Running Gemini Clinical Evaluation...' : 'Generate Clinical Handoff Dossier'}</span>
             </button>
           </form>
         </div>
 
         {/* Right Output Panel */}
-        <div className="lg:col-span-7 rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-md flex flex-col justify-between">
+        <div className="lg:col-span-7 space-y-4">
           {result ? (
-            <div className="space-y-4">
-              {/* Triage Banner */}
-              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-purple-500/30 bg-purple-950/30 p-4">
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-purple-300 block">
-                    Assessed Triage Priority
-                  </span>
-                  <div className="mt-1 flex items-center gap-2">
-                    <Badge status={result.triageLevel} variant="triage" />
-                    <span className="text-xs text-slate-300 font-mono">
-                      Source: {result.providerSource}
-                    </span>
-                  </div>
-                </div>
-
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xs space-y-5 transition-colors">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
                 <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-500 uppercase">Assessment:</span>
+                  <Badge status={result.triageLevel} variant="triage" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-semibold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800 px-2.5 py-0.5 rounded-full">
+                    {result.providerSource}
+                  </span>
                   <button
                     onClick={handleCopyReport}
-                    className="flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700"
+                    className="flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-700 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50"
                   >
-                    {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-                    {copied ? 'Copied' : 'Copy Dossier'}
-                  </button>
-                  <button
-                    onClick={() => window.print()}
-                    className="flex items-center gap-1 rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700"
-                  >
-                    <Printer className="h-3.5 w-3.5" />
-                    Print
+                    {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                    <span>{copied ? 'Copied!' : 'Copy Dossier'}</span>
                   </button>
                 </div>
               </div>
 
-              {/* Clinical Summary */}
-              <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4 space-y-1">
-                <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                  <HeartPulse className="h-4 w-4 text-rose-400" />
-                  Clinical Evaluation Summary
-                </span>
-                <p className="text-xs text-slate-300 leading-relaxed pt-1">{result.summary}</p>
+              <div>
+                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                  Executive Clinical Summary
+                </h4>
+                <p className="text-sm font-semibold text-slate-900 dark:text-white leading-relaxed">
+                  {result.summary}
+                </p>
               </div>
 
-              {/* Responder Protocol */}
-              <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4 space-y-2">
-                <span className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <ShieldAlert className="h-4 w-4 text-amber-400" />
-                  Immediate Bystander & Volunteer Action Steps
-                </span>
-                <ul className="space-y-1.5 text-xs text-slate-300">
-                  {result.immediateActionSteps.map((step, idx) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-[10px] font-bold text-amber-300 mt-0.5">
-                        {idx + 1}
-                      </span>
-                      <span>{step}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              {result.immediateActionSteps.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    Immediate First-Responder Protocols
+                  </h4>
+                  <div className="space-y-1.5 text-xs">
+                    {result.immediateActionSteps.map((step, idx) => (
+                      <div key={idx} className="flex items-start gap-2 p-2 rounded-lg bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+                        <span className="font-bold text-purple-600 shrink-0">{idx + 1}.</span>
+                        <span className="text-slate-800 dark:text-slate-200 font-medium">{step}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-              {/* Hospital Trauma Preparation Checklist */}
-              <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4 space-y-2">
-                <span className="text-xs font-bold text-sky-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <Building2 className="h-4 w-4 text-sky-400" />
-                  Hospital Receiving & Trauma Unit Checklist
-                </span>
-                <ul className="space-y-1.5 text-xs text-slate-300">
-                  {result.hospitalPrepRecommendations.map((prep, idx) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <FileCheck className="h-4 w-4 text-sky-400 shrink-0 mt-0.5" />
-                      <span>{prep}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              {result.hospitalPrepRecommendations.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    Hospital Trauma Unit Recommendations
+                  </h4>
+                  <div className="space-y-1.5 text-xs">
+                    {result.hospitalPrepRecommendations.map((prep, idx) => (
+                      <div key={idx} className="flex items-start gap-2 p-2 rounded-lg bg-blue-50/50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/40">
+                        <CheckCircle2 className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+                        <span className="text-blue-900 dark:text-blue-200 font-medium">{prep}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full min-h-[350px] text-center p-8">
-              <div className="rounded-full bg-purple-500/10 p-4 text-purple-400 mb-3 ring-1 ring-purple-500/20">
-                <Sparkles className="h-8 w-8 animate-pulse" />
+            <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-12 text-center bg-white dark:bg-slate-900 h-full flex flex-col items-center justify-center">
+              <div className="rounded-full bg-purple-50 text-purple-600 dark:bg-purple-950/50 dark:text-purple-400 p-4 mb-3 border border-purple-200 dark:border-purple-800/40">
+                <Sparkles className="h-6 w-6" />
               </div>
-              <h4 className="text-sm font-bold text-white">AI Clinical Triage Ready</h4>
-              <p className="mt-1 text-xs text-slate-400 max-w-sm">
-                Provide the incident parameters and click &quot;Generate AI Triage Evaluation&quot; to synthesize
-                first-aid steps and hospital trauma preparations.
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">AI Clinical Engine Standing By</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mt-1">
+                Enter emergency parameters to generate severity triage ratings and hospital trauma bay readiness dossiers.
               </p>
             </div>
           )}

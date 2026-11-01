@@ -41,13 +41,13 @@ emergency-alert-and-hospital-assistance-system/
 |   |-- Dockerfile                  # Container definition for Render deployment
 |   `-- pom.xml                     # Maven build specification
 |
-|-- Web App/                        # React + TypeScript + Vite Frontend Application
+|-- Web App/                        # Premium Healthcare SaaS React Frontend (Vite + TS + Tailwind v4)
 |   |-- src/
 |   |   |-- api/                    # Axios API clients with JWT interceptors
-|   |   |-- components/             # Reusable UI components, Modals, Navbar, Sidebar
+|   |   |-- components/             # Reusable UI components, Modals, Navbar, Sidebar, Leaflet Map
 |   |   |-- layouts/                # MainLayout with role-tailored navigation
 |   |   |-- pages/                  # Four dedicated role dashboards (Admin, Hospital, Responder, Citizen)
-|   |   |-- store/                  # Zustand state stores (Auth, Emergency, Notification, Hospital)
+|   |   |-- store/                  # Zustand state stores (Auth, Emergency, Notification, Hospital, Theme)
 |   |   `-- types/                  # TypeScript interfaces & domain enums
 |   |-- public/                     # Favicons (SVG, ICO, PNG) and PWA manifest.json
 |   |-- vercel.json                 # Vercel SPA routing and reverse-proxy configuration
@@ -55,28 +55,7 @@ emergency-alert-and-hospital-assistance-system/
 |   `-- package.json                # Dependencies and build scripts
 |
 |-- render.yaml                     # Render Infrastructure-as-Code blueprint
-|-- README.md                       # Project documentation
-`-- .gitignore                      # Git exclusion rules
-```
-|   |-- .env.example                # Safe environment variable configuration template
-|   `-- README.md
-|
-|-- Web App/                        # [RESERVED FOR FUTURE DEVELOPMENT - DO NOT IMPLEMENT NOW]
-|
-|-- database/
-|   |-- schema/01_init_schema.sql   # MySQL 9.5 production schema definition
-|   `-- seed/01_seed_data.sql       # Initial seed data for VVIT / Guntur / Mangalagiri
-|
-|-- docs/
-|   |-- architecture/               # Comprehensive technical architecture
-|   |-- api/                        # REST API reference manual
-|   |-- setup/                      # Setup guide & verified environment report
-|   |-- demo/                       # Step-by-step demonstration walkthrough
-|   `-- testing/                    # Test execution report & verification records
-|
-|-- scripts/                        # Automated startup & test runner scripts
-|-- .gitignore
-`-- README.md
+`-- README.md                       # Project documentation
 ```
 
 ---

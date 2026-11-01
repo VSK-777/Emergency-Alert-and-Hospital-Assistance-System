@@ -3,7 +3,7 @@ import { Modal } from '../common/Modal';
 import { useEmergencyStore } from '../../store/emergencyStore';
 import { emergencyApi } from '../../api/emergencies';
 import type { IncidentSource } from '../../types';
-import { AlertTriangle, Watch, Smartphone, MapPin, Activity, Zap } from 'lucide-react';
+import { AlertTriangle, Watch, Smartphone, MapPin, Activity, CheckCircle2 } from 'lucide-react';
 
 interface CreateEmergencyModalProps {
   isOpen: boolean;
@@ -15,14 +15,12 @@ export const CreateEmergencyModal: React.FC<CreateEmergencyModalProps> = ({
   onClose,
 }) => {
   const { fetchActiveIncidents } = useEmergencyStore();
-  const [source, setSource] = useState<IncidentSource>('SMARTWATCH_AUTO');
+  const [source, setSource] = useState<IncidentSource>('MANUAL_SOS');
   const [detectionReason, setDetectionReason] = useState(
-    'High Impact Fall with 15s Post-Impact Stillness'
+    'Citizen manual emergency SOS dispatch - Urgent assistance needed'
   );
   const [latitude, setLatitude] = useState(16.3533);
   const [longitude, setLongitude] = useState(80.5238);
-  const [peakG, setPeakG] = useState(3.65);
-  const [gyroDps, setGyroDps] = useState(410);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -44,12 +42,12 @@ export const CreateEmergencyModal: React.FC<CreateEmergencyModalProps> = ({
       if (source === 'SMARTWATCH_AUTO') {
         payload.detectionEvent = {
           eventType: 'FALL_IMPACT',
-          accelerationMagnitude: peakG,
-          angularVelocity: gyroDps / 57.3, // convert to rad/s
+          accelerationMagnitude: 3.65,
+          angularVelocity: 7.15,
           postImpactInactivitySec: 15,
           rawTelemetryJson: JSON.stringify({
-            accel_peak_g: peakG,
-            gyro_dps: gyroDps,
+            accel_peak_g: 3.65,
+            gyro_dps: 410,
             inactivity_sec: 15,
             impact_axis: 'Z-Y',
             device_model: 'VVIT-WearOS-Round-Watch',
@@ -60,7 +58,7 @@ export const CreateEmergencyModal: React.FC<CreateEmergencyModalProps> = ({
       await emergencyApi.createIncident(payload);
       await fetchActiveIncidents();
 
-      setFeedback('Emergency alert successfully dispatched to network!');
+      setFeedback('Emergency alert dispatched to trauma hospital & responder network!');
       setTimeout(() => {
         setIsSubmitting(false);
         setFeedback(null);
@@ -82,193 +80,154 @@ export const CreateEmergencyModal: React.FC<CreateEmergencyModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Dispatch Emergency Incident (Live Network Simulation)"
-      subtitle="Creates a real incident in the backend and triggers live SSE alert broadcast"
+      title="Dispatch Emergency SOS Alert"
+      subtitle="Immediately broadcasts coordinates and distress parameters to the emergency grid"
       maxWidth="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {feedback && (
+          <div className="flex items-center gap-2 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 p-3 text-xs text-emerald-800 dark:text-emerald-300">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+            <span>{feedback}</span>
+          </div>
+        )}
+
         {/* Source Selection */}
         <div>
-          <label className="block text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wide">
-            Trigger Source
+          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wide">
+            Emergency Trigger Mode
           </label>
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
               onClick={() => {
-                setSource('SMARTWATCH_AUTO');
-                setDetectionReason('High Impact Fall with 15s Post-Impact Stillness');
+                setSource('MANUAL_SOS');
+                setDetectionReason('Citizen manual emergency SOS dispatch - Urgent medical help requested');
               }}
               className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${
-                source === 'SMARTWATCH_AUTO'
-                  ? 'border-red-500 bg-red-950/40 text-white'
-                  : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700'
+                source === 'MANUAL_SOS'
+                  ? 'border-red-500 bg-red-50 text-red-900 dark:bg-red-950/40 dark:text-red-300 font-bold ring-2 ring-red-500/20'
+                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-300'
               }`}
             >
-              <Watch className="h-5 w-5 text-rose-400" />
+              <Smartphone className="h-5 w-5 text-red-600 dark:text-red-400 shrink-0" />
               <div>
-                <p className="text-xs font-bold text-white">Smartwatch Fall</p>
-                <p className="text-[11px] text-slate-400">IMU Sensor Trigger (50Hz)</p>
+                <p className="text-xs font-bold">Manual SOS Alert</p>
+                <p className="text-[10px] opacity-80">Immediate citizen dispatch</p>
               </div>
             </button>
 
             <button
               type="button"
               onClick={() => {
-                setSource('MOBILE_SOS');
-                setDetectionReason('Manual User SOS Activated from Phone');
+                setSource('SMARTWATCH_AUTO');
+                setDetectionReason('Smartwatch IMU Dual-Peak Impact Detection with Inactivity');
               }}
               className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${
-                source === 'MOBILE_SOS'
-                  ? 'border-orange-500 bg-orange-950/40 text-white'
-                  : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700'
+                source === 'SMARTWATCH_AUTO'
+                  ? 'border-blue-500 bg-blue-50 text-blue-900 dark:bg-blue-950/40 dark:text-blue-300 font-bold ring-2 ring-blue-500/20'
+                  : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-300'
               }`}
             >
-              <Smartphone className="h-5 w-5 text-orange-400" />
+              <Watch className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0" />
               <div>
-                <p className="text-xs font-bold text-white">Mobile SOS</p>
-                <p className="text-[11px] text-slate-400">App Button or 5x Power Tap</p>
+                <p className="text-xs font-bold">Smartwatch Sensor</p>
+                <p className="text-[10px] opacity-80">50Hz IMU Impact Event</p>
               </div>
             </button>
           </div>
         </div>
 
-        {/* Reason / Note */}
+        {/* Reason */}
         <div>
-          <label className="block text-xs font-semibold text-slate-300 mb-1">
-            Detection Reason / Situation
+          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+            Emergency Condition / Description
           </label>
           <input
             type="text"
             value={detectionReason}
             onChange={(e) => setDetectionReason(e.target.value)}
-            className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2.5 text-xs text-white focus:border-red-500 focus:outline-none"
+            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:border-red-500 focus:outline-none"
             required
           />
         </div>
 
-        {/* Smartwatch IMU Telemetry Fields if Smartwatch */}
-        {source === 'SMARTWATCH_AUTO' && (
-          <div className="rounded-xl border border-slate-800/80 bg-slate-950/50 p-3 space-y-3">
-            <div className="flex items-center gap-2 text-xs font-bold text-rose-400">
-              <Activity className="h-4 w-4" />
-              <span>Smartwatch IMU Sensor Telemetry</span>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[11px] text-slate-400 mb-1">
-                  Peak Acceleration G-Force: <span className="font-bold text-white">{peakG} G</span>
-                </label>
-                <input
-                  type="range"
-                  min="2.0"
-                  max="6.0"
-                  step="0.05"
-                  value={peakG}
-                  onChange={(e) => setPeakG(parseFloat(e.target.value))}
-                  className="w-full accent-rose-500"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] text-slate-400 mb-1">
-                  Rotational Speed: <span className="font-bold text-white">{gyroDps} °/s</span>
-                </label>
-                <input
-                  type="range"
-                  min="200"
-                  max="800"
-                  step="10"
-                  value={gyroDps}
-                  onChange={(e) => setGyroDps(parseInt(e.target.value))}
-                  className="w-full accent-rose-500"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Coordinates */}
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-              <MapPin className="h-3.5 w-3.5 text-red-400" />
-              GPS Coordinates (Latitude, Longitude)
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              GPS Latitude
             </label>
-            <div className="flex gap-1.5">
-              <button
-                type="button"
-                onClick={() => setPresetLocation('VVIT Campus', 16.3533, 80.5238)}
-                className="text-[10px] text-red-400 hover:underline"
-              >
-                VVIT Campus
-              </button>
-              <span className="text-[10px] text-slate-600">·</span>
-              <button
-                type="button"
-                onClick={() => setPresetLocation('AIIMS Mangalagiri', 16.4357, 80.5644)}
-                className="text-[10px] text-sky-400 hover:underline"
-              >
-                AIIMS NH16
-              </button>
-              <span className="text-[10px] text-slate-600">·</span>
-              <button
-                type="button"
-                onClick={() => setPresetLocation('GGH Guntur', 16.3067, 80.4365)}
-                className="text-[10px] text-emerald-400 hover:underline"
-              >
-                GGH Guntur
-              </button>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
             <input
               type="number"
-              step="0.0001"
+              step="any"
               value={latitude}
               onChange={(e) => setLatitude(parseFloat(e.target.value))}
-              placeholder="Latitude"
-              className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-white focus:border-red-500 focus:outline-none"
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:border-red-500 focus:outline-none"
               required
             />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              GPS Longitude
+            </label>
             <input
               type="number"
-              step="0.0001"
+              step="any"
               value={longitude}
               onChange={(e) => setLongitude(parseFloat(e.target.value))}
-              placeholder="Longitude"
-              className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-white focus:border-red-500 focus:outline-none"
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:border-red-500 focus:outline-none"
               required
             />
           </div>
         </div>
 
-        {feedback && (
-          <div
-            className={`rounded-xl p-3 text-xs font-semibold ${
-              feedback.startsWith('Error')
-                ? 'bg-rose-950/40 text-rose-300 border border-rose-500/30'
-                : 'bg-emerald-950/40 text-emerald-300 border border-emerald-500/30'
-            }`}
-          >
-            {feedback}
+        {/* Location Presets */}
+        <div>
+          <span className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5 flex items-center gap-1">
+            <MapPin className="h-3 w-3" /> Quick Location Presets:
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              onClick={() => setPresetLocation('VVIT Campus', 16.3533, 80.5238)}
+              className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-[11px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-200"
+            >
+              VVIT Campus (Nambur)
+            </button>
+            <button
+              type="button"
+              onClick={() => setPresetLocation('AIIMS Mangalagiri', 16.4357, 80.5644)}
+              className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-[11px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-200"
+            >
+              AIIMS Mangalagiri (NH16)
+            </button>
+            <button
+              type="button"
+              onClick={() => setPresetLocation('GGH Guntur', 16.3067, 80.4428)}
+              className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-[11px] font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-200"
+            >
+              GGH Guntur
+            </button>
           </div>
-        )}
+        </div>
 
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+        {/* Actions */}
+        <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl px-4 py-2 text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white"
+            className="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex items-center gap-2 rounded-xl bg-red-600 px-5 py-2 text-xs font-bold text-white shadow-lg shadow-red-600/30 hover:bg-red-500 active:scale-95 disabled:opacity-50 transition-all"
+            className="flex items-center gap-1.5 rounded-xl bg-red-600 px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-red-700 active:scale-95 disabled:opacity-50 transition-all"
           >
-            <Zap className="h-4 w-4" />
-            {isSubmitting ? 'Broadcasting...' : 'Broadcast Emergency'}
+            <AlertTriangle className="h-4 w-4" />
+            <span>{isSubmitting ? 'Transmitting Alert...' : 'Dispatch Live Emergency'}</span>
           </button>
         </div>
       </form>

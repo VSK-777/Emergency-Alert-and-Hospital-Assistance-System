@@ -40,6 +40,40 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/send-otp")
+    @Operation(summary = "Generate and dispatch a 6-digit OTP to a mobile phone number")
+    public ResponseEntity<Map<String, Object>> sendOtp(@RequestBody Map<String, String> payload) {
+        String phoneNumber = payload.get("phoneNumber");
+        if (phoneNumber == null || phoneNumber.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Phone number is required."));
+        }
+        String otp = authService.generateOtp(phoneNumber);
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Verification OTP dispatched successfully to " + phoneNumber,
+                "phoneNumber", phoneNumber,
+                "expiresInSeconds", 300,
+                "devOtp", otp
+        ));
+    }
+
+    @PostMapping("/verify-otp")
+    @Operation(summary = "Verify 6-digit OTP and authenticate user")
+    public ResponseEntity<AuthResponse> verifyOtp(@RequestBody Map<String, String> payload) {
+        String phoneNumber = payload.get("phoneNumber");
+        String otp = payload.get("otp");
+        String fullName = payload.get("fullName");
+        String roleStr = payload.get("role");
+        net.vvit.csp.emergency.model.UserRole role = net.vvit.csp.emergency.model.UserRole.CITIZEN;
+        if (roleStr != null && !roleStr.isBlank()) {
+            try {
+                role = net.vvit.csp.emergency.model.UserRole.valueOf(roleStr.toUpperCase());
+            } catch (Exception ignored) {}
+        }
+        AuthResponse response = authService.verifyOtpAndLogin(phoneNumber, otp, fullName, role);
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/phone-login")
     @Operation(summary = "Sign in or register with verified phone number (Phone.email verification)")
     public ResponseEntity<AuthResponse> phoneLogin(@RequestBody Map<String, String> payload) {

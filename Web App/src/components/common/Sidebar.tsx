@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -11,8 +11,11 @@ import {
   Sparkles,
   FileText,
   Settings,
-  ShieldAlert,
+  ShieldCheck,
   Heart,
+  ChevronLeft,
+  ChevronRight,
+  Activity,
 } from 'lucide-react';
 import { useEmergencyStore } from '../../store/emergencyStore';
 import { useAuthStore } from '../../store/authStore';
@@ -20,12 +23,13 @@ import { useAuthStore } from '../../store/authStore';
 export const Sidebar: React.FC = () => {
   const { activeIncidents } = useEmergencyStore();
   const { user } = useAuthStore();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const getNavItems = () => {
     switch (user?.role) {
       case 'HOSPITAL_STAFF':
         return [
-          { label: 'Hospital Dashboard', to: '/', icon: Building2 },
+          { label: 'Hospital Dashboard', to: '/hospital', icon: Building2 },
           {
             label: 'Incoming Emergencies',
             to: '/emergencies',
@@ -33,35 +37,34 @@ export const Sidebar: React.FC = () => {
             badge: activeIncidents.length > 0 ? activeIncidents.length : undefined,
             badgeColor: 'bg-red-600',
           },
-          { label: 'Patient Clinical Intake', to: '/patients', icon: Users },
+          { label: 'Active Patients', to: '/patients', icon: Users },
           { label: 'Facility & ICUs', to: '/hospitals', icon: Building2 },
           { label: 'Ambulance Fleet', to: '/ambulances', icon: Ambulance },
-          { label: 'AI Clinical Triage', to: '/ai-triage', icon: Sparkles },
-          { label: 'Audit Trail', to: '/audit-logs', icon: FileText },
-          { label: 'Hospital Profile', to: '/settings', icon: Settings },
+          { label: 'Clinical Triage Dossier', to: '/ai-triage', icon: Sparkles },
+          { label: 'Hospital Settings', to: '/settings', icon: Settings },
         ];
 
       case 'RESPONDER':
         return [
-          { label: 'Responder Dashboard', to: '/', icon: HeartHandshake },
+          { label: 'Responder Dashboard', to: '/responder', icon: HeartHandshake },
           {
-            label: 'Nearby Emergency Alerts',
+            label: 'Nearby Alerts',
             to: '/emergencies',
             icon: AlertCircle,
             badge: activeIncidents.length > 0 ? activeIncidents.length : undefined,
             badgeColor: 'bg-emerald-600',
           },
           { label: 'Hospital Network', to: '/hospitals', icon: Building2 },
-          { label: 'AI Emergency Guide', to: '/ai-triage', icon: Sparkles },
+          { label: 'First-Aid Guide', to: '/ai-triage', icon: Sparkles },
           { label: 'Availability & Profile', to: '/settings', icon: Settings },
         ];
 
       case 'CITIZEN':
         return [
-          { label: 'Citizen Home Dashboard', to: '/', icon: Heart },
+          { label: 'Home Dashboard', to: '/citizen', icon: Heart },
           { label: 'Emergency Status & SOS', to: '/emergencies', icon: AlertCircle },
           { label: 'Nearby Hospitals', to: '/hospitals', icon: Building2 },
-          { label: 'My Medical ID Card', to: '/patients', icon: Users },
+          { label: 'My Medical ID', to: '/patients', icon: Users },
           { label: 'My Smartwatch', to: '/devices', icon: Watch },
           { label: 'AI First-Aid Assistant', to: '/ai-triage', icon: Sparkles },
           { label: 'Profile & Contacts', to: '/settings', icon: Settings },
@@ -70,7 +73,7 @@ export const Sidebar: React.FC = () => {
       case 'ADMIN':
       default:
         return [
-          { label: 'System Admin Dashboard', to: '/', icon: LayoutDashboard },
+          { label: 'System Admin Dashboard', to: '/admin', icon: LayoutDashboard },
           {
             label: 'Live Emergencies',
             to: '/emergencies',
@@ -80,55 +83,109 @@ export const Sidebar: React.FC = () => {
           },
           { label: 'Hospital Network', to: '/hospitals', icon: Building2 },
           { label: 'Ambulance Fleet', to: '/ambulances', icon: Ambulance },
-          { label: 'Responders Grid', to: '/responders', icon: HeartHandshake },
+          { label: 'First Responders', to: '/responders', icon: HeartHandshake },
           { label: 'Patient Records', to: '/patients', icon: Users },
-          { label: 'Smartwatch Devices', to: '/devices', icon: Watch },
-          { label: 'AI Triage & Handoff', to: '/ai-triage', icon: Sparkles },
+          { label: 'Smartwatch Fleet', to: '/devices', icon: Watch },
+          { label: 'AI Clinical Triage', to: '/ai-triage', icon: Sparkles },
           { label: 'Audit Trail', to: '/audit-logs', icon: FileText },
-          { label: 'System & Governance', to: '/settings', icon: Settings },
+          { label: 'System Governance', to: '/settings', icon: Settings },
         ];
     }
   };
 
   const navItems = getNavItems();
 
+  const getRoleDisplayName = () => {
+    switch (user?.role) {
+      case 'ADMIN':
+        return 'System Admin';
+      case 'HOSPITAL_STAFF':
+        return 'Hospital Staff';
+      case 'RESPONDER':
+        return 'First Responder';
+      case 'CITIZEN':
+      default:
+        return 'Citizen';
+    }
+  };
+
   return (
-    <aside className="w-64 border-r border-slate-800 bg-slate-950/60 backdrop-blur-md flex flex-col shrink-0 select-none">
-      {/* Role Badge Indicator */}
-      <div className="px-5 pt-4 pb-2">
-        <div className="flex items-center justify-between">
-          <p className="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
-            Navigation Mode
-          </p>
-          <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[9px] font-black text-slate-300">
-            {user?.role || 'SYSTEM'}
-          </span>
-        </div>
+    <aside
+      className={`border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col shrink-0 select-none transition-all duration-300 z-20 ${
+        isCollapsed ? 'w-20' : 'w-64'
+      }`}
+    >
+      {/* Brand & Collapse Header */}
+      <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        {!isCollapsed ? (
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-xs">
+              <Activity className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-xs font-bold tracking-tight text-slate-900 dark:text-white uppercase truncate">
+                Emergency Alert
+              </h2>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate">
+                Hospital Assistance System
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-xs">
+            <Activity className="h-5 w-5" />
+          </div>
+        )}
+
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
+        >
+          {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </button>
       </div>
 
+      {/* Role Badge Indicator */}
+      {!isCollapsed && (
+        <div className="px-4 py-2.5 bg-slate-50/80 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800/80">
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[10px]">
+              Active Role
+            </span>
+            <span className="rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800/50 px-2 py-0.5 font-bold text-blue-700 dark:text-blue-300 text-[10px]">
+              {getRoleDisplayName()}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Navigation links */}
-      <nav className="flex-1 space-y-1.5 p-4 overflow-y-auto">
+      <nav className="flex-1 space-y-1 p-3 overflow-y-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
           return (
             <NavLink
               key={item.to + item.label}
               to={item.to}
-              end={item.to === '/'}
+              end={item.to === '/admin' || item.to === '/hospital' || item.to === '/responder' || item.to === '/citizen'}
+              title={isCollapsed ? item.label : undefined}
               className={({ isActive }) =>
-                `flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold transition-all ${
+                `flex items-center ${
+                  isCollapsed ? 'justify-center p-3' : 'justify-between px-3 py-2.5'
+                } rounded-xl text-xs font-semibold transition-all ${
                   isActive
-                    ? 'bg-red-600/15 text-red-400 border border-red-500/30 shadow-sm'
-                    : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                    ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 font-bold border-l-4 border-blue-600 shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/70 hover:text-slate-900 dark:hover:text-slate-200'
                 }`
               }
             >
-              <div className="flex items-center gap-3">
-                <Icon className="h-4 w-4" />
-                <span>{item.label}</span>
+              <div className="flex items-center gap-3 min-w-0">
+                <Icon className="h-4 w-4 shrink-0" />
+                {!isCollapsed && <span className="truncate">{item.label}</span>}
               </div>
 
-              {item.badge !== undefined && (
+              {!isCollapsed && item.badge !== undefined && (
                 <span
                   className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-black text-white ${item.badgeColor} animate-pulse`}
                 >
@@ -141,20 +198,22 @@ export const Sidebar: React.FC = () => {
       </nav>
 
       {/* Footer Info Box */}
-      <div className="p-4 border-t border-slate-800/80 bg-slate-900/30">
-        <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
-          <div className="flex items-center gap-2">
-            <ShieldAlert className="h-4 w-4 text-emerald-400" />
-            <span className="text-xs font-bold text-white">CSP Batch 8</span>
-          </div>
-          <p className="mt-1 text-[11px] text-slate-400 leading-tight">
-            Vasireddy Venkatadri Institute of Technology (VVIT)
-          </p>
-          <div className="mt-2 text-[10px] text-slate-500">
-            Guide: Mr. G. Lakshmi Narayana · Prepared by VSK
+      {!isCollapsed && (
+        <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
+          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/60 p-3 shadow-xs">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">VVIT CSE CSP</span>
+            </div>
+            <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+              Vasireddy Venkatadri Institute of Technology
+            </p>
+            <div className="mt-2 text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+              Prepared by: <span className="text-blue-600 dark:text-blue-400 font-bold">VSK (24BQ1A054O)</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </aside>
   );
 };

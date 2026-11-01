@@ -12,6 +12,16 @@ export const authApi = {
     return response.data;
   },
 
+  sendOtp: async (phoneNumber: string): Promise<{ success: boolean; message: string; phoneNumber: string; expiresInSeconds: number; devOtp?: string }> => {
+    const response = await api.post('/auth/send-otp', { phoneNumber });
+    return response.data;
+  },
+
+  verifyOtp: async (payload: { phoneNumber: string; otp: string; fullName?: string }): Promise<AuthResponse> => {
+    const response = await api.post<AuthResponse>('/auth/verify-otp', payload);
+    return response.data;
+  },
+
   register: async (userData: Partial<User> & { password: string }): Promise<AuthResponse> => {
     const response = await api.post<AuthResponse>('/auth/register', userData);
     return response.data;

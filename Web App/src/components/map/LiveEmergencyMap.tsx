@@ -3,14 +3,14 @@ import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import L from 'leaflet';
 import type { EmergencyIncident, Hospital, Ambulance, Responder } from '../../types';
 import { useEmergencyStore } from '../../store/emergencyStore';
-import { AlertCircle, Building2, Ambulance as AmbulanceIcon, UserCheck, Layers, Radio } from 'lucide-react';
+import { AlertCircle, Building2, Ambulance as AmbulanceIcon, UserCheck, Layers } from 'lucide-react';
 
 // Custom SVG-based Leaflet markers
 const createCustomIcon = (color: string, label: string, isPulsing = false) => {
   const pulseClass = isPulsing ? 'animate-radar' : '';
   const html = `
     <div class="relative flex items-center justify-center cursor-pointer">
-      <div class="w-8 h-8 rounded-full flex items-center justify-center text-white shadow-lg font-black text-xs border-2 border-white/80 ${pulseClass}" style="background-color: ${color};">
+      <div class="w-8 h-8 rounded-full flex items-center justify-center text-white shadow-md font-black text-xs border-2 border-white ${pulseClass}" style="background-color: ${color};">
         ${label}
       </div>
     </div>
@@ -24,10 +24,10 @@ const createCustomIcon = (color: string, label: string, isPulsing = false) => {
   });
 };
 
-const emergencyIcon = createCustomIcon('#ef4444', '🚨', true);
-const hospitalIcon = createCustomIcon('#0284c7', '🏥');
-const ambulanceIcon = createCustomIcon('#f59e0b', '🚑');
-const responderIcon = createCustomIcon('#10b981', '👤');
+const emergencyIcon = createCustomIcon('#D32F2F', '🚨', true);
+const hospitalIcon = createCustomIcon('#1565C0', '🏥');
+const ambulanceIcon = createCustomIcon('#D97706', '🚑');
+const responderIcon = createCustomIcon('#16865C', '👤');
 
 interface LiveEmergencyMapProps {
   incidents: EmergencyIncident[];
@@ -54,27 +54,29 @@ export const LiveEmergencyMap: React.FC<LiveEmergencyMapProps> = ({
   const defaultCenter: [number, number] = [16.3533, 80.5238]; // VVIT Campus Nambur
 
   return (
-    <div className="relative rounded-2xl overflow-hidden border border-slate-800 shadow-xl bg-slate-950">
+    <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 transition-colors">
       {/* Map Filter Controls Bar */}
-      <div className="absolute top-3 right-3 z-[1000] flex items-center gap-1.5 rounded-xl border border-slate-700/80 bg-slate-900/90 p-1.5 backdrop-blur-md text-xs shadow-lg">
+      <div className="absolute top-3 right-3 z-[1000] flex flex-wrap items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 p-1.5 backdrop-blur-md text-xs shadow-md">
         <a
           href="https://www.openstreetmap.org"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-medium bg-slate-800 text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 transition-all mr-1"
-          title="Map service powered by OpenStreetMap (https://www.openstreetmap.org)"
+          className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 transition-all mr-1"
+          title="Map service powered by OpenStreetMap"
         >
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
           OpenStreetMap
         </a>
-        <span className="px-2 text-slate-400 font-semibold flex items-center gap-1">
+        <span className="px-2 text-slate-500 dark:text-slate-400 font-semibold flex items-center gap-1">
           <Layers className="h-3.5 w-3.5" />
           Layers:
         </span>
         <button
           onClick={() => setShowHospitals(!showHospitals)}
-          className={`flex items-center gap-1 rounded-lg px-2.5 py-1 font-medium transition-all ${
-            showHospitals ? 'bg-sky-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
+          className={`flex items-center gap-1 rounded-lg px-2.5 py-1 font-semibold transition-all ${
+            showHospitals
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900'
           }`}
         >
           <Building2 className="h-3 w-3" />
@@ -82,8 +84,10 @@ export const LiveEmergencyMap: React.FC<LiveEmergencyMapProps> = ({
         </button>
         <button
           onClick={() => setShowAmbulances(!showAmbulances)}
-          className={`flex items-center gap-1 rounded-lg px-2.5 py-1 font-medium transition-all ${
-            showAmbulances ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
+          className={`flex items-center gap-1 rounded-lg px-2.5 py-1 font-semibold transition-all ${
+            showAmbulances
+              ? 'bg-amber-600 text-white shadow-xs'
+              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900'
           }`}
         >
           <AmbulanceIcon className="h-3 w-3" />
@@ -91,8 +95,10 @@ export const LiveEmergencyMap: React.FC<LiveEmergencyMapProps> = ({
         </button>
         <button
           onClick={() => setShowResponders(!showResponders)}
-          className={`flex items-center gap-1 rounded-lg px-2.5 py-1 font-medium transition-all ${
-            showResponders ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
+          className={`flex items-center gap-1 rounded-lg px-2.5 py-1 font-semibold transition-all ${
+            showResponders
+              ? 'bg-emerald-600 text-white shadow-xs'
+              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900'
           }`}
         >
           <UserCheck className="h-3 w-3" />
@@ -108,7 +114,7 @@ export const LiveEmergencyMap: React.FC<LiveEmergencyMapProps> = ({
           scrollWheelZoom={true}
           style={{ height: '100%', width: '100%' }}
         >
-          {/* OpenStreetMap tile layer (100% free, no API key required) */}
+          {/* OpenStreetMap tile layer */}
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -124,8 +130,8 @@ export const LiveEmergencyMap: React.FC<LiveEmergencyMapProps> = ({
                   center={[incident.latitude, incident.longitude]}
                   radius={500}
                   pathOptions={{
-                    color: '#ef4444',
-                    fillColor: '#ef4444',
+                    color: '#D32F2F',
+                    fillColor: '#D32F2F',
                     fillOpacity: 0.15,
                     weight: 1.5,
                     dashArray: '4, 4',
@@ -138,48 +144,34 @@ export const LiveEmergencyMap: React.FC<LiveEmergencyMapProps> = ({
                   eventHandlers={{
                     click: () => {
                       if (onSelectIncident) onSelectIncident(incident);
+                      else setSelectedIncident(incident);
                     },
                   }}
                 >
                   <Popup>
-                    <div className="p-1 space-y-2 min-w-[220px]">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-red-400 text-xs flex items-center gap-1">
+                    <div className="p-1 space-y-2 text-xs">
+                      <div className="flex items-center justify-between border-b pb-1.5 gap-2">
+                        <span className="font-bold text-red-600 uppercase flex items-center gap-1">
                           <AlertCircle className="h-3.5 w-3.5" />
-                          EMERGENCY ALERT
-                        </span>
-                        <span className="text-[10px] font-mono text-slate-400">
                           {incident.source}
                         </span>
+                        <span className="text-[10px] font-mono text-slate-500">
+                          {new Date(incident.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
                       </div>
-                      <p className="text-xs font-semibold text-white">
-                        {incident.patientName || 'Emergency Victim'}
-                      </p>
-                      <p className="text-[11px] text-slate-300">
-                        {incident.detectionReason || 'Critical incident reported'}
-                      </p>
-                      <div className="text-[10px] text-slate-400 space-y-0.5 border-t border-slate-700/60 pt-1">
-                        <div>Blood Group: <strong className="text-white">{incident.bloodGroup || 'O+'}</strong></div>
-                        <div>Status: <strong className="text-amber-400">{incident.status}</strong></div>
-                        <div>Coordinates: {incident.latitude.toFixed(4)}, {incident.longitude.toFixed(4)}</div>
+                      <p className="font-semibold text-slate-800 dark:text-slate-100">{incident.detectionReason}</p>
+                      <div className="text-[11px] text-slate-600 dark:text-slate-300">
+                        Status: <strong className="text-red-600 dark:text-red-400">{incident.status}</strong>
                       </div>
                       <button
                         onClick={() => {
-                          setSelectedIncident(incident);
                           if (onSelectIncident) onSelectIncident(incident);
+                          else setSelectedIncident(incident);
                         }}
-                        className="w-full mt-2 rounded bg-red-600 hover:bg-red-500 text-white font-bold text-[11px] py-1 transition-colors"
+                        className="w-full mt-2 rounded bg-red-600 py-1 text-center font-bold text-white hover:bg-red-700"
                       >
-                        Inspect & Coordinate
+                        Open Incident Dossier
                       </button>
-                      <a
-                        href={`https://www.openstreetmap.org/?mlat=${incident.latitude}&mlon=${incident.longitude}#map=16/${incident.latitude}/${incident.longitude}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block text-center w-full mt-1.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 font-semibold text-[10px] py-1 transition-colors"
-                      >
-                        View on OpenStreetMap ↗
-                      </a>
                     </div>
                   </Popup>
                 </Marker>
@@ -190,34 +182,23 @@ export const LiveEmergencyMap: React.FC<LiveEmergencyMapProps> = ({
           {showHospitals &&
             hospitals
               .filter((h) => h.latitude && h.longitude)
-              .map((h) => (
-                <Marker key={h.id} position={[h.latitude, h.longitude]} icon={hospitalIcon}>
+              .map((hospital) => (
+                <Marker
+                  key={hospital.id}
+                  position={[hospital.latitude, hospital.longitude]}
+                  icon={hospitalIcon}
+                >
                   <Popup>
-                    <div className="p-1 space-y-1.5 min-w-[200px]">
-                      <div className="font-bold text-sky-400 text-xs flex items-center gap-1">
+                    <div className="p-1 space-y-1.5 text-xs">
+                      <h4 className="font-bold text-blue-700 dark:text-blue-400 flex items-center gap-1">
                         <Building2 className="h-3.5 w-3.5" />
-                        {h.name}
+                        {hospital.name}
+                      </h4>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-300">{hospital.address}</p>
+                      <div className="flex justify-between text-[11px] font-semibold pt-1 border-t">
+                        <span className="text-sky-700">ICUs: {hospital.availableIcus}</span>
+                        <span className="text-amber-700">Ambulances: {hospital.availableAmbulances}</span>
                       </div>
-                      <p className="text-[11px] text-slate-300">{h.address}</p>
-                      <div className="grid grid-cols-2 gap-2 text-[10px] bg-slate-800/80 p-1.5 rounded border border-slate-700">
-                        <div>
-                          <span className="text-slate-400">ICU Beds:</span>{' '}
-                          <strong className="text-emerald-400">{h.availableIcus}</strong>
-                        </div>
-                        <div>
-                          <span className="text-slate-400">Ambulances:</span>{' '}
-                          <strong className="text-amber-400">{h.availableAmbulances}</strong>
-                        </div>
-                      </div>
-                      <div className="text-[10px] text-slate-400">Tel: {h.phoneNumber}</div>
-                      <a
-                        href={`https://www.openstreetmap.org/?mlat=${h.latitude}&mlon=${h.longitude}#map=16/${h.latitude}/${h.longitude}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block text-center w-full mt-2 rounded bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 font-semibold text-[10px] py-1 transition-colors"
-                      >
-                        View on OpenStreetMap ↗
-                      </a>
                     </div>
                   </Popup>
                 </Marker>
@@ -226,46 +207,23 @@ export const LiveEmergencyMap: React.FC<LiveEmergencyMapProps> = ({
           {/* Ambulances */}
           {showAmbulances &&
             ambulances
-              .filter((a) => a.latitude !== undefined && a.longitude !== undefined)
-              .map((a) => (
-                <Marker key={a.id} position={[a.latitude!, a.longitude!]} icon={ambulanceIcon}>
+              .filter((a) => a.latitude && a.longitude)
+              .map((ambulance) => (
+                <Marker
+                  key={ambulance.id}
+                  position={[ambulance.latitude!, ambulance.longitude!]}
+                  icon={ambulanceIcon}
+                >
                   <Popup>
-                    <div className="p-1 space-y-1.5 min-w-[190px]">
-                      <div className="font-bold text-amber-400 text-xs flex items-center gap-1">
+                    <div className="p-1 space-y-1 text-xs">
+                      <h4 className="font-bold text-amber-700 flex items-center gap-1">
                         <AmbulanceIcon className="h-3.5 w-3.5" />
-                        {a.vehicleNumber} ({a.vehicleType})
-                      </div>
-                      <p className="text-[11px] text-slate-200">
-                        Driver: <strong>{a.driverName}</strong>
+                        {ambulance.vehicleNumber} ({ambulance.vehicleType})
+                      </h4>
+                      <p className="text-[11px] text-slate-600">
+                        Status: <strong className="text-amber-600">{ambulance.status}</strong>
                       </p>
-                      <p className="text-[10px] text-slate-400">Phone: {a.driverPhone}</p>
-                      <div className="text-[10px]">
-                        Status:{' '}
-                        <strong
-                          className={
-                            a.status === 'AVAILABLE'
-                              ? 'text-emerald-400'
-                              : a.status === 'ASSIGNED'
-                              ? 'text-amber-400'
-                              : 'text-rose-400'
-                          }
-                        >
-                          {a.status}
-                        </strong>
-                      </div>
-                      {a.equipment && (
-                        <p className="text-[10px] text-slate-400 border-t border-slate-700 pt-1">
-                          Equipment: {a.equipment}
-                        </p>
-                      )}
-                      <a
-                        href={`https://www.openstreetmap.org/?mlat=${a.latitude}&mlon=${a.longitude}#map=16/${a.latitude}/${a.longitude}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block text-center w-full mt-2 rounded bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 font-semibold text-[10px] py-1 transition-colors"
-                      >
-                        View on OpenStreetMap ↗
-                      </a>
+                      <p className="text-[10px] text-slate-500">Driver: {ambulance.driverName}</p>
                     </div>
                   </Popup>
                 </Marker>
@@ -274,31 +232,23 @@ export const LiveEmergencyMap: React.FC<LiveEmergencyMapProps> = ({
           {/* Responders */}
           {showResponders &&
             responders
-              .filter((r) => r.latitude !== undefined && r.longitude !== undefined)
-              .map((r) => (
-                <Marker key={r.id} position={[r.latitude!, r.longitude!]} icon={responderIcon}>
+              .filter((r) => r.latitude && r.longitude)
+              .map((responder) => (
+                <Marker
+                  key={responder.id}
+                  position={[responder.latitude!, responder.longitude!]}
+                  icon={responderIcon}
+                >
                   <Popup>
-                    <div className="p-1 space-y-1.5 min-w-[190px]">
-                      <div className="font-bold text-emerald-400 text-xs flex items-center gap-1">
+                    <div className="p-1 space-y-1 text-xs">
+                      <h4 className="font-bold text-emerald-700 flex items-center gap-1">
                         <UserCheck className="h-3.5 w-3.5" />
-                        {r.name}
+                        {responder.name}
+                      </h4>
+                      <p className="text-[11px] text-slate-600">{responder.specialization || 'Community Volunteer'}</p>
+                      <div className="text-[10px] text-emerald-600 font-semibold">
+                        {responder.isAvailable ? '✓ Available for Dispatch' : 'Occupied'}
                       </div>
-                      <p className="text-[11px] text-slate-200">{r.specialization}</p>
-                      <p className="text-[10px] text-slate-400">Skills: {r.skills}</p>
-                      <div className="text-[10px]">
-                        Availability:{' '}
-                        <strong className={r.isAvailable ? 'text-emerald-400' : 'text-slate-400'}>
-                          {r.isAvailable ? 'ON-CALL' : 'OFFLINE'}
-                        </strong>
-                      </div>
-                      <a
-                        href={`https://www.openstreetmap.org/?mlat=${r.latitude}&mlon=${r.longitude}#map=16/${r.latitude}/${r.longitude}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block text-center w-full mt-2 rounded bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 font-semibold text-[10px] py-1 transition-colors"
-                      >
-                        View on OpenStreetMap ↗
-                      </a>
                     </div>
                   </Popup>
                 </Marker>
