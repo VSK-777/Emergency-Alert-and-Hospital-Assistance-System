@@ -5,13 +5,25 @@ import type { EmergencyIncident, Hospital, Ambulance, Responder } from '../../ty
 import { useEmergencyStore } from '../../store/emergencyStore';
 import { AlertCircle, Building2, Ambulance as AmbulanceIcon, UserCheck, Layers } from 'lucide-react';
 
-// Custom SVG-based Leaflet markers
-const createCustomIcon = (color: string, label: string, isPulsing = false) => {
-  const pulseClass = isPulsing ? 'animate-radar' : '';
+// High-Precision Vector Leaflet Markers (No Emojis)
+const createVectorIcon = (
+  color: string,
+  svgInner: string,
+  isPulsing = false,
+  isRoundedSquare = false
+) => {
+  const pulseHtml = isPulsing
+    ? `<span class="absolute -inset-1 rounded-full opacity-75 animate-ping" style="background-color: ${color};"></span>`
+    : '';
+  const shapeClass = isRoundedSquare ? 'rounded-xl' : 'rounded-full';
+
   const html = `
     <div class="relative flex items-center justify-center cursor-pointer">
-      <div class="w-8 h-8 rounded-full flex items-center justify-center text-white shadow-md font-black text-xs border-2 border-white ${pulseClass}" style="background-color: ${color};">
-        ${label}
+      ${pulseHtml}
+      <div class="relative w-8 h-8 ${shapeClass} flex items-center justify-center text-white shadow-lg border-2 border-white" style="background-color: ${color};">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          ${svgInner}
+        </svg>
       </div>
     </div>
   `;
@@ -24,10 +36,35 @@ const createCustomIcon = (color: string, label: string, isPulsing = false) => {
   });
 };
 
-const emergencyIcon = createCustomIcon('#D32F2F', '🚨', true);
-const hospitalIcon = createCustomIcon('#1565C0', '🏥');
-const ambulanceIcon = createCustomIcon('#D97706', '🚑');
-const responderIcon = createCustomIcon('#16865C', '👤');
+// Emergency Incident: Dynamic Beacon Alert with Location Ping
+const emergencyIcon = createVectorIcon(
+  '#DC2626',
+  `<circle cx="12" cy="12" r="3" fill="currentColor"/><path d="M12 2v3M12 19v3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M2 12h3M19 12h3M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12"/>`,
+  true
+);
+
+// Hospital Network: Clinical Cross Facility
+const hospitalIcon = createVectorIcon(
+  '#2563EB',
+  `<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 7v10M7 12h10" stroke-width="2.6"/>`,
+  false,
+  true
+);
+
+// Ambulance Fleet: High-Speed Medical Transit Cruiser
+const ambulanceIcon = createVectorIcon(
+  '#D97706',
+  `<path d="M10 17h4V5H2v12h3"/><path d="M18 17h1a2 2 0 0 0 2-2v-3.5L18.5 7H14v10h1"/><circle cx="7.5" cy="17.5" r="2" fill="currentColor"/><circle cx="16.5" cy="17.5" r="2" fill="currentColor"/><path d="M7 10h4M9 8v4" stroke-width="2.4"/>`,
+  false,
+  true
+);
+
+// First Responder: Guardian Shield Pulse Beacon
+const responderIcon = createVectorIcon(
+  '#059669',
+  `<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/>`,
+  false
+);
 
 interface LiveEmergencyMapProps {
   incidents: EmergencyIncident[];
@@ -246,8 +283,8 @@ export const LiveEmergencyMap: React.FC<LiveEmergencyMapProps> = ({
                         {responder.name}
                       </h4>
                       <p className="text-[11px] text-slate-600">{responder.specialization || 'Community Volunteer'}</p>
-                      <div className="text-[10px] text-emerald-600 font-semibold">
-                        {responder.isAvailable ? '✓ Available for Dispatch' : 'Occupied'}
+                      <div className={`text-[10px] font-semibold ${responder.isAvailable ? 'text-emerald-600' : 'text-slate-500'}`}>
+                        {responder.isAvailable ? 'Available for Dispatch' : 'Occupied'}
                       </div>
                     </div>
                   </Popup>
