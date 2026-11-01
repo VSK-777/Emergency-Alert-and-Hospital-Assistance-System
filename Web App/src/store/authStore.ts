@@ -29,6 +29,20 @@ const getStoredUser = (): User | null => {
   }
 };
 
+const extractAuthErrorMessage = (err: any, defaultMsg: string): string => {
+  const status = err.response?.status;
+  if (status === 502 || status === 503 || status === 504) {
+    return `Backend service is temporarily restarting or deploying (HTTP ${status} Bad Gateway). Please wait ~30 seconds and retry.`;
+  }
+  if (!err.response) {
+    return 'Unable to reach backend server. Please verify your connection or wait for cloud service to finish starting.';
+  }
+  if (err.response?.data?.message) {
+    return err.response.data.message;
+  }
+  return defaultMsg;
+};
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: getStoredUser(),
   token: localStorage.getItem('vvit_csp_token'),
@@ -67,7 +81,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error: null,
       });
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Invalid email or password credentials.';
+      const msg = extractAuthErrorMessage(err, 'Invalid email or password credentials.');
       set({ error: msg, isLoading: false, isAuthenticated: false });
       throw new Error(msg);
     }
@@ -108,7 +122,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error: null,
       });
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Phone verification failed.';
+      const msg = extractAuthErrorMessage(err, 'Phone verification failed.');
       set({ error: msg, isLoading: false, isAuthenticated: false });
       throw new Error(msg);
     }
@@ -121,7 +135,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ isLoading: false });
       return { success: res.success, message: res.message, devOtp: res.devOtp };
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Failed to dispatch OTP.';
+      const msg = extractAuthErrorMessage(err, 'Failed to dispatch OTP.');
       set({ error: msg, isLoading: false });
       throw new Error(msg);
     }
@@ -162,7 +176,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error: null,
       });
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Invalid OTP code.';
+      const msg = extractAuthErrorMessage(err, 'Invalid OTP code.');
       set({ error: msg, isLoading: false, isAuthenticated: false });
       throw new Error(msg);
     }
@@ -202,7 +216,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         error: null,
       });
     } catch (err: any) {
-      let msg = err.response?.data?.message || 'Registration failed.';
+      let msg = extractAuthErrorMessage(err, 'Registration failed.');
       if (err.response?.data?.errors && typeof err.response.data.errors === 'object') {
         const fieldErrors = Object.entries(err.response.data.errors)
           .map(([field, errText]) => `${field}: ${errText}`)
