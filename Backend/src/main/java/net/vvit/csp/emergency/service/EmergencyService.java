@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -244,7 +245,15 @@ public class EmergencyService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<IncidentResponse> listActiveIncidentsForUser(User user) {
+        if (user.getRole() == UserRole.CITIZEN) {
+            return incidentRepo.findByUserIdOrderByCreatedAtDesc(user.getId()).stream()
+                    .filter(i -> i.getStatus() != IncidentStatus.RESOLVED && i.getStatus() != IncidentStatus.CANCELLED)
+                    .map(IncidentResponse::fromEntity)
+                    .toList();
+        }
+
         List<EmergencyIncident> allActive = incidentRepo.findAllByOrderByCreatedAtDesc().stream()
                 .filter(i -> i.getStatus() != IncidentStatus.RESOLVED && i.getStatus() != IncidentStatus.CANCELLED)
                 .toList();
@@ -270,11 +279,7 @@ public class EmergencyService {
                     .toList();
         }
 
-        // CITIZEN: STRICT PATIENT ISOLATION
-        return allActive.stream()
-                .filter(i -> i.getUser() != null && i.getUser().getId().equals(user.getId()))
-                .map(IncidentResponse::fromEntity)
-                .toList();
+        return Collections.emptyList();
     }
 
     @Transactional
