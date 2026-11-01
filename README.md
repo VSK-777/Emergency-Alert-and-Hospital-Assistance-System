@@ -81,7 +81,7 @@ emergency-alert-and-hospital-assistance-system/
 ### 3. Java Spring Boot Backend (Java 21 LTS)
 - **Stateless REST API:** Versioned endpoints under `/api/v1` documented via Swagger UI (`/swagger-ui.html`).
 - **Security:** Spring Security with BCrypt hashing and stateless JWT bearer token authentication.
-- **Dual Database Profiles:** Fast, zero-config in-memory H2 for development/testing (`SPRING_PROFILES_ACTIVE=dev`) and native MySQL 9.5 for production (`SPRING_PROFILES_ACTIVE=mysql`).
+- **Relational Persistence & Migration:** Supabase PostgreSQL 17 managed via Flyway 10.x versioned migrations (`SPRING_PROFILES_ACTIVE=postgres`) with strict Hibernate validation (`ddl-auto=validate`), plus in-memory H2 for local testing (`SPRING_PROFILES_ACTIVE=dev`).
 - **Proximity Engine:** Haversine formula calculation returning nearest trauma facilities (AIIMS Mangalagiri, Manipal Hospital Vijayawada, GGH Guntur).
 - **Notification Fanout Tracker:** Audit logging for hospital trauma room alerts, SMS guardian notices, and FCM responder alerts.
 - **AI Emergency Triage:** Google Gemini 1.5 Flash client with deterministic, clinical rule-based emergency protocol fallback.
@@ -94,7 +94,7 @@ All components were built and verified with automated test suites in the local W
 
 | Module | Test Suite | Tests Run | Passed | Failed | Status |
 |--------|------------|-----------|--------|--------|--------|
-| **Backend** | `EmergencyBackendApplicationTests` | 6 | 6 | 0 | **VERIFIED** |
+| **Backend** | `FlywayMigrationAndSchemaValidationTest`, `JwtAndSecurityConfigTest`, `EmergencyWorkflowIntegrationTest` | 5 | 5 | 0 | **VERIFIED** |
 | **Mobile App** | `emergency_app_test.dart` | 5 | 5 | 0 | **VERIFIED** |
 | **Smartwatch** | `FallDetectorTest.kt` | 3 | 3 | 0 | **VERIFIED** |
 

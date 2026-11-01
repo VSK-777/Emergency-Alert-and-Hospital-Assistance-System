@@ -6,15 +6,23 @@ services:
     dockerfilePath: ./Backend/Dockerfile
     dockerContext: ./Backend
     plan: free
-    region: oregon
+    region: singapore
     envVars:
       - key: PORT
         value: 8080
       - key: SPRING_PROFILES_ACTIVE
-        value: dev
+        value: postgres
+      - key: SPRING_DATASOURCE_URL
+        sync: false
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
       - key: APP_JWT_SECRET
-        generateValue: true
+        sync: false
       - key: APP_JWT_EXPIRATION_MS
         value: 86400000
+      - key: APP_CORS_ALLOWED_ORIGINS
+        value: https://emergency-alert-and-hospital-assistance-system.vercel.app
       - key: GEMINI_API_KEY
         sync: false

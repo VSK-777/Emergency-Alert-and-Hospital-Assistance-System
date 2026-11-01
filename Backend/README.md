@@ -1,98 +1,137 @@
-# Emergency Alert and Hospital Assistance System - Java Spring Boot Backend
+# Emergency Alert and Hospital Assistance System — Java Spring Boot Backend
 
 **Project:** B.Tech Community Service Project (CSP)  
 **Institution:** Vasireddy Venkatadri Institute of Technology (VVIT)  
 **Department:** Computer Science and Engineering (Batch 8)  
 **Prepared by:** VSK (Reg. No: 24BQ1A054O)  
-**Project Guide:** Mr. G. Lakshmi Narayana (Assist. Prof)
+**Project Guide:** Mr. G. Lakshmi Narayana (Assist. Prof)  
+
+**Live Production API:** [https://emergency-alert-and-hospital-assistance.onrender.com](https://emergency-alert-and-hospital-assistance.onrender.com)  
+**Swagger UI:** [https://emergency-alert-and-hospital-assistance.onrender.com/swagger-ui.html](https://emergency-alert-and-hospital-assistance.onrender.com/swagger-ui.html)  
 
 ---
 
-**Live Render API:** [https://emergency-alert-and-hospital-assistance.onrender.com](https://emergency-alert-and-hospital-assistance.onrender.com)  
+## 1. Database & Persistence Architecture
 
-## Architecture & Technology Stack
-- **Framework:** Spring Boot 3.3.4 (Java 21 LTS)
-- **Security:** Spring Security + Stateless JWT Bearer Authentication (BCrypt password hashing)
-- **Persistence:** Spring Data JPA with dual-profile support:
-  - `dev` profile: In-memory H2 in MySQL compatibility mode with pre-seeded demo users, hospitals, and responder records.
-  - `mysql` profile: Native MySQL 9.5 integration with schema auto-updates.
-- **RESTful Endpoints:** Versioned `/api/v1` architecture.
-- **API Documentation:** OpenAPI 3.0 / Swagger UI (`/swagger-ui.html`).
-- **AI Integration:** Google Gemini 1.5 Flash client with deterministic, clinical rule-based emergency protocol fallback.
-- **Offline Synchronization:** Idempotent incident processing with deduplication tracking.
+The backend utilizes **Supabase PostgreSQL** as its production relational database, managed exclusively through version-controlled **Flyway** database migrations.
+
+```
+Smartwatch (Wear OS) ──> Mobile App (Flutter) ──> Spring Boot REST API ──> Supabase PostgreSQL (Port 5432)
+                                                        ▲
+React Web App (Vite SaaS) ──────────────────────────────┘
+```
+
+- **Database:** Supabase PostgreSQL 17.11 (Region: Seoul `ap-northeast-2`)
+- **Connection Mode:** Supabase Session Pooler via JDBC (Port `5432` with `sslmode=require`)
+- **Schema Management:** Flyway 10.x versioned migrations (`classpath:db/migration`)
+- **Hibernate DDL Policy:** `spring.jpa.hibernate.ddl-auto=validate` (Strict validation against Flyway migrations)
+- **Security Boundary:** The Spring Boot backend is the sole authority communicating with PostgreSQL. Neither the browser nor mobile apps hold database credentials.
 
 ---
 
-## Configuration & Environment Variables
+## 2. Spring Profiles
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PORT` | HTTP Server port | `8080` |
-| `SPRING_PROFILES_ACTIVE` | Active profile (`dev` or `mysql`) | `dev` |
-| `SPRING_DATASOURCE_URL` | MySQL JDBC connection string | `jdbc:mysql://localhost:3306/emergency_db` |
-| `SPRING_DATASOURCE_USERNAME` | MySQL database user | `root` |
-| `SPRING_DATASOURCE_PASSWORD` | MySQL database password | ` ` |
-| `APP_JWT_SECRET` | 256-bit Base64 secret key for JWT signing | Preconfigured test secret |
-| `APP_JWT_EXPIRATION_MS` | JWT expiration duration in milliseconds | `86400000` (24h) |
-| `GEMINI_API_KEY` | Optional Google Gemini API key for online AI triage | None (defaults to rule-based fallback) |
+| Profile | Purpose | Database | Schema Management | Data Seeding |
+| :--- | :--- | :--- | :--- | :--- |
+| **`postgres`** | **Production & Staging** | Supabase PostgreSQL | Flyway (`ddl-auto=validate`) | **None** (Clean schema, voluntary user registration) |
+| **`dev`** | **Local Development** | In-Memory H2 | Auto-create with seeds | `DataInitializer.java` (Demonstration records for testing) |
+| **`test`** | **Automated CI/CD** | H2 (PostgreSQL mode) | Flyway (`ddl-auto=validate`) | Isolated transactional test cases |
 
 ---
 
-## How to Run & Test
+## 3. Required Environment Variables
 
-### Run in Development Mode (Zero-config in-memory H2)
-```bash
-mvn spring-boot:run
-```
-Swagger UI will be immediately available at:
-`http://localhost:8080/swagger-ui.html`
+For production deployment on Render, configure the following environment variables:
 
-H2 Database Console:
-`http://localhost:8080/h2-console` (JDBC URL: `jdbc:h2:mem:emergency_db`, User: `sa`, Password: empty)
+| Variable | Description | Example / Format |
+| :--- | :--- | :--- |
+| `SPRING_PROFILES_ACTIVE` | Active Spring profile | `postgres` |
+| `SPRING_DATASOURCE_URL` | Supabase Session Pooler JDBC URL | `jdbc:postgresql://<POOLER_HOST>:5432/postgres?sslmode=require` |
+| `SPRING_DATASOURCE_USERNAME` | Supabase Session Pooler Username | `postgres.<PROJECT_REF>` |
+| `SPRING_DATASOURCE_PASSWORD` | Supabase Database Password | *(Secure database password)* |
+| `APP_JWT_SECRET` | 256-bit Base64-encoded secret key | *(Base64 string generated via `openssl rand -base64 32`)* |
+| `APP_JWT_EXPIRATION_MS` | JWT expiration duration in ms | `86400000` (24 hours) |
+| `APP_CORS_ALLOWED_ORIGINS` | Comma-separated frontend origins | `https://emergency-alert-and-hospital-assistance-system.vercel.app` |
+| `PORT` | Web server listening port | `8080` |
+| `GEMINI_API_KEY` | Google Gemini AI API key | *(Optional API Key for Online Clinical Triage)* |
 
-### Run with Local MySQL 9.5
-```bash
-$env:SPRING_PROFILES_ACTIVE="mysql"
-$env:SPRING_DATASOURCE_PASSWORD="your_password"
-mvn spring-boot:run
-```
-
-### Run Automated Unit and Integration Tests
-```bash
-mvn test
-```
-
-### Package Production JAR
-```bash
-mvn clean package -DskipTests
-```
-Output artifact: `target/emergency-assistance-backend-1.0.0-SNAPSHOT.jar`
+> **Security Rule:** Never commit real database passwords or JWT secrets to Git. Placeholders only are kept in `.env.example`.
 
 ---
 
-## REST Endpoints Overview
+## 4. Flyway Database Migrations
 
-- **Auth:**
-  - `POST /api/v1/auth/register` — Citizen/responder registration
-  - `POST /api/v1/auth/login` — JWT login
-  - `GET /api/v1/auth/me` — Current authenticated profile
-- **Emergencies:**
-  - `POST /api/v1/emergencies` — Create/trigger emergency incident
-  - `GET /api/v1/emergencies/{id}` — Retrieve emergency incident
-  - `GET /api/v1/emergencies` — User's incident history
-  - `GET /api/v1/emergencies/all` — Hospital/Responder incident feed
-  - `PATCH /api/v1/emergencies/{id}/status` — Status lifecycle (DISPATCHED, EN_ROUTE, ARRIVED, RESOLVED)
-  - `POST /api/v1/emergencies/{id}/cancel` — False-alarm cancellation
-- **Hospitals & Responders:**
-  - `GET /api/v1/hospitals?latitude=&longitude=` — Proximity-sorted hospital discovery
-  - `GET /api/v1/responders?latitude=&longitude=` — Proximity-sorted active responders
-  - `PUT /api/v1/responders/availability` — Toggle responder on-duty state
-- **Offline Sync:**
-  - `POST /api/v1/sync` — Batch incident sync with idempotency keys
-- **Medical Expenses:**
-  - `GET /api/v1/medical-expenses/incident/{incidentId}` — Incident cost log
-  - `POST /api/v1/medical-expenses` — Add medical/ambulance expense
-- **AI Assistance:**
-  - `POST /api/v1/ai/triage` — Emergency triage assessment & hospital prep checklist
-- **Notifications:**
-  - `GET /api/v1/notifications/incident/{incidentId}` — Delivery and acknowledgement audit logs
+Database schema evolution is maintained in `src/main/resources/db/migration/`:
+
+- `V1__create_initial_schema.sql` — Creates the 12 normalized relational tables:
+  1. `users`
+  2. `hospitals`
+  3. `responders`
+  4. `user_devices`
+  5. `emergency_contacts`
+  6. `emergency_incidents`
+  7. `ambulances`
+  8. `detection_events`
+  9. `notification_attempts`
+  10. `medical_expenses`
+  11. `synchronization_records`
+  12. `audit_logs`
+- `V2__create_indexes_and_constraints.sql` — Creates foreign keys, cascade rules, and query indexes on geospatial, user, status, and audit lookup fields.
+
+To apply new schema changes, always add sequential version files (e.g. `V3__description.sql`). Never edit already-applied migrations.
+
+---
+
+## 5. Automated Testing & Verification
+
+Run the automated test suite locally:
+
+```bash
+cd Backend
+mvn clean test
+```
+
+### Verified Test Suites:
+1. `FlywayMigrationAndSchemaValidationTest`:
+   - Verifies Flyway executes migration scripts cleanly.
+   - Verifies Hibernate `ddl-auto=validate` validates all 12 JPA entities with zero discrepancies.
+   - Tests entity CRUD, foreign key cascading, and decimal precision (`NUMERIC(10,2)` for medical expenses).
+2. `JwtAndSecurityConfigTest`:
+   - Verifies JWT token generation, role claims, subject claims, and expiration.
+   - Verifies BCrypt password hashing.
+3. `EmergencyWorkflowIntegrationTest`:
+   - Verifies citizen registration, nearby hospital discovery, incident dispatching, and status retrieval.
+
+---
+
+## 6. Deployment Procedure (Render)
+
+1. Open Render Dashboard: Service `emergency-alert-and-hospital-assistance-backend` (Region: Singapore).
+2. Set Environment Variables:
+   - `SPRING_PROFILES_ACTIVE`: `postgres`
+   - `SPRING_DATASOURCE_URL`: `jdbc:postgresql://<SESSION_POOLER_HOST>:5432/postgres?sslmode=require`
+   - `SPRING_DATASOURCE_USERNAME`: `<SESSION_POOLER_USERNAME>`
+   - `SPRING_DATASOURCE_PASSWORD`: `<DATABASE_PASSWORD>`
+   - `APP_JWT_SECRET`: `<STRONG_RANDOM_SECRET>`
+   - `APP_JWT_EXPIRATION_MS`: `86400000`
+   - `APP_CORS_ALLOWED_ORIGINS`: `https://emergency-alert-and-hospital-assistance-system.vercel.app`
+3. Trigger Manual Deploy with Clear Build Cache from branch `main`.
+4. Monitor deployment logs for:
+   - `Migrating schema "public" to version "1 - create initial schema"`
+   - `Migrating schema "public" to version "2 - create indexes and constraints"`
+   - `Started EmergencyAssistanceApplication in X.XXX seconds`
+
+---
+
+## 7. Rollback & Disaster Recovery Plan
+
+1. **Pre-Cutover Backup:** Prior to cutover, execute a full PostgreSQL logical dump:
+   ```bash
+   pg_dump -h <POOLER_HOST> -p 5432 -U <USERNAME> -d postgres -F c -b -v -f supabase_pre_migration_backup.dump
+   ```
+2. **Restoration Procedure:** If a rollback is necessitated:
+   ```bash
+   pg_restore -h <POOLER_HOST> -p 5432 -U <USERNAME> -d postgres -v -c supabase_pre_migration_backup.dump
+   ```
+3. **Additive Schema Rule:** Never write destructive down-migrations. If schema rollback is required, apply a new forward migration (e.g. `V3__revert_...sql`).
+4. **Data Preservation:** In the event of service degradation, keep PostgreSQL running and review Render logs. Do not switch back to in-memory H2 as H2 will lose live production citizen records.
