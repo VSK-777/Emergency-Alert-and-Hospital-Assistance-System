@@ -60,13 +60,16 @@ public class DataInitializer implements CommandLineRunner {
         userRepo.findByEmail("patient.vsk@vvit.net").ifPresent(user -> {
             boolean changed = false;
             if (!"Sai Krishna".equals(user.getFullName())) { user.setFullName("Sai Krishna"); changed = true; }
-            if (!"+919490500730".equals(user.getPhoneNumber())) { user.setPhoneNumber("+919490500730"); changed = true; }
+            if (!"+919490500730".equals(user.getPhoneNumber()) && !"9490500730".equals(user.getPhoneNumber())) {
+                user.setPhoneNumber("9490500730");
+                changed = true;
+            }
             if (user.getBloodGroup() != null) { user.setBloodGroup(null); changed = true; }
             if (user.getAllergies() != null) { user.setAllergies(null); changed = true; }
             if (user.getMedicalConditions() != null) { user.setMedicalConditions(null); changed = true; }
             if (changed) {
                 userRepo.save(user);
-                log.info("Synchronized exact registration details for user {}: Sai Krishna, +919490500730", user.getEmail());
+                log.info("Synchronized exact registration details for user {}: Sai Krishna, 9490500730", user.getEmail());
             }
 
             // Remove any unverified emergency contacts associated with this user
@@ -85,6 +88,27 @@ public class DataInitializer implements CommandLineRunner {
                     log.info("Marked seed incident {} as RESOLVED for user {}", inc.getId(), user.getEmail());
                 }
             }
+        });
+
+        // Ensure registered citizen account vajjhasaikrishna@gmail.com is present with exact registration details
+        userRepo.findByEmail("vajjhasaikrishna@gmail.com").ifPresentOrElse(user -> {
+            boolean changed = false;
+            if (!"Sai Krishna".equals(user.getFullName())) { user.setFullName("Sai Krishna"); changed = true; }
+            if (!"9490500730".equals(user.getPhoneNumber()) && !"+919490500730".equals(user.getPhoneNumber())) {
+                user.setPhoneNumber("9490500730");
+                changed = true;
+            }
+            if (user.getBloodGroup() != null) { user.setBloodGroup(null); changed = true; }
+            if (user.getAllergies() != null) { user.setAllergies(null); changed = true; }
+            if (user.getMedicalConditions() != null) { user.setMedicalConditions(null); changed = true; }
+            if (changed) {
+                userRepo.save(user);
+                log.info("Synchronized exact registration details for user {}: Sai Krishna, 9490500730", user.getEmail());
+            }
+        }, () -> {
+            User citizen = new User("vajjhasaikrishna@gmail.com", passwordEncoder.encode("Password@123"), "Sai Krishna", "9490500730", UserRole.CITIZEN);
+            userRepo.save(citizen);
+            log.info("Seeded registered citizen account: vajjhasaikrishna@gmail.com");
         });
 
         if (userRepo.count() > 0) {

@@ -106,7 +106,12 @@ public class AuthService {
             throw new BadRequestException("Phone number is required for phone verification.");
         }
         String cleanPhone = phoneNumber.trim();
+        String altPhone = cleanPhone.startsWith("+91")
+                ? cleanPhone.substring(3).trim()
+                : "+91" + cleanPhone;
+
         User user = userRepository.findByPhoneNumber(cleanPhone)
+                .or(() -> userRepository.findByPhoneNumber(altPhone))
                 .orElseGet(() -> {
                     String name = (fullName != null && !fullName.isBlank()) ? fullName.trim() : "Citizen User";
                     String dummyEmail = "phone." + cleanPhone.replaceAll("[^0-9]", "") + "@vvit.net";
