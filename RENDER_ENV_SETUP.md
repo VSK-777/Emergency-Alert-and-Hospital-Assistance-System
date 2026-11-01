@@ -25,7 +25,7 @@ The Emergency Alert and Hospital Assistance System is architected with strict bo
   - Flyway Migrations (V1, V2, V3)
 ```
 
-### Critical Security Rule:
+### Critical Security Rules:
 - **Never expose backend credentials to the frontend**: Database connection strings, database passwords, `APP_JWT_SECRET`, `SUPABASE_SECRET_KEY`, and `GEMINI_API_KEY` belong **exclusively** on Render backend environment variables.
 - **Frontend variables in Vercel** must ONLY contain public client endpoints (such as `VITE_API_BASE_URL` pointing to Render, `VITE_MAP_TILE_URL`, or `VITE_PHONE_EMAIL_CLIENT_ID`).
 - **Never commit `.env` to GitHub**: All local `.env` and `.env.*` files are strictly ignored by `.gitignore`. Only `.env.example` is checked into version control.
@@ -34,39 +34,51 @@ The Emergency Alert and Hospital Assistance System is architected with strict bo
 
 ## 2. Navigating Render Dashboard to Configure Environment Variables
 
-Render runs your backend inside an isolated Docker container built from `./Backend/Dockerfile`. **Render does NOT automatically read local `.env` files from developer machines or Git repositories.** Environment variables must be entered directly in the Render Dashboard or defined via `render.yaml`.
+Render runs your backend inside an isolated Docker container built from `./Backend/Dockerfile`.
 
-### Step-by-Step Navigation:
+> **CRITICAL DEPLOYMENT PRINCIPLE:**
+> - **Do not assume Render automatically reads your local `.env` file.** Render operates in an isolated container environment and does not have access to developer local files or gitignored configurations.
+> - Render environment variables should be configured individually or imported using a supported environment-variable workflow (such as Render Environment Groups, Infrastructure-as-Code via `render.yaml`, or bulk importing key-value pairs via the dashboard's "Add from .env" modal).
+
+### Exact Dashboard Navigation:
+To add each required environment variable in Render, follow this exact dashboard path:
+
+```text
+Render Dashboard → Select Backend Web Service → Environment → Add Environment Variable
+```
+
+### Step-by-Step Instructions:
 1. Log in to your [Render Dashboard](https://dashboard.render.com).
 2. Under **Services**, select your backend web service: **`emergency-alert-and-hospital-assistance-backend`**.
-3. In the left navigation sidebar, click **Environment**.
-4. Click the **Add Environment Variable** button (or click **Add from .env** to paste multiple lines in key=value format).
-5. Enter each key and value as specified in the environment variable reference below.
+3. In the left navigation sidebar, navigate to:
+   **`Render Dashboard → Select Backend Web Service → Environment → Add Environment Variable`**
+4. Click **Add Environment Variable** to add variables individually, or click **Add from .env** to paste multiple lines formatted as `KEY=VALUE`.
+5. Enter each key and value as specified in the environment variable reference matrix below.
 6. Click **Save Changes**. Render will automatically trigger a rolling redeployment with the new environment variables.
 
 ---
 
 ## 3. Complete Environment Variable Reference Matrix
 
-| Variable Name | Required? | Hosting Scope | Public Exposure Risk | Description & Purpose | Where to Obtain Value |
-| :--- | :---: | :---: | :---: | :--- | :--- |
-| `SPRING_PROFILES_ACTIVE` | **Mandatory** | **Render** | Safe / Internal | Activates production profile (`postgres` or `prod`), enabling Flyway migrations, PostgreSQL dialect, and strict validation. | Set to `postgres` (or `prod`). |
-| `PORT` | Optional (Default: `8080`) | **Render** | Safe / Internal | Server listen port. Render automatically injects `PORT=10000` or uses default `8080`. | Render dashboard or leave blank for default. |
-| `SPRING_DATASOURCE_URL` | **Mandatory** | **Render** | **CRITICAL SECRET** | JDBC connection string with SSL mode required for cloud PostgreSQL. | Supabase / Neon Dashboard (see Section 4 & 5). |
-| `SPRING_DATASOURCE_USERNAME` | **Mandatory** | **Render** | **CRITICAL SECRET** | Database username (`postgres` for Supabase, or Neon role username). | Supabase / Neon Dashboard. |
-| `SPRING_DATASOURCE_PASSWORD` | **Mandatory** | **Render** | **CRITICAL SECRET** | Database user password. | Supabase / Neon project settings. |
-| `SPRING_DATASOURCE_DRIVER_CLASS_NAME` | Optional (Default: `org.postgresql.Driver`) | **Render** | Safe / Internal | JDBC driver class name. | Already defaults to `org.postgresql.Driver`. |
-| `SPRING_FLYWAY_ENABLED` | Optional (Default: `true` in prod) | **Render** | Safe / Internal | Controls execution of Flyway SQL migrations on application startup. | Set to `true`. |
-| `APP_JWT_SECRET` | **Mandatory** | **Render** | **CRITICAL SECRET** | 256-bit Base64-encoded secret key for signing & verifying backend JWT tokens. | Generated securely via `openssl rand -base64 32` (see Section 7). |
-| `APP_JWT_EXPIRATION_MS` | Optional (Default: `86400000`) | **Render** | Safe / Internal | Token expiration time in milliseconds (86400000 ms = 24 hours). | Set desired token lifetime in milliseconds. |
-| `FRONTEND_URL` | **Mandatory** | **Render** | Public URL | Canonical URL of the Vercel-deployed frontend web application. | Vercel Project Dashboard (e.g. `https://emergency-alert-and-hospital-assistance-system.vercel.app`). |
-| `APP_CORS_ALLOWED_ORIGINS` | **Mandatory** | **Render** | Public URLs | Comma-separated CORS whitelist of domains permitted to make credentialed API requests. | Comma-separated Vercel domain and local preview domains. |
-| `SUPABASE_URL` | Optional / Storage | **Render** | Public Project URL | Base URL of your Supabase project (`https://<project-ref>.supabase.co`). | Supabase Dashboard → Project Settings → API. |
-| `SUPABASE_PUBLISHABLE_KEY` | Optional / Client | **Render** & Vercel | Public Anon Key | Supabase anonymous public API key. | Supabase Dashboard → Project Settings → API → `anon public`. |
-| `SUPABASE_SECRET_KEY` | Optional / Storage | **Render ONLY** | **CRITICAL SECRET** | Supabase service role secret key. Never expose to client applications! | Supabase Dashboard → Project Settings → API → `service_role secret`. |
-| `SUPABASE_JWKS_URL` | Optional / Auth | **Render** | Public JWKS URL | JSON Web Key Set URL for Supabase Auth token signature verification. | `https://<project-ref>.supabase.co/auth/v1/.well-known/jwks.json`. |
-| `SUPABASE_STORAGE_BUCKET` | Optional / Storage | **Render** | Bucket Name | Supabase Storage bucket name for incident medical photos and triage files. | Supabase Dashboard → Storage → Bucket name (e.g. `emergency-attachments`). |
-| `GEMINI_API_KEY` | Optional (AI Triage) | **Render** | **CRITICAL SECRET** | Google Gemini API key for automated AI triage notes and symptom analysis. | [Google AI Studio](https://aistudio.google.com/). |
+| Variable Name | Required? | Hosting Scope | Where to Add in Dashboard | Public Exposure Risk | Description & Purpose | Where to Obtain Value |
+| :--- | :---: | :---: | :--- | :---: | :--- | :--- |
+| `SPRING_PROFILES_ACTIVE` | **Mandatory** | **Render** | `Render Dashboard → Select Backend Web Service → Environment → Add Environment Variable` | Safe / Internal | Activates production profile (`prod`), enabling Flyway migrations, PostgreSQL dialect, and strict validation (`postgres` is also supported as alias). | Set to `prod` (or `postgres`). |
+| `PORT` | Optional (Default: `8080`) | **Render** | `Render Dashboard → Select Backend Web Service → Environment → Add Environment Variable` | Safe / Internal | Server listen port. Render automatically injects `PORT=10000` or uses default `8080`. | Render dashboard or leave blank for default. |
+| `SPRING_DATASOURCE_URL` | **Mandatory** | **Render** | `Render Dashboard → Select Backend Web Service → Environment → Add Environment Variable` | **CRITICAL SECRET** | JDBC connection string with SSL mode required for cloud PostgreSQL. | Supabase / Neon Dashboard (see Section 4 & 5). |
+| `SPRING_DATASOURCE_USERNAME` | **Mandatory** | **Render** | `Render Dashboard → Select Backend Web Service → Environment → Add Environment Variable` | **CRITICAL SECRET** | Database username (`postgres` for Supabase, or Neon role username). | Supabase / Neon Dashboard. |
+| `SPRING_DATASOURCE_PASSWORD` | **Mandatory** | **Render** | `Render Dashboard → Select Backend Web Service → Environment → Add Environment Variable` | **CRITICAL SECRET** | Database user password. | Supabase / Neon project settings. |
+| `SPRING_DATASOURCE_DRIVER_CLASS_NAME` | Optional (Default: `org.postgresql.Driver`) | **Render** | `Render Dashboard → Select Backend Web Service → Environment → Add Environment Variable` | Safe / Internal | JDBC driver class name. | Already defaults to `org.postgresql.Driver`. |
+| `SPRING_FLYWAY_ENABLED` | Optional (Default: `true` in prod) | **Render** | `Render Dashboard → Select Backend Web Service → Environment → Add Environment Variable` | Safe / Internal | Controls execution of Flyway SQL migrations on application startup. | Set to `true`. |
+| `APP_JWT_SECRET` | **Mandatory** | **Render** | `Render Dashboard → Select Backend Web Service → Environment → Add Environment Variable` | **CRITICAL SECRET** | 256-bit Base64-encoded secret key for signing & verifying backend JWT tokens. | Generated securely via `openssl rand -base64 32` (see Section 7). |
+| `APP_JWT_EXPIRATION_MS` | Optional (Default: `86400000`) | **Render** | `Render Dashboard → Select Backend Web Service → Environment → Add Environment Variable` | Safe / Internal | Token expiration time in milliseconds (86400000 ms = 24 hours). | Set desired token lifetime in milliseconds. |
+| `FRONTEND_URL` | **Mandatory** | **Render** | `Render Dashboard → Select Backend Web Service → Environment → Add Environment Variable` | Public URL | Canonical URL of the Vercel-deployed frontend web application. | Vercel Project Dashboard (e.g. `https://emergency-alert-and-hospital-assistance-system.vercel.app`). |
+| `APP_CORS_ALLOWED_ORIGINS` | **Mandatory** | **Render** | `Render Dashboard → Select Backend Web Service → Environment → Add Environment Variable` | Public URLs | Comma-separated CORS whitelist of domains permitted to make credentialed API requests. | Comma-separated Vercel domain and local preview domains. |
+| `SUPABASE_URL` | Optional / Storage | **Render** | `Render Dashboard → Select Backend Web Service → Environment → Add Environment Variable` | Public Project URL | Base URL of your Supabase project (`https://<project-ref>.supabase.co`). | Supabase Dashboard → Project Settings → API. |
+| `SUPABASE_PUBLISHABLE_KEY` | Optional / Client | **Render** & Vercel | `Render Dashboard` & `Vercel Dashboard → Environment Variables` | Public Anon Key | Supabase anonymous public API key. | Supabase Dashboard → Project Settings → API → `anon public`. |
+| `SUPABASE_SECRET_KEY` | Optional / Storage | **Render ONLY** | `Render Dashboard → Select Backend Web Service → Environment → Add Environment Variable` | **CRITICAL SECRET** | Supabase service role secret key. Never expose to client applications or Vercel! | Supabase Dashboard → Project Settings → API → `service_role secret`. |
+| `SUPABASE_JWKS_URL` | Optional / Auth | **Render** | `Render Dashboard → Select Backend Web Service → Environment → Add Environment Variable` | Public JWKS URL | JSON Web Key Set URL for Supabase Auth token signature verification. | `https://<project-ref>.supabase.co/auth/v1/.well-known/jwks.json`. |
+| `SUPABASE_STORAGE_BUCKET` | Optional / Storage | **Render** | `Render Dashboard → Select Backend Web Service → Environment → Add Environment Variable` | Bucket Name | Supabase Storage bucket name for incident medical photos and triage files. | Supabase Dashboard → Storage → Bucket name (e.g. `emergency-attachments`). |
+| `GEMINI_API_KEY` | Optional (AI Triage) | **Render** | `Render Dashboard → Select Backend Web Service → Environment → Add Environment Variable` | **CRITICAL SECRET** | Google Gemini API key for automated AI triage notes and symptom analysis. | [Google AI Studio](https://aistudio.google.com/). |
 
 ---
 
@@ -86,8 +98,11 @@ The application natively supports **Supabase PostgreSQL** via its built-in sessi
    - **User:** `postgres` (or `postgres.ludglhsoseisgqbpylae` for session pooler)
    - **Password:** The password specified during project creation.
 6. Assemble the JDBC URL with mandatory SSL mode:
-   ```
+   ```properties
    SPRING_DATASOURCE_URL=jdbc:postgresql://db.ludglhsoseisgqbpylae.supabase.co:5432/postgres?sslmode=require
+   SPRING_DATASOURCE_USERNAME=postgres
+   SPRING_DATASOURCE_PASSWORD=UUl7kFBWJXiE0TV2
+   SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
    ```
 
 ---
@@ -102,19 +117,21 @@ If deploying against **Neon Serverless PostgreSQL** instead of Supabase:
 3. Toggle the connection selector from **Direct connection** to **Pooled connection** (utilizes PgBouncer to manage connection limits during traffic spikes).
 4. Select **JDBC** from the connection language dropdown.
 5. Neon provides a connection string with the following components:
-   - **Pooled Host:** `ep-<endpoint-id>-pooler.<region>.neon.tech`
+   - **Pooled Host:** `ep-<endpoint-id>-pooler.<region>.neon.tech` (or direct `ep-<endpoint-id>.<region>.neon.tech`)
    - **Port:** `5432`
-   - **Database:** `neondb`
+   - **Database:** `neondb` (or custom database name)
    - **User:** `neondb_owner` (or your created role)
    - **Password:** Available via **Show Password** button.
-6. Configure the Render environment variables:
+6. Configure the Render environment variables in Render Dashboard:
    ```properties
+   # Standard Neon JDBC connection URL format:
    SPRING_DATASOURCE_URL=jdbc:postgresql://ep-<endpoint-id>-pooler.<region>.neon.tech:5432/neondb?sslmode=require
    SPRING_DATASOURCE_USERNAME=neondb_owner
    SPRING_DATASOURCE_PASSWORD=YOUR_NEON_PASSWORD
    SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
    ```
-7. **JPA/Hibernate Compatibility:** Neon PostgreSQL 15/16/17 fully complies with Hibernate 6's `PostgreSQLDialect` and executes Flyway migrations without modification.
+   *(Note: Neon also supports `jdbc:postgresql://YOUR_NEON_HOST/YOUR_DATABASE?sslmode=require` where port 5432 is default).*
+7. **JPA/Hibernate Compatibility:** Neon PostgreSQL fully complies with Hibernate 6's `PostgreSQLDialect` and executes Flyway migrations without modification.
 
 ---
 
@@ -133,36 +150,40 @@ If deploying against **Neon Serverless PostgreSQL** instead of Supabase:
 ### Supabase Storage Bucket Configuration:
 1. In the Supabase Dashboard, click **Storage** in the left sidebar.
 2. Click **New bucket**.
-3. Name the bucket: `emergency-attachments`.
+3. Name the bucket: `emergency-attachments` (or custom bucket name defined in `SUPABASE_STORAGE_BUCKET`).
 4. **Public Bucket vs RLS:**
    - Keep the bucket **Private** for patient data privacy.
    - Configure Row Level Security (RLS) policies or upload via the backend using the `service_role` key.
 5. **Java SDK Integration Notice:**
    - Java Spring Boot communicates with Supabase Storage via standard HTTP REST APIs (`POST /storage/v1/object/{bucket}/{filename}` with `Authorization: Bearer <SUPABASE_SECRET_KEY>`).
-   - Do **NOT** install `@supabase/supabase-js` or Node packages into the Java Maven repository.
+   - Do **NOT** install `@supabase/supabase-js` or `@supabase/server` Node packages into the Java Maven repository.
 
 ---
 
 ## 7. Generating the Production JWT Secret
 
-The Spring Boot backend uses an integrated HMAC-SHA256 JWT service (`io.jsonwebtoken` JJWT 0.12.6). In production profiles (`postgres` or `prod`), the application strictly validates that `APP_JWT_SECRET` is present and decodes to at least 256 bits (32 bytes).
+The Spring Boot backend uses an integrated HMAC-SHA256 JWT service (`io.jsonwebtoken` JJWT 0.12.6). In production profiles (`prod` or `postgres`), the application strictly validates that `APP_JWT_SECRET` is present and decodes to at least 256 bits (32 bytes).
+
+> **SECURITY WARNING:**
+> Never use the test or development fallback key (`404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970`) in production. Anyone with knowledge of that key can forge admin and medical role tokens.
 
 ### Generate a Cryptographically Secure 256-Bit Secret:
-Run this command in any PowerShell or bash terminal:
+Run this command in any terminal:
 ```bash
-# Using OpenSSL (macOS / Linux / Git Bash / WSL)
+# Using OpenSSL (macOS / Linux / Git Bash / WSL):
 openssl rand -base64 32
 
 # Or using PowerShell on Windows:
-$bytes = New-Object byte[] 32; (New-Object Security.Cryptography.RNGCryptoServiceProvider).GetBytes($bytes); [Convert]::ToBase64String($bytes)
+pwsh -Command '$b = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b)'
 ```
 
-Example valid output:
+Example valid production output:
 ```
-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+5WGMKyBB+8oXOF/+ikHgEXGzmTsCqFcajZU2F9Mg98U=
 ```
 
-Add the generated string as the value for `APP_JWT_SECRET` in the Render Dashboard.
+Add your newly generated string as the value for `APP_JWT_SECRET` in:
+`Render Dashboard → Select Backend Web Service → Environment → Add Environment Variable`.
 
 ---
 
@@ -176,7 +197,7 @@ The React Web App is hosted separately on Vercel. In your Vercel Dashboard (**Pr
 | `VITE_MAP_TILE_URL` | `https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png` | Leaflet OpenStreetMap tile server. |
 | `VITE_PHONE_EMAIL_CLIENT_ID` | `15695407177920574360` | Optional client ID for phone/email sign-in widget. |
 
-> **Security Check:** Vercel MUST NEVER be given `SPRING_DATASOURCE_PASSWORD`, `APP_JWT_SECRET`, or `SUPABASE_SECRET_KEY`.
+> **Security Boundary Enforcement:** Vercel MUST NEVER be given `SPRING_DATASOURCE_PASSWORD`, `APP_JWT_SECRET`, or `SUPABASE_SECRET_KEY`.
 
 ---
 
@@ -186,7 +207,7 @@ After configuring the environment variables in Render:
 1. Go to **Manual Deploy** → **Deploy latest commit** (or trigger a clean cache build).
 2. Open the **Logs** tab in Render Dashboard.
 3. Verify the following startup milestones in the log stream:
-   - `The following 1 profile is active: "postgres"` (or `"prod"`)
+   - `The following 1 profile is active: "prod"` (or `"postgres"`)
    - `HikariPool-1 - Added connection conn0: url=jdbc:postgresql://...`
    - `Successfully applied 3 migrations to schema "public", now at version v3`
    - `Tomcat started on port 8080 (http) with context path ''`
