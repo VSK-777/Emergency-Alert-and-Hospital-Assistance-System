@@ -1,0 +1,20 @@
+services:
+  # Emergency Alert and Hospital Assistance System - Java Spring Boot Backend
+  - type: web
+    name: emergency-assistance-backend
+    runtime: docker
+    dockerfilePath: ./Backend/Dockerfile
+    dockerContext: ./Backend
+    plan: free
+    region: oregon
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: SPRING_PROFILES_ACTIVE
+        value: dev
+      - key: APP_JWT_SECRET
+        generateValue: true
+      - key: APP_JWT_EXPIRATION_MS
+        value: 86400000
+      - key: GEMINI_API_KEY
+        sync: false

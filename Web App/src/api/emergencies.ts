@@ -1,4 +1,4 @@
-import api from './client';
+import api, { API_BASE_URL } from './client';
 import type { EmergencyIncident, IncidentStatus } from '../types';
 
 export const emergencyApi = {
@@ -41,6 +41,6 @@ export const emergencyApi = {
   },
 
   createSseSource: (): EventSource => {
-    return new EventSource('/api/v1/emergencies/stream');
+    return new EventSource(`${API_BASE_URL}/emergencies/stream`);
   },
 };
