@@ -111,7 +111,8 @@ build/
 
 # Environment & Secrets
 .env
-.env.local
+.env.*
+!.env.example
 *.key
 *.pfx
 *.keystore
