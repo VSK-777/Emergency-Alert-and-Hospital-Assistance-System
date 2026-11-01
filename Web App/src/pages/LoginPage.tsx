@@ -187,9 +187,6 @@ export const LoginPage: React.FC = () => {
           <p className="text-xs text-slate-500 dark:text-slate-400">
             Vasireddy Venkatadri Institute of Technology (VVIT) · Dept. of CSE
           </p>
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40 px-3 py-1 text-[11px] font-semibold text-blue-700 dark:text-blue-300">
-            <span>Community Service Project (CSP)</span>
-          </div>
         </div>
 
         {/* Authentication Card */}

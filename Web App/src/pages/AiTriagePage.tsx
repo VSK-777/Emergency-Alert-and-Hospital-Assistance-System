@@ -62,7 +62,6 @@ EMERGENCY MEDICAL HANDOFF DOSSIER
 ==============================================
 Institution: Vasireddy Venkatadri Institute of Technology (VVIT) CSP
 Emergency Alert and Hospital Assistance System
-Prepared By: VSK (Reg. No: 24BQ1A054O) · Guide: Mr. G. Lakshmi Narayana
 
 TRIAGE ASSESSMENT: ${result.triageLevel}
 AI Engine: ${result.providerSource}

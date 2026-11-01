@@ -208,9 +208,6 @@ export const Sidebar: React.FC = () => {
             <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
               Vasireddy Venkatadri Institute of Technology
             </p>
-            <div className="mt-2 text-[10px] text-slate-400 dark:text-slate-500 font-medium">
-              Prepared by: <span className="text-blue-600 dark:text-blue-400 font-bold">VSK (24BQ1A054O)</span>
-            </div>
           </div>
         </div>
       )}
