@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Heart,
+  HeartPulse,
   Watch,
   Building2,
   Phone,
@@ -102,7 +102,7 @@ export const CitizenDashboardPage: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xs transition-colors">
         <div className="flex items-center gap-4">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400 font-bold border border-blue-200 dark:border-blue-800/40">
-            <Heart className="h-6 w-6" />
+            <HeartPulse className="h-6 w-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -318,7 +318,7 @@ export const CitizenDashboardPage: React.FC = () => {
         <div className="lg:col-span-5 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold tracking-wider uppercase text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-              <Heart className="h-4 w-4 text-red-600 dark:text-red-400" />
+              <ShieldCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               My Digital Medical ID
             </h3>
             <button
