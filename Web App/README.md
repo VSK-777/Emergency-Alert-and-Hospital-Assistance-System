@@ -7,7 +7,7 @@
 **Prepared by:** VSK (Reg. No: 24BQ1A054O)  
 **Project Guide:** Mr. G. Lakshmi Narayana, Assistant Professor  
 
-**Live Production URL:** [https://emergency-alert-and-hospital-assist.vercel.app](https://emergency-alert-and-hospital-assist.vercel.app)  
+**Live Production URL:** [https://emergency-alert-and-hospital-assistance-system.vercel.app](https://emergency-alert-and-hospital-assistance-system.vercel.app)  
 **Backend API:** [https://emergency-alert-and-hospital-assistance.onrender.com](https://emergency-alert-and-hospital-assistance.onrender.com)  
 
 ---
@@ -19,7 +19,7 @@ The Web Platform serves as the central command, triage, and multi-role operation
 1. **System Administrator (`/admin`):** Network command overview, active alerts counter, Wear OS telemetry, ICU availability, ambulance fleet status, volunteer response KPIs, interactive OpenStreetMap dispatch GIS with layer filters, and system audit logs.
 2. **Hospital Staff (`/hospital`):** Emergency department triage center, inbound incident queue with clinical details, 1-click Accept / Decline (with clinical reason modal), trauma bay preparation milestones, and live bed/ICU capacity management.
 3. **First Responder (`/responder`):** Volunteer field command with duty toggle (`AVAILABLE` / `OFF_DUTY`), GPS location synchronization, nearby unclaimed incident radar, and turn-by-turn routing with OpenStreetMap directions.
-4. **Citizen / Patient (`/citizen`):** Reassuring emergency portal, prominent tactile SOS button, real-time active incident tracking, paired Wear OS smartwatch telemetry (IMU 50Hz, battery, algorithm health), read-only nearby ER hospital directory, and personal Digital Medical ID card with transparent emergency care invoices.
+4. **Citizen / Patient (`/citizen`):** Reassuring emergency portal, real-time active incident tracking, paired Wear OS smartwatch telemetry (IMU 50Hz, battery, algorithm health), read-only nearby ER hospital directory, and personal Digital Medical ID card with voluntary profile fields and transparent emergency care invoices.
 
 ---
 
