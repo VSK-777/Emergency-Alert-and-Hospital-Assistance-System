@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
+import { BrandIcon } from '../components/common/BrandIcon';
 import {
   Activity,
   Lock,
@@ -190,9 +191,9 @@ export const LoginPage: React.FC = () => {
 
       <div className="relative w-full max-w-md space-y-6 my-8">
         {/* Header Branding */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white font-bold shadow-xs">
-            <Activity className="h-7 w-7" />
+        <div className="text-center space-y-3">
+          <div className="inline-flex items-center justify-center">
+            <BrandIcon size={64} variant="container" withGlow />
           </div>
           <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
             Emergency Alert and Hospital Assistance System

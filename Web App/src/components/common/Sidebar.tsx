@@ -11,12 +11,12 @@ import {
   Sparkles,
   FileText,
   Settings,
-  ShieldCheck,
-  Heart,
+  HeartPulse,
   ChevronLeft,
   ChevronRight,
-  Activity,
+  ShieldCheck,
 } from 'lucide-react';
+import { BrandIcon } from './BrandIcon';
 import { useEmergencyStore } from '../../store/emergencyStore';
 import { useAuthStore } from '../../store/authStore';
 
@@ -61,10 +61,10 @@ export const Sidebar: React.FC = () => {
 
       case 'CITIZEN':
         return [
-          { label: 'Home Dashboard', to: '/citizen', icon: Heart },
+          { label: 'Home Dashboard', to: '/citizen', icon: HeartPulse },
           { label: 'Emergency Status & SOS', to: '/emergencies', icon: AlertCircle },
           { label: 'Nearby Hospitals', to: '/hospitals', icon: Building2 },
-          { label: 'My Medical ID', to: '/patients', icon: Users },
+          { label: 'My Medical ID', to: '/patients', icon: ShieldCheck },
           { label: 'My Smartwatch', to: '/devices', icon: Watch },
           { label: 'AI First-Aid Assistant', to: '/ai-triage', icon: Sparkles },
           { label: 'Profile & Contacts', to: '/settings', icon: Settings },
@@ -119,9 +119,7 @@ export const Sidebar: React.FC = () => {
       <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
         {!isCollapsed ? (
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-xs">
-              <Activity className="h-5 w-5" />
-            </div>
+            <BrandIcon size={38} variant="container" withGlow />
             <div className="min-w-0">
               <h2 className="text-xs font-bold tracking-tight text-slate-900 dark:text-white uppercase truncate">
                 Emergency Alert
@@ -132,8 +130,8 @@ export const Sidebar: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-xs">
-            <Activity className="h-5 w-5" />
+          <div className="mx-auto flex items-center justify-center">
+            <BrandIcon size={36} variant="container" withGlow />
           </div>
         )}
 

@@ -1,16 +1,44 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
   <defs>
-    <linearGradient id="favBg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#6A1B9A" />
-      <stop offset="100%" stop-color="#1A0D3F" />
+    <linearGradient id="glyphShieldFill" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1E293B" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#090E17" stop-opacity="0.98" />
+    </linearGradient>
+    <linearGradient id="glyphShieldRim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="50%" stop-color="#818CF8" />
+      <stop offset="100%" stop-color="#EF4444" />
+    </linearGradient>
+    <linearGradient id="glyphCross" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FF4D4D" />
+      <stop offset="100%" stop-color="#DC2626" />
     </linearGradient>
   </defs>
-  <!-- Rounded Squircle -->
-  <rect x="4" y="4" width="120" height="120" rx="30" fill="url(#favBg)" />
-  <!-- High Contrast Emergency Cross -->
-  <path d="M 52,24 L 76,24 Q 78,24 78,26 L 78,48 L 100,48 Q 102,48 102,50 L 102,74 Q 102,76 100,76 L 78,76 L 78,98 Q 78,100 76,100 L 52,100 Q 50,100 50,98 L 50,76 L 28,76 Q 26,76 26,74 L 26,50 Q 26,48 28,48 L 50,48 L 50,26 Q 50,24 52,24 Z"
-        fill="#EF4444" stroke="#FFFFFF" stroke-width="4" />
-  <!-- Prominent ECG Line in Center -->
-  <path d="M 12,62 L 36,62 L 44,50 L 54,78 L 64,32 L 74,90 L 84,54 L 92,62 L 116,62" 
-        fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Radiating Dispatch Signal Arcs -->
+  <path d="M 212, 70 A 48,48 0 0,1 300, 70" fill="none" stroke="#38BDF8" stroke-width="8" stroke-linecap="round" stroke-opacity="0.6" />
+  <path d="M 188, 44 A 78,78 0 0,1 324, 44" fill="none" stroke="#38BDF8" stroke-width="6" stroke-linecap="round" stroke-opacity="0.3" />
+
+  <!-- Shield Contour -->
+  <path d="M 256, 94 C 348, 94 420, 120 420, 202 C 420, 332 328, 420 256, 456 C 184, 420 92, 332 92, 202 C 92, 120 164, 94 256, 94 Z"
+        fill="url(#glyphShieldFill)"
+        stroke="url(#glyphShieldRim)"
+        stroke-width="12"
+        stroke-linejoin="round" />
+
+  <!-- Medical Cross Elements -->
+  <rect x="222" y="140" width="68" height="244" rx="22" fill="url(#glyphCross)" />
+  <rect x="132" y="230" width="248" height="68" rx="22" fill="url(#glyphCross)" />
+
+  <!-- Precision ECG Pulse Waveform -->
+  <path d="M 118, 264 L 192, 264 L 214, 226 L 236, 318 L 260, 172 L 286, 346 L 306, 244 L 322, 264 L 394, 264"
+        fill="none"
+        stroke="#FFFFFF"
+        stroke-width="15"
+        stroke-linecap="round"
+        stroke-linejoin="round" />
+
+  <!-- Apex Beacon -->
+  <circle cx="256" cy="94" r="12" fill="#38BDF8" />
+  <circle cx="256" cy="94" r="18" fill="none" stroke="#38BDF8" stroke-width="3" stroke-opacity="0.8" />
 </svg>

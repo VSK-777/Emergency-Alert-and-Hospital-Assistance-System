@@ -4,8 +4,8 @@
   "description": "Central Emergency Alert and Hospital Assistance Platform - VVIT B.Tech CSE Community Service Project (VSK)",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#090D16",
-  "theme_color": "#4527A0",
+  "background_color": "#020617",
+  "theme_color": "#0F172A",
   "icons": [
     {
       "src": "/favicon-32x32.png",

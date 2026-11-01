@@ -56,15 +56,17 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        // Enforce removal of unverified medical information and emergency contacts for patient.vsk@vvit.net
+        // Enforce exact registration details and removal of unverified medical info for patient.vsk@vvit.net
         userRepo.findByEmail("patient.vsk@vvit.net").ifPresent(user -> {
             boolean changed = false;
+            if (!"Sai Krishna".equals(user.getFullName())) { user.setFullName("Sai Krishna"); changed = true; }
+            if (!"+919490500730".equals(user.getPhoneNumber())) { user.setPhoneNumber("+919490500730"); changed = true; }
             if (user.getBloodGroup() != null) { user.setBloodGroup(null); changed = true; }
             if (user.getAllergies() != null) { user.setAllergies(null); changed = true; }
             if (user.getMedicalConditions() != null) { user.setMedicalConditions(null); changed = true; }
             if (changed) {
                 userRepo.save(user);
-                log.info("Cleared unverified medical information for user {}", user.getEmail());
+                log.info("Synchronized exact registration details for user {}: Sai Krishna, +919490500730", user.getEmail());
             }
 
             // Remove any unverified emergency contacts associated with this user
@@ -95,8 +97,8 @@ public class DataInitializer implements CommandLineRunner {
 
         String encodedPassword = passwordEncoder.encode("Password@123");
 
-        // 1. Seed Users
-        User patient = new User("patient.vsk@vvit.net", encodedPassword, "Sai Krishna VSK", "+919876543210", UserRole.CITIZEN);
+        // 1. Seed Users (strictly with user-provided registration details)
+        User patient = new User("patient.vsk@vvit.net", encodedPassword, "Sai Krishna", "+919490500730", UserRole.CITIZEN);
         patient.setBloodGroup(null);
         patient.setAllergies(null);
         patient.setMedicalConditions(null);
@@ -269,7 +271,7 @@ public class DataInitializer implements CommandLineRunner {
             auditLogRepo.save(new AuditLog("SYSTEM_BOOT", "admin@vvit.net", "ADMIN", null, "Emergency Coordination System active"));
         }
         if (deviceRepo.count() == 0 && userRepo.count() > 0) {
-            User patient = userRepo.findAll().get(0);
+            User patient = userRepo.findByEmail("patient.vsk@vvit.net").orElse(userRepo.findAll().get(0));
             UserDevice watch = new UserDevice();
             watch.setUser(patient);
             watch.setDeviceType(DeviceType.SMARTWATCH);
