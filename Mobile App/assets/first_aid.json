@@ -1,0 +1,181 @@
+[
+  {
+    "id": "cardiac_arrest",
+    "title": "Suspected Cardiac Arrest",
+    "urgency": "CRITICAL",
+    "icon": "heart",
+    "attribution": "American Heart Association / Red Cross Guidelines",
+    "overview": "Victim is unresponsive, not breathing normally, or only gasping.",
+    "steps": [
+      "Check scene safety and tap victim's shoulder shouting 'Are you OK?'.",
+      "If unresponsive and not breathing, immediately call emergency services or activate SOS.",
+      "Place heel of one hand in center of chest, place other hand on top and interlock fingers.",
+      "Push hard and fast: 100-120 compressions/min, at least 2 inches (5 cm) deep.",
+      "Allow chest to fully recoil between each compression.",
+      "Continue uninterrupted CPR until emergency responders arrive or an AED is ready."
+    ],
+    "warnings": [
+      "Do NOT stop chest compressions for more than 10 seconds.",
+      "Do NOT hesitate to perform hands-only CPR even if untrained in rescue breaths."
+    ]
+  },
+  {
+    "id": "severe_bleeding",
+    "title": "Severe Bleeding & Hemorrhage",
+    "urgency": "CRITICAL",
+    "icon": "drop",
+    "attribution": "Stop the Bleed / WHO First Aid Manual",
+    "overview": "Spurting or continuous rapid blood flow from a traumatic wound.",
+    "steps": [
+      "Ensure personal safety; use disposable gloves or barrier if available.",
+      "Expose the wound by cutting or removing clothing.",
+      "Apply direct, continuous, firm pressure onto the bleeding point using sterile gauze, towel, or cloth.",
+      "Maintain unbroken pressure for at least 5 to 10 minutes without lifting the dressing.",
+      "If blood soaks through, add more cloth on top; NEVER remove the original layers.",
+      "If bleeding is from an arm/leg and life-threatening, apply a certified tourniquet 2-3 inches above the wound."
+    ],
+    "warnings": [
+      "Do NOT remove embedded objects (knife, glass) — stabilize them in place.",
+      "Do NOT release pressure to check if bleeding has stopped."
+    ]
+  },
+  {
+    "id": "road_accident",
+    "title": "Road Traffic Accident (RTA)",
+    "urgency": "CRITICAL",
+    "icon": "car",
+    "attribution": "International Trauma Life Support (ITLS) Guidelines",
+    "overview": "High-velocity vehicular or motorcycle impact involving trauma.",
+    "steps": [
+      "Secure scene: Warn oncoming traffic using hazard lights or indicators. Turn off vehicle ignition.",
+      "DO NOT move the casualty unless there is immediate threat of fire, explosion, or submersion.",
+      "Stabilize cervical spine: Manually hold the head and neck in neutral alignment without twisting.",
+      "If motorcyclist is breathing, DO NOT remove the helmet unless airway is obstructed.",
+      "Check airway and breathing without tilting the neck excessively (use jaw-thrust maneuver if trained).",
+      "Control any major external bleeding with direct pressure.",
+      "Cover victim to maintain body temperature and prevent hypovolemic shock."
+    ],
+    "warnings": [
+      "Moving a spinal trauma victim can cause permanent quadriplegia or death.",
+      "Do NOT give oral liquids or medication to trauma victims."
+    ]
+  },
+  {
+    "id": "choking",
+    "title": "Choking (Airway Obstruction)",
+    "urgency": "CRITICAL",
+    "icon": "warning",
+    "attribution": "Red Cross First Aid Guidelines",
+    "overview": "Victim cannot breathe, speak, or cough, and may clutch their throat.",
+    "steps": [
+      "Ask 'Are you choking?' If victim nods and cannot cough, intervene immediately.",
+      "Stand behind the victim with one foot forward for balance.",
+      "Deliver 5 sharp back blows between shoulder blades with the heel of your hand.",
+      "If obstruction remains: Wrap arms around victim's waist, make a fist above the navel.",
+      "Grasp fist with other hand and pull sharply inward and upward (Heimlich maneuver).",
+      "Repeat sequence of 5 back blows and 5 abdominal thrusts until object clears or victim becomes unresponsive."
+    ],
+    "warnings": [
+      "If victim loses consciousness, lower them gently to ground and start CPR immediately.",
+      "Do NOT perform blind finger sweeps in mouth."
+    ]
+  },
+  {
+    "id": "burns",
+    "title": "Burns & Scalds",
+    "urgency": "URGENT",
+    "icon": "flame",
+    "attribution": "WHO Essential Trauma Care Guidelines",
+    "overview": "Thermal, chemical, or contact burns to skin tissue.",
+    "steps": [
+      "Cool the burn immediately under cool, gentle running water for 10 to 20 minutes.",
+      "Remove jewelry and loose clothing around the burn before swelling occurs.",
+      "Cover burn loosely with a sterile, non-adherent dressing or clean cling wrap.",
+      "Keep patient warm with a blanket over unburned areas.",
+      "Seek emergency medical evaluation for burns larger than the patient's palm, on face, hands, joints, or groin."
+    ],
+    "warnings": [
+      "Do NOT apply ice, butter, toothpaste, or oil to burns.",
+      "Do NOT peel off clothing that is stuck to melted or charred skin.",
+      "Do NOT pop blisters."
+    ]
+  },
+  {
+    "id": "seizures",
+    "title": "Seizures & Convulsions",
+    "urgency": "URGENT",
+    "icon": "activity",
+    "attribution": "Epilepsy Foundation / NHS Emergency Guidance",
+    "overview": "Involuntary shaking, muscular rigidity, or loss of responsiveness.",
+    "steps": [
+      "Gently guide person to the ground to prevent falling.",
+      "Clear away sharp, hard, or hot objects.",
+      "Place a soft folded jacket or cushion under the person's head.",
+      "Loosen tight neckwear (ties, collars).",
+      "Time the seizure. If it lasts longer than 5 minutes, call ambulance immediately.",
+      "Once shaking stops, gently roll person onto their side into recovery position to keep airway clear."
+    ],
+    "warnings": [
+      "Do NOT hold the person down or restrain their movements.",
+      "Do NOT put ANYTHING in the person's mouth."
+    ]
+  },
+  {
+    "id": "falls_fractures",
+    "title": "Falls & Suspected Fractures",
+    "urgency": "URGENT",
+    "icon": "shield",
+    "attribution": "Red Cross Emergency Orthopedic Guidance",
+    "overview": "Severe localized pain, swelling, deformity, or inability to bear weight after a fall.",
+    "steps": [
+      "Encourage casualty to remain still; do not force movement of injured limb.",
+      "Support the injured area in the most comfortable position using rolled blankets or splints.",
+      "If bone pierces skin (open fracture), cover with clean dressing; apply pressure around edges to stop bleeding.",
+      "Apply cold pack wrapped in a cloth to reduce swelling (max 15 mins).",
+      "Check circulation below injury (warmth, sensation, pulse)."
+    ],
+    "warnings": [
+      "Do NOT attempt to push back protruding bone ends or realign crooked limbs.",
+      "Do NOT massage the injured limb."
+    ]
+  },
+  {
+    "id": "electric_shock",
+    "title": "Electric Shock",
+    "urgency": "CRITICAL",
+    "icon": "zap",
+    "attribution": "Occupational Safety and Health Administration (OSHA) Guidance",
+    "overview": "Contact with energized electrical line or household appliance.",
+    "steps": [
+      "DO NOT TOUCH THE VICTIM while they are still in contact with electrical source.",
+      "Turn off the power source or unplug appliance immediately at breaker box.",
+      "If unable to cut power, use a dry non-conductive object (wooden broom handle) to push victim clear.",
+      "Once safe from current, check responsiveness and breathing; begin CPR if pulseless.",
+      "Treat visible entrance/exit burn points with clean dry dressings."
+    ],
+    "warnings": [
+      "Never touch high-voltage power lines until certified utility personnel disconnect current.",
+      "Do NOT use damp or metal objects to move victim."
+    ]
+  },
+  {
+    "id": "unconsciousness",
+    "title": "Unconsciousness (Breathing Normally)",
+    "urgency": "URGENT",
+    "icon": "user",
+    "attribution": "European Resuscitation Council (ERC)",
+    "overview": "Person is unresponsive but chest rises regularly with clear airway sounds.",
+    "steps": [
+      "Kneel beside person, ensure their legs are straight.",
+      "Place the arm nearest to you at a right angle to body, elbow bent with palm up.",
+      "Bring far arm across chest, hold back of hand against person's near cheek.",
+      "With your other hand, pull the far knee up until foot is flat on ground.",
+      "Roll person toward you onto their side by pulling the raised knee.",
+      "Tilt head backward gently to maintain open airway, mouth facing downward to allow fluids to drain."
+    ],
+    "warnings": [
+      "If spinal injury is suspected, only roll victim if airway is threatened by vomiting.",
+      "Monitor breathing continuously until paramedics arrive."
+    ]
+  }
+]
