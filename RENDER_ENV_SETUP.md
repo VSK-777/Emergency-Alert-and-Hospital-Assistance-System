@@ -84,26 +84,37 @@ Render Dashboard → Select Backend Web Service → Environment → Add Environm
 
 ## 4. Supabase PostgreSQL Configuration
 
-The application natively supports **Supabase PostgreSQL** via its built-in session pooler or direct connection.
+The application natively supports **Supabase PostgreSQL** via its built-in session pooler.
 
-### How to Retrieve Credentials from Supabase Dashboard:
-1. Log in to [Supabase](https://supabase.com/dashboard) and open your project (`ludglhsoseisgqbpylae`).
+> [!CAUTION]
+> **CRITICAL RENDER NETWORKING REQUIREMENT: IPv6 vs IPv4**
+> - **Supabase Direct Connection** (`db.<project-ref>.supabase.co`) resolves to **IPv6 only**.
+> - **Render does NOT support outbound IPv6 networking**. Connecting to `db.<project-ref>.supabase.co` from Render triggers:
+>   `java.net.SocketException: Network unreachable`
+> - **Solution:** You **MUST** use the Supabase **Session Pooler** (`aws-0-<region>.pooler.supabase.com:5432`), which operates over **IPv4** and fully supports Flyway migrations, Hibernate, and prepared statements.
+> - When using the pooler, the username format **MUST** be: `postgres.<project-ref>`.
+
+### Exact Tested Credentials for Project `ludglhsoseisgqbpylae`:
+Your Supabase project is located in AWS region **`ap-northeast-2`** (Seoul). The tested, verified IPv4 configuration is:
+
+```properties
+SPRING_DATASOURCE_URL=jdbc:postgresql://aws-0-ap-northeast-2.pooler.supabase.com:5432/postgres?sslmode=require
+SPRING_DATASOURCE_USERNAME=postgres.ludglhsoseisgqbpylae
+SPRING_DATASOURCE_PASSWORD=UUl7kFBWJXiE0TV2
+SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
+```
+
+### How to Retrieve Credentials for Any Supabase Project:
+1. Log in to [Supabase](https://supabase.com/dashboard) and open your project.
 2. In the top navigation bar, click the **Connect** button (or navigate to **Project Settings** → **Database**).
-3. Under the **Connection string** tab, select **JDBC**.
-4. Choose **Session pooler** (Port `5432`) or **Direct connection** (Port `5432`).
-5. The connection details will be formatted as follows:
-   - **Host:** `db.ludglhsoseisgqbpylae.supabase.co` (or session pooler hostname `aws-0-<region>.pooler.supabase.com`)
+3. Under the **Connection string** tab, select **Session pooler** (Port `5432`), then select **JDBC**.
+4. The connection parameters are:
+   - **Pooler Host:** `aws-0-<region>.pooler.supabase.com`
    - **Port:** `5432`
    - **Database Name:** `postgres`
-   - **User:** `postgres` (or `postgres.ludglhsoseisgqbpylae` for session pooler)
+   - **User:** `postgres.<project-ref>`
    - **Password:** The password specified during project creation.
-6. Assemble the JDBC URL with mandatory SSL mode:
-   ```properties
-   SPRING_DATASOURCE_URL=jdbc:postgresql://db.ludglhsoseisgqbpylae.supabase.co:5432/postgres?sslmode=require
-   SPRING_DATASOURCE_USERNAME=postgres
-   SPRING_DATASOURCE_PASSWORD=UUl7kFBWJXiE0TV2
-   SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
-   ```
+5. In Render Dashboard, enter these under `Environment` for your backend service.
 
 ---
 
