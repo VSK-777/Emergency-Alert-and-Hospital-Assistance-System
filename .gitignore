@@ -117,9 +117,10 @@ build/
 *.pfx
 *.keystore
 
-# OS files
+# OS & Document files
 .DS_Store
 Thumbs.db
+*.pdf
 
 # Auxiliary project assets
 database/
