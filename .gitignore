@@ -130,6 +130,8 @@ scripts/
 # Local companion platforms
 Mobile App/
 Smart Watch App/
+CSP_Triage_App/
+src/
 
 # Workspace Agent Guidelines
 AGENTS.md
