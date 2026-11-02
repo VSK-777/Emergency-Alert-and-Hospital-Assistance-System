@@ -57,62 +57,39 @@ React Web App (Vite SaaS) ──────────────────
 
 ---
 
-## 3. Repository Architecture
+## 3. Systematic Repository Architecture
 
-The version-controlled repository tracks the full emergency assistance ecosystem:
+The project is organized into exactly **three core domains arranged hierarchically**:
 
-```
-emergency-alert-and-hospital-assistance-system/
-|-- Backend/                        # Java Spring Boot Backend (Java 21 LTS, Spring Boot 3.3.4)
-|   |-- src/main/java/.../emergency/
-|   |   |-- controller/             # REST controllers (/api/v1/auth, /emergencies, /hospitals, /admin)
-|   |   |-- service/                # Proximity engine, notification fanout, SSE stream broadcasts
-|   |   |-- repository/             # Spring Data JPA interfaces (12 repositories)
-|   |   |-- model/                  # JPA entities (User, Incident, Hospital, Responder, Expense, etc.)
-|   |   |-- security/               # JWT authentication filter, BCrypt password hashing
-|   |   `-- config/                 # SecurityConfig, CorsConfig, OpenAPI, DataInitializer (dev only)
-|   |-- src/main/resources/
-|   |   |-- db/migration/           # Flyway SQL migrations (V1__initial_schema.sql, V2__constraints.sql)
-|   |   |-- application.properties  # Shared configuration and CORS whitelist
-|   |   `-- application-postgres.properties # Supabase PostgreSQL production configuration
-|   |-- Dockerfile                  # Production container definition for Render cloud deployment
-|   `-- pom.xml                     # Maven project configuration and dependencies
-|
-|-- Web App/                        # React TypeScript Single Page Application (Vite 8, Tailwind v4)
-|   |-- src/
-|   |   |-- api/                    # Axios clients with automatic JWT bearer interceptors
-|   |   |-- components/             # Reusable UI components, Modals, Navbar, Sidebar, Leaflet Map
-|   |   |-- layouts/                # MainLayout with responsive sidebar and role-tailored navigation
-|   |   |-- pages/                  # Four dedicated role dashboards (Admin, Hospital, Responder, Citizen)
-|   |   |-- store/                  # Zustand state stores (Auth, Emergency, Hospital, Notification, Theme)
-|   |   `-- types/                  # Domain TypeScript interfaces and API schemas
-|   |-- public/                     # Healthcare branding assets, SVGs, and PWA manifest
-|   |-- vercel.json                 # Vercel SPA routing and reverse-proxy configuration
-|   |-- vite.config.ts              # Vite bundler configuration
-|   `-- package.json                # NPM build scripts and dependencies
-|
-|-- Mobile App/                     # Flutter Cross-Platform Mobile Client (Dart)
-|   |-- lib/
-|   |   |-- core/                   # Storage, networking, synchronization services
-|   |   |-- models/                 # Incidents, triage, contacts, responders, hospitals
-|   |   |-- providers/              # State management & reactive view models
-|   |   `-- views/                  # Screens (SOS, first-aid, map, medical profile, expenses)
-|   `-- pubspec.yaml                # Flutter dependencies and assets
-|
-|-- Smart Watch App/                # Native Wear OS Smartwatch Application (Kotlin)
-|   |-- app/src/main/
-|   |   |-- java/.../wear/
-|   |   |   |-- detector/           # FallDetector, SensorPipeline, MotionTelemetry
-|   |   |   |-- service/            # Background AccidentMonitorService
-|   |   |   |-- comm/               # PhoneSyncManager & WatchPayload serialization
-|   |   |   `-- ui/                 # CountdownActivity, TactileUi, MainActivity
-|   |   `-- AndroidManifest.xml     # Wear OS hardware sensor permissions
-|   `-- build.gradle.kts            # Android Gradle build configuration
-|
-|-- render.yaml                     # Render Infrastructure-as-Code deployment blueprint
-`-- README.md                       # Comprehensive platform documentation
-```
-
+\emergency-alert-and-hospital-assistance-system/
+│
+├── Web Development/                # Domain 1: Cloud Backend & Web Portals
+│   ├── Frontend/                   # React 19, TypeScript, Tailwind CSS, Vite SaaS web application
+│   │   ├── src/                    # API clients, Zustand stores, Leaflet Maps, role dashboards
+│   │   ├── vercel.json             # Vercel deployment configuration & reverse-proxy
+│   │   └── package.json            # Node.js dependencies and build scripts
+│   ├── Backend/                    # Java 21 LTS, Spring Boot 3.3.4 REST API & WebSocket server
+│   │   ├── src/main/java/          # Controllers, Services, Repositories, Security, AI Triage
+│   │   ├── src/main/resources/     # Flyway database migrations, application properties
+│   │   ├── Dockerfile              # Production container definition for Render cloud deployment
+│   │   └── pom.xml                 # Maven build configuration
+│   ├── Database/                   # PostgreSQL schema definitions, RLS security policies, seed data
+│   └── Docs/                       # Cloud deployment guides and Render environment documentation
+│
+├── App Development/                # Domain 2: Mobile & Wearable Applications
+│   ├── Android_Triage_App/         # Production Android Studio Kotlin companion app (Jetpack Compose, BLE)
+│   │   ├── app/src/main/           # BLE GATT client, MVVM, Room/SQLite, GPS provider, Foreground Service
+│   │   └── app/build/outputs/apk/  # Pre-compiled, installable Debug APK (app-debug.apk)
+│   ├── Emergency_Mobile_Flutter/   # Cross-platform Flutter mobile client (Citizen & Responder app)
+│   │   ├── lib/                    # Riverpod providers, offline sync, SOS screens, hospital maps
+│   │   └── pubspec.yaml            # Flutter configuration
+│   └── Docs/                       # Prototype V1 Android application requirements specification
+│
+└── Hardware Coding/                # Domain 3: Embedded Systems & Sensor Firmware
+    ├── Firmware/                   # ESP32 C++/Arduino firmware (ESP32_Triage_Firmware.ino)
+    ├── Protocol/                   # Binary struct layouts, GATT UUIDs, state enums (PROJECT_GUIDE.h)
+    └── Circuit/                    # Breadboard wiring guide, component BOM, and GPIO pinout table
+\
 ---
 
 ## 4. Implemented Features & Core Capabilities

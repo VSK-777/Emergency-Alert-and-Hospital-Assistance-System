@@ -123,16 +123,12 @@ Thumbs.db
 *.pdf
 
 # Auxiliary project assets
-database/
-docs/
-scripts/
+Web Development/Database/
+Web Development/Docs/
 
 # Local companion platforms
-Mobile App/
-Smart Watch App/
-CSP_Triage_App/
-ESP32_Firmware/
-src/
+App Development/
+Hardware Coding/
 
 # Workspace Agent Guidelines
 AGENTS.md
