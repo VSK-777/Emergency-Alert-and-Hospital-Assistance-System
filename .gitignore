@@ -131,6 +131,7 @@ scripts/
 Mobile App/
 Smart Watch App/
 CSP_Triage_App/
+ESP32_Firmware/
 src/
 
 # Workspace Agent Guidelines
