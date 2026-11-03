@@ -15,16 +15,17 @@
 
 ## 1. Database & Persistence Architecture
 
-The backend utilizes **Supabase PostgreSQL** as its production relational database, managed exclusively through version-controlled **Flyway** database migrations.
+The backend utilizes **Neon Serverless PostgreSQL** as its production relational database, managed exclusively through version-controlled **Flyway** database migrations.
 
 ```
-Smartwatch (Wear OS) ──> Mobile App (Flutter) ──> Spring Boot REST API ──> Supabase PostgreSQL (Port 5432)
+Smartwatch (Wear OS) ──> Mobile App (Flutter) ──> Spring Boot REST API ──> Neon PostgreSQL (Port 5432)
                                                         ▲
 React Web App (Vite SaaS) ──────────────────────────────┘
 ```
 
-- **Database:** Supabase PostgreSQL 17.11 (Region: Seoul `ap-northeast-2`)
-- **Connection Mode:** Supabase Session Pooler via JDBC (Port `5432` with `sslmode=require`)
+- **Database:** Neon Serverless PostgreSQL 18.6 (Region: AWS `ap-southeast-1` Singapore)
+- **Connection Mode:** Neon Connection Pooler via JDBC (Port `5432` with `sslmode=require&channelBinding=require`)
+- **Neon Data API:** `https://ep-odd-art-b3wr3a72.apirest.c-4.ap-southeast-1.aws.neon.tech/neondb/rest/v1`
 - **Schema Management:** Flyway 10.x versioned migrations (`classpath:db/migration`)
 - **Hibernate DDL Policy:** `spring.jpa.hibernate.ddl-auto=validate` (Strict validation against Flyway migrations)
 - **Security Boundary:** The Spring Boot backend is the sole authority communicating with PostgreSQL. Neither the browser nor mobile apps hold database credentials.
@@ -35,7 +36,7 @@ React Web App (Vite SaaS) ──────────────────
 
 | Profile | Purpose | Database | Schema Management | Data Seeding |
 | :--- | :--- | :--- | :--- | :--- |
-| **`postgres`** | **Production & Staging** | Supabase PostgreSQL | Flyway (`ddl-auto=validate`) | **None** (Clean schema, voluntary user registration) |
+| **`postgres`** | **Production & Staging** | Neon Serverless PostgreSQL | Flyway (`ddl-auto=validate`) | **None** (Clean schema, voluntary user registration) |
 | **`dev`** | **Local Development** | In-Memory H2 | Auto-create with seeds | `DataInitializer.java` (Demonstration records for testing) |
 | **`test`** | **Automated CI/CD** | H2 (PostgreSQL mode) | Flyway (`ddl-auto=validate`) | Isolated transactional test cases |
 
@@ -48,12 +49,12 @@ For production deployment on Render, configure the following environment variabl
 | Variable | Description | Example / Format |
 | :--- | :--- | :--- |
 | `SPRING_PROFILES_ACTIVE` | Active Spring profile | `postgres` |
-| `SPRING_DATASOURCE_URL` | Supabase Session Pooler JDBC URL | `jdbc:postgresql://<POOLER_HOST>:5432/postgres?sslmode=require` |
-| `SPRING_DATASOURCE_USERNAME` | Supabase Session Pooler Username | `postgres.<PROJECT_REF>` |
-| `SPRING_DATASOURCE_PASSWORD` | Supabase Database Password | *(Secure database password)* |
+| `SPRING_DATASOURCE_URL` | Neon Connection Pooler JDBC URL | `jdbc:postgresql://ep-odd-art-b3wr3a72-pooler.c-4.ap-southeast-1.aws.neon.tech:5432/neondb?sslmode=require&channelBinding=require` |
+| `SPRING_DATASOURCE_USERNAME` | Neon Database Role Username | `neondb_owner` |
+| `SPRING_DATASOURCE_PASSWORD` | Neon Database Password | *(Secure database password)* |
 | `APP_JWT_SECRET` | 256-bit Base64-encoded secret key | *(Base64 string generated via `openssl rand -base64 32`)* |
 | `APP_JWT_EXPIRATION_MS` | JWT expiration duration in ms | `86400000` (24 hours) |
-| `APP_CORS_ALLOWED_ORIGINS` | Comma-separated frontend origins | `https://emergency-alert-and-hospital-assistance-system.vercel.app` |
+| `APP_CORS_ALLOWED_ORIGINS` | Comma-separated frontend origins | `https://emergency-alert-and-hospital-assist.vercel.app` |
 | `PORT` | Web server listening port | `8080` |
 | `GEMINI_API_KEY` | Google Gemini AI API key | *(Optional API Key for Online Clinical Triage)* |
 
@@ -65,20 +66,13 @@ For production deployment on Render, configure the following environment variabl
 
 Database schema evolution is maintained in `src/main/resources/db/migration/`:
 
-- `V1__create_initial_schema.sql` — Creates the 12 normalized relational tables:
-  1. `users`
-  2. `hospitals`
-  3. `responders`
-  4. `user_devices`
-  5. `emergency_contacts`
-  6. `emergency_incidents`
-  7. `ambulances`
-  8. `detection_events`
-  9. `notification_attempts`
-  10. `medical_expenses`
-  11. `synchronization_records`
-  12. `audit_logs`
+- `V1__create_initial_schema.sql` — Creates the 12 core relational tables (`users`, `hospitals`, `responders`, `user_devices`, `emergency_contacts`, `emergency_incidents`, `ambulances`, `detection_events`, `notification_attempts`, `medical_expenses`, `synchronization_records`, `audit_logs`).
 - `V2__create_indexes_and_constraints.sql` — Creates foreign keys, cascade rules, and query indexes on geospatial, user, status, and audit lookup fields.
+- `V3__add_device_auth_token.sql` — Adds cryptographic hardware authentication tokens (`device_auth_token`, `last_authenticated_at`) to `user_devices`.
+- `V4__add_esp32_hardware_telemetry.sql` — Creates `hardware_telemetry_logs` for real-time ESP32 MPU6050 & MAX30102 sensor telemetry.
+- `V5__add_detection_event_timestamps.sql` — Adds `detection_source`, `confidence_score`, and telemetry sync timestamps to `detection_events`.
+- `V6__synchronize_passwords.sql` — Synchronizes default BCrypt hashes for pre-seeded demonstration accounts.
+- `V7__create_file_storage_and_pairing_tables.sql` — Creates `medical_documents` and `device_pairing_challenges` tables for medical attachments and secure hardware pairing.
 
 To apply new schema changes, always add sequential version files (e.g. `V3__description.sql`). Never edit already-applied migrations.
 
@@ -111,17 +105,14 @@ mvn clean test
 1. Open Render Dashboard: Service `emergency-alert-and-hospital-assistance-backend` (Region: Singapore).
 2. Set Environment Variables:
    - `SPRING_PROFILES_ACTIVE`: `postgres`
-   - `SPRING_DATASOURCE_URL`: `jdbc:postgresql://<SESSION_POOLER_HOST>:5432/postgres?sslmode=require`
-   - `SPRING_DATASOURCE_USERNAME`: `<SESSION_POOLER_USERNAME>`
-   - `SPRING_DATASOURCE_PASSWORD`: `<DATABASE_PASSWORD>`
+   - `SPRING_DATASOURCE_URL`: `jdbc:postgresql://ep-odd-art-b3wr3a72-pooler.c-4.ap-southeast-1.aws.neon.tech:5432/neondb?sslmode=require&channelBinding=require`
+   - `SPRING_DATASOURCE_USERNAME`: `neondb_owner`
+   - `SPRING_DATASOURCE_PASSWORD`: `<NEON_DATABASE_PASSWORD>`
    - `APP_JWT_SECRET`: `<STRONG_RANDOM_SECRET>`
    - `APP_JWT_EXPIRATION_MS`: `86400000`
-   - `APP_CORS_ALLOWED_ORIGINS`: `https://emergency-alert-and-hospital-assistance-system.vercel.app`
+   - `APP_CORS_ALLOWED_ORIGINS`: `https://emergency-alert-and-hospital-assist.vercel.app`
 3. Trigger Manual Deploy with Clear Build Cache from branch `main`.
-4. Monitor deployment logs for:
-   - `Migrating schema "public" to version "1 - create initial schema"`
-   - `Migrating schema "public" to version "2 - create indexes and constraints"`
-   - `Started EmergencyAssistanceApplication in X.XXX seconds`
+4. Monitor deployment logs for Flyway schema migrations and successful startup.
 
 ---
 
@@ -129,11 +120,11 @@ mvn clean test
 
 1. **Pre-Cutover Backup:** Prior to cutover, execute a full PostgreSQL logical dump:
    ```bash
-   pg_dump -h <POOLER_HOST> -p 5432 -U <USERNAME> -d postgres -F c -b -v -f supabase_pre_migration_backup.dump
+   pg_dump -h ep-odd-art-b3wr3a72-pooler.c-4.ap-southeast-1.aws.neon.tech -p 5432 -U neondb_owner -d neondb -F c -b -v -f neon_backup.dump
    ```
 2. **Restoration Procedure:** If a rollback is necessitated:
    ```bash
-   pg_restore -h <POOLER_HOST> -p 5432 -U <USERNAME> -d postgres -v -c supabase_pre_migration_backup.dump
+   pg_restore -h ep-odd-art-b3wr3a72-pooler.c-4.ap-southeast-1.aws.neon.tech -p 5432 -U neondb_owner -d neondb -v -c neon_backup.dump
    ```
-3. **Additive Schema Rule:** Never write destructive down-migrations. If schema rollback is required, apply a new forward migration (e.g. `V3__revert_...sql`).
+3. **Additive Schema Rule:** Never write destructive down-migrations. If schema rollback is required, apply a new forward migration (e.g. `V8__revert_...sql`).
 4. **Data Preservation:** In the event of service degradation, keep PostgreSQL running and review Render logs. Do not switch back to in-memory H2 as H2 will lose live production citizen records.

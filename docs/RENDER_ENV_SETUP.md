@@ -81,9 +81,33 @@ Render Dashboard → Select Backend Web Service → Environment → Add Environm
 
 ---
 
-## 4. Supabase PostgreSQL Configuration
+## 4. Neon PostgreSQL Configuration (Primary Production Database)
 
-The application natively supports **Supabase PostgreSQL** via its built-in session pooler.
+The application uses **Neon Serverless PostgreSQL** via its built-in connection pooler (`PgBouncer`).
+
+### Tested Production Configuration:
+- **Neon Host (Pooled):** `ep-odd-art-b3wr3a72-pooler.c-4.ap-southeast-1.aws.neon.tech`
+- **Port:** `5432`
+- **Database:** `neondb`
+- **User:** `neondb_owner`
+- **Region:** AWS `ap-southeast-1` (Singapore)
+- **Neon Data API URL:** `https://ep-odd-art-b3wr3a72.apirest.c-4.ap-southeast-1.aws.neon.tech/neondb/rest/v1`
+
+Configure the Render environment variables in Render Dashboard:
+```properties
+SPRING_DATASOURCE_URL=jdbc:postgresql://ep-odd-art-b3wr3a72-pooler.c-4.ap-southeast-1.aws.neon.tech:5432/neondb?sslmode=require&channelBinding=require
+SPRING_DATASOURCE_USERNAME=neondb_owner
+SPRING_DATASOURCE_PASSWORD=YOUR_NEON_PASSWORD
+SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
+```
+
+Neon PostgreSQL fully complies with Hibernate 6's `PostgreSQLDialect` and executes Flyway migrations without modification.
+
+---
+
+## 5. Secondary Database Options & Legacy Reference
+
+The application also natively supported Supabase PostgreSQL via its session pooler.
 
 > [!CAUTION]
 > **CRITICAL RENDER NETWORKING REQUIREMENT: IPv6 vs IPv4**
