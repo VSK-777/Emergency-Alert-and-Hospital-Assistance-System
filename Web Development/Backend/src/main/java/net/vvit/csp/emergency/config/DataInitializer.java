@@ -94,26 +94,8 @@ public class DataInitializer implements CommandLineRunner {
             }
         });
 
-        // Ensure registered citizen account vajjhasaikrishna@gmail.com is present with exact registration details
-        userRepo.findByEmail("vajjhasaikrishna@gmail.com").ifPresentOrElse(user -> {
-            boolean changed = false;
-            if (!"Sai Krishna".equals(user.getFullName())) { user.setFullName("Sai Krishna"); changed = true; }
-            if (!"9490500730".equals(user.getPhoneNumber()) && !"+919490500730".equals(user.getPhoneNumber())) {
-                user.setPhoneNumber("9490500730");
-                changed = true;
-            }
-            if (user.getBloodGroup() != null) { user.setBloodGroup(null); changed = true; }
-            if (user.getAllergies() != null) { user.setAllergies(null); changed = true; }
-            if (user.getMedicalConditions() != null) { user.setMedicalConditions(null); changed = true; }
-            if (changed) {
-                userRepo.save(user);
-                log.info("Synchronized exact registration details for user {}: Sai Krishna, 9490500730", user.getEmail());
-            }
-        }, () -> {
-            User citizen = new User("vajjhasaikrishna@gmail.com", passwordEncoder.encode("Password@123"), "Sai Krishna", "9490500730", UserRole.CITIZEN);
-            userRepo.save(citizen);
-            log.info("Seeded registered citizen account: vajjhasaikrishna@gmail.com");
-        });
+        // Ensure registered citizen account vajjhasaikrishna@gmail.com is present with exact registration details and valid password
+        ensureUserWithPassword("vajjhasaikrishna@gmail.com", "VAJJHA SAI KRISHNA", "+919490500730", UserRole.CITIZEN);
 
         if (userRepo.count() > 0) {
             log.info("Database already contains data, checking supplemental seed records...");
@@ -311,6 +293,13 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void seedSupplementalRecordsIfMissing() {
+        // Guarantee all standard demonstration accounts exist with Password@123
+        ensureUserWithPassword("vajjhasaikrishna@gmail.com", "VAJJHA SAI KRISHNA", "+919490500730", UserRole.CITIZEN);
+        ensureUserWithPassword("patient.vsk@vvit.net", "Sai Krishna", "+919490500730", UserRole.CITIZEN);
+        ensureUserWithPassword("admin@vvit.net", "CSP System Administrator", "+919876543212", UserRole.ADMIN);
+        ensureUserWithPassword("hospital.admin@aiims.edu.in", "AIIMS Mangalagiri Emergency Admin", "+918645280000", UserRole.HOSPITAL_STAFF);
+        ensureUserWithPassword("responder@vvit.net", "Ramesh Kumar T (NSS Volunteer)", "+919876543211", UserRole.RESPONDER);
+
         if (ambulanceRepo.count() == 0 && hospitalRepo.count() > 0) {
             Hospital h1 = hospitalRepo.findAll().get(0);
             ambulanceRepo.save(new Ambulance("AP 16 TE 1081", h1, "ALS", "S. K. Naidu", "+919440123456", "AVAILABLE", 16.3530, 80.5235, "Ventilator, Defibrillator, ECG Monitor, Oxygen"));
@@ -340,6 +329,37 @@ public class DataInitializer implements CommandLineRunner {
                 deviceRepo.save(esp32);
                 log.info("Enrolled and provisioned secure token hash for device CSP-Triage-V1");
             }
+        });
+    }
+
+    private void ensureUserWithPassword(String email, String name, String phone, UserRole role) {
+        String encoded = passwordEncoder.encode("Password@123");
+        userRepo.findByEmail(email).ifPresentOrElse(user -> {
+            boolean changed = false;
+            if (!passwordEncoder.matches("Password@123", user.getPasswordHash())) {
+                user.setPasswordHash(encoded);
+                changed = true;
+            }
+            if (user.getRole() != role) {
+                user.setRole(role);
+                changed = true;
+            }
+            if (!name.equalsIgnoreCase(user.getFullName())) {
+                user.setFullName(name);
+                changed = true;
+            }
+            if (!phone.equals(user.getPhoneNumber()) && !phone.replace("+91", "").equals(user.getPhoneNumber())) {
+                user.setPhoneNumber(phone);
+                changed = true;
+            }
+            if (changed) {
+                userRepo.save(user);
+                log.info("Synchronized credentials and role for user: {}", email);
+            }
+        }, () -> {
+            User newUser = new User(email, encoded, name, phone, role);
+            userRepo.save(newUser);
+            log.info("Seeded user account: {}", email);
         });
     }
 }

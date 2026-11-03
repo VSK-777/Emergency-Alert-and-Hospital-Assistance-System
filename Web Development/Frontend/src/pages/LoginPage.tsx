@@ -63,6 +63,7 @@ export const LoginPage: React.FC = () => {
   const [regConditions, setRegConditions] = useState('');
   const [regError, setRegError] = useState<string | null>(null);
   const [regSuccess, setRegSuccess] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   const redirectByRole = (role: UserRole) => {
     switch (role) {
@@ -138,6 +139,7 @@ export const LoginPage: React.FC = () => {
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isRegistering) return;
     setRegError(null);
 
     const cleanPhone = regPhone.trim();
@@ -146,12 +148,13 @@ export const LoginPage: React.FC = () => {
       return;
     }
 
-    const phoneRegex = /^\+?[0-9\s\-()]{7,20}$/;
+    const phoneRegex = /^\+?[0-9\s\(\)\-]{7,20}$/;
     if (!phoneRegex.test(cleanPhone)) {
       setRegError('Invalid Mobile Phone: Please enter a valid phone number with 7-20 digits (e.g. +91 98765 43210).');
       return;
     }
 
+    setIsRegistering(true);
     try {
       await register({
         fullName: regFullName.trim(),
@@ -172,6 +175,8 @@ export const LoginPage: React.FC = () => {
       }, 1200);
     } catch (err: any) {
       setRegError(err.message || 'Registration failed.');
+    } finally {
+      setIsRegistering(false);
     }
   };
 
@@ -238,6 +243,45 @@ export const LoginPage: React.FC = () => {
             <div className="flex items-center gap-2.5 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 p-3.5 mb-4 text-xs text-rose-800 dark:text-rose-300 animate-in fade-in duration-200">
               <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
               <span>{error}</span>
+            </div>
+          )}
+
+          {/* Quick Demo Credentials */}
+          {authMethod === 'email' && (
+            <div className="mb-4 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 text-[11px]">
+              <span className="font-semibold text-slate-500 dark:text-slate-400 block mb-1.5">
+                Quick Fill Demo Roles (Password: <code className="font-mono text-blue-600 dark:text-blue-400">Password@123</code>):
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => { setEmail('vajjhasaikrishna@gmail.com'); setPassword('Password@123'); }}
+                  className="rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 px-2 py-1 font-medium hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors cursor-pointer"
+                >
+                  Citizen (Sai Krishna)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setEmail('admin@vvit.net'); setPassword('Password@123'); }}
+                  className="rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 px-2 py-1 font-medium hover:bg-purple-100 dark:hover:bg-purple-900/60 transition-colors cursor-pointer"
+                >
+                  Admin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setEmail('hospital.admin@aiims.edu.in'); setPassword('Password@123'); }}
+                  className="rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-2 py-1 font-medium hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors cursor-pointer"
+                >
+                  Hospital Staff
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setEmail('responder@vvit.net'); setPassword('Password@123'); }}
+                  className="rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 px-2 py-1 font-medium hover:bg-amber-100 dark:hover:bg-amber-900/60 transition-colors cursor-pointer"
+                >
+                  Responder
+                </button>
+              </div>
             </div>
           )}
 
@@ -532,7 +576,7 @@ export const LoginPage: React.FC = () => {
                     onChange={(e) => setRegPhone(e.target.value)}
                     placeholder="+91 98765 43210"
                     maxLength={20}
-                    pattern="^\+?[0-9\s\-()]{7,20}$"
+                    pattern="^\+?[0-9\s\(\)\-]{7,20}$"
                     className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-2.5 text-slate-900 dark:text-white"
                     required
                     autoComplete="tel"
@@ -639,9 +683,10 @@ export const LoginPage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-blue-600 px-5 py-2 font-bold text-white hover:bg-blue-700"
+                  disabled={isRegistering}
+                  className="rounded-xl bg-blue-600 px-5 py-2 font-bold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
                 >
-                  Register Profile
+                  {isRegistering ? 'Registering...' : 'Register Profile'}
                 </button>
               </div>
             </form>

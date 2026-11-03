@@ -31,6 +31,12 @@ const getStoredUser = (): User | null => {
 
 const extractAuthErrorMessage = (err: any, defaultMsg: string): string => {
   const status = err.response?.status;
+  if (status === 429) {
+    return 'Too many requests were sent in a short period (HTTP 429 Rate Limit). Please wait 15–30 seconds before retrying.';
+  }
+  if (status === 409) {
+    return err.response?.data?.message || 'An account with this email or phone number already exists. Please sign in instead.';
+  }
   if (status === 502 || status === 503 || status === 504) {
     return `Backend service is temporarily restarting or deploying (HTTP ${status} Bad Gateway). Please wait ~30 seconds and retry.`;
   }
