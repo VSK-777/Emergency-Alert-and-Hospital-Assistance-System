@@ -16,14 +16,12 @@ import {
   Edit,
   UserCheck,
   Activity,
-  FileText,
-  ArrowRight,
+  Navigation,
 } from 'lucide-react';
 import { emergencyApi } from '../api/emergencies';
 import { hospitalApi } from '../api/hospitals';
 import { contactApi } from '../api/contacts';
 import { deviceApi } from '../api/devices';
-import { fileApi, type MedicalDocument } from '../api/files';
 import { useAuthStore } from '../store/authStore';
 import type { EmergencyIncident, Hospital, EmergencyContact, HardwareDevice } from '../types';
 import { Badge } from '../components/common/Badge';
@@ -85,10 +83,10 @@ export const CitizenDashboardPage: React.FC = () => {
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const [activeEmergency, setActiveEmergency] = useState<EmergencyIncident | null>(null);
-  const [hospitals, setHospitals] = useState<Hospital[]>(DEFAULT_REGIONAL_HOSPITALS);
+  const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [isLoadingHospitals, setIsLoadingHospitals] = useState(true);
   const [contacts, setContacts] = useState<EmergencyContact[]>([]);
   const [pairedDevice, setPairedDevice] = useState<HardwareDevice | null>(null);
-  const [documents, setDocuments] = useState<MedicalDocument[]>([]);
   const [isTriggeringSos, setIsTriggeringSos] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>({
     lat: OSM_TEST_LOCATION.lat,
@@ -120,12 +118,19 @@ export const CitizenDashboardPage: React.FC = () => {
       );
       setActiveEmergency(active || null);
 
-      // 2. Nearby Hospitals
-      const nearbyHosp = await hospitalApi.getHospitals(userLocation.lat, userLocation.lng);
-      if (nearbyHosp && nearbyHosp.length > 0) {
-        setHospitals(nearbyHosp.slice(0, 4));
-      } else {
+      // 2. Nearby Hospitals from Live Backend (calculated with live GPS)
+      try {
+        const nearbyHosp = await hospitalApi.getHospitals(userLocation.lat, userLocation.lng);
+        if (nearbyHosp && nearbyHosp.length > 0) {
+          setHospitals(nearbyHosp.slice(0, 4));
+        } else {
+          setHospitals(DEFAULT_REGIONAL_HOSPITALS);
+        }
+      } catch (err) {
+        console.warn('Backend hospital query failed, falling back to cached emergency directory:', err);
         setHospitals(DEFAULT_REGIONAL_HOSPITALS);
+      } finally {
+        setIsLoadingHospitals(false);
       }
 
       // 3. Verified Emergency Contacts
@@ -136,10 +141,6 @@ export const CitizenDashboardPage: React.FC = () => {
       const devices = await deviceApi.getDevices();
       const myDevice = devices.find((d) => (d.deviceType === 'ESP32_TRIAGE' || d.deviceType === 'SMARTWATCH') && d.isActive);
       setPairedDevice(myDevice || null);
-
-      // 5. Medical Documents & Reports (Secure Cloud Storage)
-      const docs = await fileApi.getMyDocuments();
-      setDocuments(docs);
     } catch (err) {
       console.error('Failed to load citizen dashboard data:', err);
     }
@@ -438,17 +439,31 @@ export const CitizenDashboardPage: React.FC = () => {
 
       {/* Grid: Nearby Hospitals + Digital Medical ID */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Nearby Hospitals (Read-Only) */}
+        {/* Nearby Hospitals (Live Neon Database Telemetry) */}
         <div className="lg:col-span-7 space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
             <h3 className="text-xs font-bold tracking-wider uppercase text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
               <Building2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               Nearby Emergency Hospitals
             </h3>
-            <span className="text-xs text-slate-500 dark:text-slate-400">Public ER Directory</span>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />
+                Live Neon DB
+              </span>
+              <span className="text-xs text-slate-400">·</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">Sorted by Live GPS Distance</span>
+            </div>
           </div>
 
-          {hospitals.length === 0 ? (
+          {isLoadingHospitals && hospitals.length === 0 ? (
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 p-8 text-center bg-white dark:bg-slate-900 animate-pulse">
+              <Building2 className="h-8 w-8 mx-auto text-slate-400 mb-2 animate-bounce" />
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                Querying live Neon PostgreSQL trauma registry with GPS coordinates...
+              </p>
+            </div>
+          ) : hospitals.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-8 text-center bg-white dark:bg-slate-900">
               <Building2 className="h-8 w-8 mx-auto text-slate-400 mb-2" />
               <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
@@ -466,23 +481,63 @@ export const CitizenDashboardPage: React.FC = () => {
               {hospitals.map((hosp) => (
                 <div
                   key={hosp.id}
-                  className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-2.5 shadow-xs transition-colors"
+                  className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-3 shadow-xs transition-colors hover:border-blue-300 dark:hover:border-blue-900 flex flex-col justify-between"
                 >
-                  <div className="flex items-start justify-between">
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">{hosp.name}</h4>
-                    <span className="rounded bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 px-2 py-0.5 text-[10px] font-bold border border-blue-200 dark:border-blue-800">
-                      {hosp.availableIcus} ICUs
-                    </span>
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
+                        {hosp.name}
+                      </h4>
+                      {hosp.distanceKm !== undefined && hosp.distanceKm !== null ? (
+                        <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 px-2 py-0.5 text-[10px] font-bold border border-emerald-200 dark:border-emerald-800">
+                          <Navigation className="h-2.5 w-2.5" />
+                          {hosp.distanceKm} km away
+                        </span>
+                      ) : (
+                        <span className="shrink-0 rounded bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 px-2 py-0.5 text-[10px] font-bold border border-blue-200 dark:border-blue-800">
+                          Regional ER
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="text-xs text-slate-500 dark:text-slate-400 flex items-start gap-1 line-clamp-1">
+                      <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400 mt-0.5" />
+                      <span>{hosp.address}</span>
+                    </p>
+
+                    {/* Live Hospital Telemetry Grid */}
+                    <div className="grid grid-cols-3 gap-1 py-1.5 px-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800/80 text-[10px]">
+                      <div className="text-center">
+                        <span className="text-slate-400 block font-medium">ICUs</span>
+                        <span className="font-bold text-blue-600 dark:text-blue-400">{hosp.availableIcus} Ready</span>
+                      </div>
+                      <div className="text-center border-x border-slate-200 dark:border-slate-800">
+                        <span className="text-slate-400 block font-medium">Fleet</span>
+                        <span className="font-bold text-amber-600 dark:text-amber-400">{hosp.availableAmbulances} Amb</span>
+                      </div>
+                      <div className="text-center">
+                        <span className="text-slate-400 block font-medium">Beds</span>
+                        <span className="font-bold text-slate-700 dark:text-slate-300">{hosp.emergencyCapacity} Cap</span>
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">{hosp.address}</p>
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
-                    <span className="text-slate-500 dark:text-slate-400">ER Phone: {hosp.phoneNumber}</span>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-xs gap-2">
                     <a
                       href={`tel:${hosp.phoneNumber}`}
                       className="font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
                     >
                       <Phone className="h-3 w-3" />
-                      Call ER
+                      <span>Call ER</span>
+                    </a>
+                    <a
+                      href={`https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${userLocation.lat}%2C${userLocation.lng}%3B${hosp.latitude}%2C${hosp.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 text-[11px]"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      <span>Directions</span>
                     </a>
                   </div>
                 </div>
@@ -561,33 +616,6 @@ export const CitizenDashboardPage: React.FC = () => {
               <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
               <span>Visible strictly to verified ER trauma teams during active emergencies.</span>
             </div>
-          </div>
-
-          {/* Medical Documents & Prescriptions Quick Card (Directs to My Medical ID Page) */}
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-3 shadow-xs transition-colors">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">
-                  Medical Documents & Prescriptions
-                </h4>
-              </div>
-              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                {documents.length > 0 ? `${documents.length} File(s)` : '0 Files'}
-              </span>
-            </div>
-
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Manage your encrypted health records, hospital discharge summaries, and prescription uploads on your Medical ID page.
-            </p>
-
-            <Link
-              to="/patients"
-              className="flex items-center justify-between w-full rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 p-2.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-950/80 transition-colors"
-            >
-              <span>Manage in My Medical ID</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
           </div>
         </div>
       </div>

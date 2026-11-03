@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 
 export const HospitalsPage: React.FC = () => {
-  const [hospitals, setHospitals] = useState<Hospital[]>(DEFAULT_REGIONAL_HOSPITALS);
+  const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const { activeIncidents } = useEmergencyStore();
   const { user } = useAuthStore();
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
