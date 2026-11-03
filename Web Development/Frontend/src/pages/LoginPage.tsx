@@ -1,20 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import { BrandIcon } from '../components/common/BrandIcon';
 import {
-  Activity,
   Lock,
   Mail,
-  Phone,
   ArrowRight,
   AlertCircle,
   Eye,
   EyeOff,
   UserPlus,
   ShieldCheck,
-  Building2,
   X,
   Sun,
   Moon,
@@ -22,33 +19,14 @@ import {
 import type { UserRole } from '../types';
 
 export const LoginPage: React.FC = () => {
-  const { login, sendOtp, verifyOtp, register, isLoading, error } = useAuthStore();
+  const { login, register, isLoading, error } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
   const navigate = useNavigate();
-
-  // Authentication Mode: Institutional / Email vs Citizen Phone
-  const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
 
   // Input states — initialized completely empty (No hardcoded credentials)
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-
-  // Phone Auth states
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [otpCode, setOtpCode] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpError, setOtpError] = useState<string | null>(null);
-  const [isSendingOtp, setIsSendingOtp] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
-
-  useEffect(() => {
-    if (resendCooldown <= 0) return;
-    const timer = setInterval(() => {
-      setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [resendCooldown]);
 
   // Registration Modal state
   const [showRegisterModal, setShowRegisterModal] = useState(false);
@@ -96,40 +74,6 @@ export const LoginPage: React.FC = () => {
       }
     } catch {
       // Error displayed in UI via authStore
-    }
-  };
-
-  const handleSendOtp = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!phoneNumber.trim()) return;
-    setOtpError(null);
-    setIsSendingOtp(true);
-    try {
-      await sendOtp(phoneNumber.trim());
-      setOtpSent(true);
-      setResendCooldown(30);
-    } catch (err: any) {
-      setOtpError(err.message || 'Failed to dispatch verification OTP.');
-    } finally {
-      setIsSendingOtp(false);
-    }
-  };
-
-  const handleVerifyPhone = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!phoneNumber.trim() || !otpCode.trim()) return;
-    setOtpError(null);
-
-    try {
-      await verifyOtp(phoneNumber, otpCode.trim(), 'Citizen User');
-      const user = useAuthStore.getState().user;
-      if (user) {
-        redirectByRole(user.role);
-      } else {
-        navigate('/');
-      }
-    } catch (err: any) {
-      setOtpError(err.message || 'Invalid or expired OTP code.');
     }
   };
 
@@ -206,225 +150,78 @@ export const LoginPage: React.FC = () => {
 
         {/* Authentication Card */}
         <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm transition-colors">
-          {/* Method Tabs */}
-          <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 mb-5">
-            <button
-              type="button"
-              onClick={() => {
-                setAuthMethod('email');
-                useAuthStore.setState({ error: null });
-                setOtpError(null);
-              }}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-all ${
-                authMethod === 'email'
-                  ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-              }`}
-            >
-              <Mail className="h-3.5 w-3.5" />
-              <span>Email Sign In</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setAuthMethod('phone');
-                useAuthStore.setState({ error: null });
-                setOtpError(null);
-              }}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-all ${
-                authMethod === 'phone'
-                  ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-              }`}
-            >
-              <Phone className="h-3.5 w-3.5" />
-              <span>Citizen Phone OTP</span>
-            </button>
-          </div>
-
-          {/* Unified Error Alert Banner */}
-          {(authMethod === 'email' ? error : (otpError || error)) && (
+          {/* Real Error Alert from Backend */}
+          {error && (
             <div className="flex items-center gap-2.5 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 p-3.5 mb-4 text-xs text-rose-800 dark:text-rose-300 animate-in fade-in duration-200">
               <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
-              <span>{authMethod === 'email' ? error : (otpError || error)}</span>
+              <span>{error}</span>
             </div>
           )}
 
-          {/* Email / Password Form */}
-          {authMethod === 'email' ? (
-            <form onSubmit={handleEmailSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="loginEmail" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
-                  <input
-                    id="loginEmail"
-                    name="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      if (error) useAuthStore.setState({ error: null });
-                    }}
-                    placeholder="Enter your registered email"
-                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pl-10 pr-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none transition-colors"
-                    required
-                    autoComplete="email"
-                  />
-                </div>
+          {/* Email / Password Sign In Form */}
+          <form onSubmit={handleEmailSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="loginEmail" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
+                <input
+                  id="loginEmail"
+                  name="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (error) useAuthStore.setState({ error: null });
+                  }}
+                  placeholder="Enter your registered email"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pl-10 pr-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none transition-colors"
+                  required
+                  autoComplete="email"
+                />
               </div>
-
-              <div>
-                <label htmlFor="loginPassword" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
-                  <input
-                    id="loginPassword"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      if (error) useAuthStore.setState({ error: null });
-                    }}
-                    placeholder="Enter account password"
-                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pl-10 pr-10 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none transition-colors"
-                    required
-                    autoComplete="current-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-xs font-bold text-white shadow-xs hover:bg-blue-700 active:scale-95 disabled:opacity-50 transition-all cursor-pointer"
-              >
-                <span>{isLoading ? 'Authenticating with Backend...' : 'Sign In to Emergency Grid'}</span>
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </form>
-          ) : (
-            /* Citizen Phone OTP Form */
-            <div className="space-y-4">
-              {!otpSent ? (
-                <form onSubmit={handleSendOtp} className="space-y-4">
-                  <div>
-                    <label htmlFor="loginPhone" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                      Citizen Mobile Number
-                    </label>
-                    <div className="relative">
-                      <Phone className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
-                      <input
-                        id="loginPhone"
-                        name="phoneNumber"
-                        type="tel"
-                        value={phoneNumber}
-                        onChange={(e) => {
-                          setPhoneNumber(e.target.value);
-                          if (error || otpError) {
-                            useAuthStore.setState({ error: null });
-                            setOtpError(null);
-                          }
-                        }}
-                        placeholder="+91 98765 43210"
-                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pl-10 pr-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none"
-                        required
-                        autoComplete="tel"
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isSendingOtp || !phoneNumber.trim()}
-                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                  >
-                    <span>{isSendingOtp ? 'Generating Security OTP...' : 'Request OTP Code'}</span>
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                </form>
-              ) : (
-                <form onSubmit={handleVerifyPhone} className="space-y-4">
-                  <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300 flex items-start gap-2.5">
-                    <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600 mt-0.5" />
-                    <div className="space-y-0.5">
-                      <p className="font-semibold">Verification Code Dispatched</p>
-                      <p className="text-[11px] text-emerald-700 dark:text-emerald-400">
-                        A 6-digit one-time password was issued for <span className="font-bold">{phoneNumber}</span>.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="loginOtp" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                      6-Digit Security Code
-                    </label>
-                    <input
-                      id="loginOtp"
-                      name="otpCode"
-                      type="text"
-                      maxLength={6}
-                      value={otpCode}
-                      onChange={(e) => {
-                        setOtpCode(e.target.value.replace(/\D/g, ''));
-                        if (error || otpError) {
-                          useAuthStore.setState({ error: null });
-                          setOtpError(null);
-                        }
-                      }}
-                      placeholder="e.g. 524103"
-                      className="w-full text-center tracking-widest font-mono text-base rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-2.5 text-slate-900 dark:text-white"
-                      required
-                      autoComplete="one-time-code"
-                    />
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setOtpSent(false);
-                        setOtpError(null);
-                        useAuthStore.setState({ error: null });
-                        setOtpCode('');
-                      }}
-                      className="rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                    >
-                      Change Number
-                    </button>
-                    <button
-                      type="button"
-                      disabled={resendCooldown > 0 || isSendingOtp}
-                      onClick={() => handleSendOtp()}
-                      className="rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
-                    >
-                      {resendCooldown > 0 ? `Resend (${resendCooldown}s)` : 'Resend Code'}
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isLoading || otpCode.length !== 6}
-                      className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-blue-600 py-2.5 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                    >
-                      <span>{isLoading ? 'Verifying...' : 'Verify & Sign In'}</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                </form>
-              )}
             </div>
-          )}
+
+            <div>
+              <label htmlFor="loginPassword" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
+                <input
+                  id="loginPassword"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (error) useAuthStore.setState({ error: null });
+                  }}
+                  placeholder="Enter account password"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pl-10 pr-10 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none transition-colors"
+                  required
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-xs font-bold text-white shadow-xs hover:bg-blue-700 active:scale-95 disabled:opacity-50 transition-all cursor-pointer"
+            >
+              <span>{isLoading ? 'Authenticating with Backend...' : 'Sign In to Emergency Grid'}</span>
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </form>
 
           {/* Registration Trigger */}
           <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 text-center">
