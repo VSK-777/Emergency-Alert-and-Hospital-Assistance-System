@@ -2,6 +2,7 @@ package net.vvit.csp.emergency.config;
 
 import net.vvit.csp.emergency.model.*;
 import net.vvit.csp.emergency.repository.*;
+import net.vvit.csp.emergency.service.DeviceAuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -254,6 +255,10 @@ public class DataInitializer implements CommandLineRunner {
         event.setAngularVelocity(6.15);
         event.setPostImpactInactivitySec(12);
         event.setRawTelemetryJson("{\"accel_peak_g\": 3.42, \"gyro_dps\": 352, \"stillness_duration_s\": 12}");
+        event.setDeviceUptimeSeconds(120L);
+        event.setMobileReceivedAt(LocalDateTime.now().minusMinutes(5));
+        event.setServerReceivedAt(LocalDateTime.now().minusMinutes(5));
+        event.setEventPersistedAt(LocalDateTime.now().minusMinutes(5));
         detectionEventRepo.save(event);
 
         MedicalExpense exp1 = new MedicalExpense();
@@ -271,6 +276,7 @@ public class DataInitializer implements CommandLineRunner {
         esp32.setDeviceType(DeviceType.ESP32_TRIAGE);
         esp32.setDeviceIdentifier("CSP-Triage-V1");
         esp32.setFcmToken("fcm-esp32-triage-v1-token");
+        esp32.setAuthTokenHash(DeviceAuthService.hashToken("dvt_esp32_triage_v1_secure_key"));
         esp32.setIsActive(true);
         esp32.setLastSyncedAt(LocalDateTime.now().minusSeconds(15));
         deviceRepo.save(esp32);
@@ -313,16 +319,27 @@ public class DataInitializer implements CommandLineRunner {
         if (auditLogRepo.count() == 0) {
             auditLogRepo.save(new AuditLog("SYSTEM_BOOT", "admin@vvit.net", "ADMIN", null, "Emergency Coordination System active"));
         }
-        if (deviceRepo.count() == 0 && userRepo.count() > 0) {
-            User patient = userRepo.findByEmail("patient.vsk@vvit.net").orElse(userRepo.findAll().get(0));
-            UserDevice esp32 = new UserDevice();
-            esp32.setUser(patient);
-            esp32.setDeviceType(DeviceType.ESP32_TRIAGE);
-            esp32.setDeviceIdentifier("CSP-Triage-V1");
-            esp32.setFcmToken("fcm-esp32-triage-v1-token");
-            esp32.setIsActive(true);
-            esp32.setLastSyncedAt(LocalDateTime.now());
-            deviceRepo.save(esp32);
-        }
+        deviceRepo.findByDeviceIdentifier("CSP-Triage-V1").ifPresentOrElse(dev -> {
+            if (dev.getAuthTokenHash() == null || dev.getAuthTokenHash().isBlank()) {
+                dev.setAuthTokenHash(DeviceAuthService.hashToken("dvt_esp32_triage_v1_secure_key"));
+                dev.setIsActive(true);
+                deviceRepo.save(dev);
+                log.info("Provisioned secure token hash for device CSP-Triage-V1");
+            }
+        }, () -> {
+            if (userRepo.count() > 0) {
+                User patient = userRepo.findByEmail("patient.vsk@vvit.net").orElse(userRepo.findAll().get(0));
+                UserDevice esp32 = new UserDevice();
+                esp32.setUser(patient);
+                esp32.setDeviceType(DeviceType.ESP32_TRIAGE);
+                esp32.setDeviceIdentifier("CSP-Triage-V1");
+                esp32.setFcmToken("fcm-esp32-triage-v1-token");
+                esp32.setAuthTokenHash(DeviceAuthService.hashToken("dvt_esp32_triage_v1_secure_key"));
+                esp32.setIsActive(true);
+                esp32.setLastSyncedAt(LocalDateTime.now());
+                deviceRepo.save(esp32);
+                log.info("Enrolled and provisioned secure token hash for device CSP-Triage-V1");
+            }
+        });
     }
 }

@@ -249,6 +249,26 @@ export const EmergencyDetailModal: React.FC<EmergencyDetailModalProps> = ({
                 </span>
               </div>
             )}
+
+            {/* Multi-tier Timestamp Ingestion Provenance */}
+            <div className="mt-3 pt-2.5 border-t border-red-200/60 dark:border-red-900/40 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+              <div>
+                <span className="text-slate-500 dark:text-slate-400 font-medium">Incident Wall-Clock Time:</span>
+                <p className="font-semibold text-slate-800 dark:text-slate-200">
+                  {new Date(incident.createdAt).toLocaleString()}
+                </p>
+              </div>
+              <div>
+                <span className="text-slate-500 dark:text-slate-400 font-medium">Hardware Device Uptime:</span>
+                <p className="font-semibold font-mono text-slate-800 dark:text-slate-200">
+                  {parsedTelemetry?.deviceUptimeSeconds != null
+                    ? `${parsedTelemetry.deviceUptimeSeconds}s (${Math.floor(parsedTelemetry.deviceUptimeSeconds / 60)}m ${parsedTelemetry.deviceUptimeSeconds % 60}s since boot)`
+                    : (parsedTelemetry?.timestamp_seconds != null
+                        ? `${parsedTelemetry.timestamp_seconds}s (${Math.floor(parsedTelemetry.timestamp_seconds / 60)}m ${parsedTelemetry.timestamp_seconds % 60}s since boot)`
+                        : 'Hardware Uptime Preserved')}
+                </p>
+              </div>
+            </div>
           </div>
         )}
 

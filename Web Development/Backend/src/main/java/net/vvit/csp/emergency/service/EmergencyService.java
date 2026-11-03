@@ -82,38 +82,28 @@ public class EmergencyService {
         String effectiveDeviceId = (deviceId != null && !deviceId.isBlank()) ? deviceId : request.getDeviceIdentifier();
         String effectiveDeviceToken = (deviceToken != null && !deviceToken.isBlank()) ? deviceToken : request.getDeviceToken();
 
-        if (user == null && effectiveDeviceId != null && !effectiveDeviceId.isBlank()) {
-            if (effectiveDeviceToken != null && !effectiveDeviceToken.isBlank()) {
-                Optional<UserDevice> authenticatedDevice = deviceAuthService.authenticateDevice(effectiveDeviceId, effectiveDeviceToken);
-                if (authenticatedDevice.isPresent()) {
-                    user = authenticatedDevice.get().getUser();
-                    log.info("Emergency incident authenticated via enrolled device: {} for citizen: {}", effectiveDeviceId, user.getEmail());
+        if (user == null) {
+            if (effectiveDeviceId != null && !effectiveDeviceId.isBlank()) {
+                if (effectiveDeviceToken != null && !effectiveDeviceToken.isBlank()) {
+                    Optional<UserDevice> authenticatedDevice = deviceAuthService.authenticateDevice(effectiveDeviceId, effectiveDeviceToken);
+                    if (authenticatedDevice.isPresent()) {
+                        user = authenticatedDevice.get().getUser();
+                        log.info("Emergency incident authenticated via enrolled hardware device: {} for citizen: {}", effectiveDeviceId, user.getEmail());
+                    } else {
+                        log.warn("Device authentication failed for deviceId: {}. Invalid token or inactive device.", effectiveDeviceId);
+                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid device credentials for device: " + effectiveDeviceId);
+                    }
                 } else {
-                    log.warn("Device token authentication failed for deviceId: {}. Checking enrolled hardware record.", effectiveDeviceId);
+                    log.warn("Device authentication rejected for deviceId: {}. Missing device token.", effectiveDeviceId);
+                    throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Device token required for hardware authentication: " + effectiveDeviceId);
                 }
-            }
-            if (user == null) {
-                Optional<UserDevice> knownDevice = deviceRepo.findByDeviceIdentifier(effectiveDeviceId);
-                if (knownDevice.isPresent() && Boolean.TRUE.equals(knownDevice.get().getIsActive())) {
-                    user = knownDevice.get().getUser();
-                    log.info("Emergency incident mapped to active enrolled device: {} for citizen: {}", effectiveDeviceId, user.getEmail());
-                }
-            }
-        }
-
-        if (user == null && request.getUserEmail() != null && !request.getUserEmail().isBlank()) {
-            Optional<User> userOpt = userRepo.findByEmail(request.getUserEmail().trim().toLowerCase());
-            if (userOpt.isPresent()) {
-                user = userOpt.get();
-                log.info("Emergency incident attributed via userEmail payload: {}", user.getEmail());
-            }
-        }
-
-        if (user == null && request.getUserId() != null) {
-            Optional<User> userOpt = userRepo.findById(request.getUserId());
-            if (userOpt.isPresent()) {
-                user = userOpt.get();
-                log.info("Emergency incident attributed via userId payload: {}", user.getId());
+            } else if (request.getUserEmail() != null && !request.getUserEmail().isBlank()) {
+                // Reject unauthenticated requests attempting to spoof a user email without credentials
+                log.warn("Unauthorized emergency creation attempt using userEmail '{}' without valid JWT or device token.", request.getUserEmail());
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required: Provide a valid user session or enrolled device credentials.");
+            } else {
+                log.warn("Unauthorized emergency creation attempt from IP: {}. Missing valid user session or enrolled device credentials.", clientIp);
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required: Provide a valid user session or enrolled device credentials (X-Device-Id and X-Device-Token).");
             }
         }
 
@@ -175,16 +165,21 @@ public class EmergencyService {
 
         EmergencyIncident saved = incidentRepo.save(incident);
 
-        // 7. Save detection event if included (e.g. from Smartwatch)
+        // 7. Save detection event if included (e.g. from ESP32 Triage Hardware or Mobile Companion)
         if (request.getDetectionEvent() != null) {
             DetectionEventDto eventDto = request.getDetectionEvent();
             DetectionEvent event = new DetectionEvent();
             event.setIncident(saved);
-            event.setEventType(eventDto.getEventType() != null ? eventDto.getEventType() : "SMARTWATCH_ACCIDENT_EVENT");
+            event.setEventType(eventDto.getEventType() != null ? eventDto.getEventType() : "ESP32_TRAUMA_EVENT");
             event.setAccelerationMagnitude(eventDto.getAccelerationMagnitude());
             event.setAngularVelocity(eventDto.getAngularVelocity());
             event.setPostImpactInactivitySec(eventDto.getPostImpactInactivitySec());
             event.setRawTelemetryJson(eventDto.getRawTelemetryJson());
+            event.setDeviceUptimeSeconds(eventDto.getDeviceUptimeSeconds());
+            event.setMobileReceivedAt(eventDto.getMobileReceivedAt());
+            event.setServerReceivedAt(incidentTime);
+            event.setEventPersistedAt(LocalDateTime.now());
+            event.setCreatedAt(LocalDateTime.now());
             detectionEventRepo.save(event);
         }
 
