@@ -28,8 +28,11 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Configuration
 @EnableWebSecurity
@@ -122,12 +125,24 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        List<String> origins = Arrays.stream(allowedOrigins.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .toList();
+        Set<String> originPatterns = new LinkedHashSet<>();
 
-        configuration.setAllowedOriginPatterns(origins);
+        if (allowedOrigins != null && !allowedOrigins.isBlank()) {
+            Arrays.stream(allowedOrigins.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .forEach(originPatterns::add);
+        }
+
+        // Always allow all Vercel deployment & preview domains and local dev environments
+        originPatterns.add("https://*.vercel.app");
+        originPatterns.add("https://frontend-seven-zeta-99.vercel.app");
+        originPatterns.add("https://emergency-alert-and-hospital-assist.vercel.app");
+        originPatterns.add("https://emergency-alert-and-hospital-assistance-system.vercel.app");
+        originPatterns.add("http://localhost:*");
+        originPatterns.add("http://127.0.0.1:*");
+
+        configuration.setAllowedOriginPatterns(new ArrayList<>(originPatterns));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList(
                 "Authorization",

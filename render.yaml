@@ -27,8 +27,8 @@ services:
       - key: APP_JWT_EXPIRATION_MS
         value: 86400000
       - key: FRONTEND_URL
-        value: https://emergency-alert-and-hospital-assistance-system.vercel.app
+        value: https://frontend-seven-zeta-99.vercel.app
       - key: APP_CORS_ALLOWED_ORIGINS
-        value: https://emergency-alert-and-hospital-assist.vercel.app,https://emergency-alert-and-hospital-assistance-system.vercel.app
+        value: https://frontend-seven-zeta-99.vercel.app,https://*.vercel.app,https://emergency-alert-and-hospital-assist.vercel.app,https://emergency-alert-and-hospital-assistance-system.vercel.app,http://localhost:5173,http://localhost:3000
       - key: GEMINI_API_KEY
         sync: false
