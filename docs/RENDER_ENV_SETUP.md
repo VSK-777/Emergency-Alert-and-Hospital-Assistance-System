@@ -27,7 +27,6 @@ The Emergency Alert and Hospital Assistance System is architected with strict bo
 
 ### Critical Security Rules:
 - **Never expose backend credentials to the frontend**: Database connection strings, database passwords, `APP_JWT_SECRET`, `SUPABASE_SECRET_KEY`, and `GEMINI_API_KEY` belong **exclusively** on Render backend environment variables.
-- **Frontend variables in Vercel** must ONLY contain public client endpoints (such as `VITE_API_BASE_URL` pointing to Render, `VITE_MAP_TILE_URL`, or `VITE_PHONE_EMAIL_CLIENT_ID`).
 - **Never commit `.env` to GitHub**: All local `.env` and `.env.*` files are strictly ignored by `.gitignore`. Only `.env.example` is checked into version control.
 
 ---
@@ -206,7 +205,6 @@ The React Web App is hosted separately on Vercel. In your Vercel Dashboard (**Pr
 | :--- | :--- | :--- |
 | `VITE_API_BASE_URL` | `https://emergency-alert-and-hospital-assistance.onrender.com` | Live backend API URL on Render. |
 | `VITE_MAP_TILE_URL` | `https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png` | Leaflet OpenStreetMap tile server. |
-| `VITE_PHONE_EMAIL_CLIENT_ID` | `15695407177920574360` | Optional client ID for phone/email sign-in widget. |
 
 > **Security Boundary Enforcement:** Vercel MUST NEVER be given `SPRING_DATASOURCE_PASSWORD`, `APP_JWT_SECRET`, or `SUPABASE_SECRET_KEY`.
 

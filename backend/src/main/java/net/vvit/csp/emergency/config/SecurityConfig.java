@@ -89,6 +89,7 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/hospitals", "/api/v1/hospitals/*").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/emergencies").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/devices/telemetry").permitAll()
                         .requestMatchers("/h2-console/**").access((authentication, context) ->
                                 new AuthorizationDecision(isDevProfile()))
                         .anyRequest().authenticated()

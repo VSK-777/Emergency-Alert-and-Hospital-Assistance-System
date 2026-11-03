@@ -27,6 +27,12 @@ public class UserDevice {
     @Column(name = "auth_token_hash", length = 255)
     private String authTokenHash;
 
+    @Column(name = "pairing_status", length = 30)
+    private String pairingStatus = "PAIRED";
+
+    @Column(name = "firmware_version", length = 50)
+    private String firmwareVersion = "CSP-Triage-V1";
+
     @Column(name = "is_active")
     private Boolean isActive = true;
 
@@ -55,6 +61,12 @@ public class UserDevice {
 
     public String getAuthTokenHash() { return authTokenHash; }
     public void setAuthTokenHash(String authTokenHash) { this.authTokenHash = authTokenHash; }
+
+    public String getPairingStatus() { return pairingStatus; }
+    public void setPairingStatus(String pairingStatus) { this.pairingStatus = pairingStatus; }
+
+    public String getFirmwareVersion() { return firmwareVersion; }
+    public void setFirmwareVersion(String firmwareVersion) { this.firmwareVersion = firmwareVersion; }
 
     public Boolean getIsActive() { return isActive; }
     public void setIsActive(Boolean active) { isActive = active; }

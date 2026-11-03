@@ -3,14 +3,14 @@ package net.vvit.csp.emergency.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import net.vvit.csp.emergency.dto.DeviceEnrollmentRequest;
-import net.vvit.csp.emergency.dto.DeviceEnrollmentResponse;
-import net.vvit.csp.emergency.dto.HardwareTelemetryDto;
+import net.vvit.csp.emergency.dto.*;
+import net.vvit.csp.emergency.exception.BadRequestException;
 import net.vvit.csp.emergency.model.AuditLog;
 import net.vvit.csp.emergency.model.DetectionEvent;
 import net.vvit.csp.emergency.model.HardwareTelemetry;
 import net.vvit.csp.emergency.model.User;
 import net.vvit.csp.emergency.model.UserDevice;
+import net.vvit.csp.emergency.model.UserRole;
 import net.vvit.csp.emergency.repository.AuditLogRepository;
 import net.vvit.csp.emergency.repository.DetectionEventRepository;
 import net.vvit.csp.emergency.repository.DeviceRepository;
@@ -22,6 +22,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -58,6 +59,58 @@ public class DeviceController {
         this.broadcastService = broadcastService;
     }
 
+    @PostMapping("/pairing-challenge")
+    @Operation(summary = "Generate a short-lived single-use pairing challenge for linking ESP32 hardware to the authenticated citizen")
+    public ResponseEntity<DevicePairingChallengeDto> requestPairingChallenge(
+            @RequestParam(required = false) String deviceType
+    ) {
+        User user = authService.getCurrentAuthenticatedUser();
+        var type = net.vvit.csp.emergency.model.DeviceType.ESP32_TRIAGE;
+        if (deviceType != null && !deviceType.isBlank()) {
+            try {
+                type = net.vvit.csp.emergency.model.DeviceType.valueOf(deviceType.toUpperCase());
+            } catch (Exception ignored) {}
+        }
+        DevicePairingChallengeDto challenge = deviceAuthService.createPairingChallenge(user, type);
+        return ResponseEntity.status(HttpStatus.CREATED).body(challenge);
+    }
+
+    @PostMapping("/claim")
+    @Operation(summary = "Claim physical possession of an ESP32 hardware device with pairing challenge and secret")
+    public ResponseEntity<DeviceClaimResponse> claimDevice(
+            @Valid @RequestBody DeviceClaimRequest request
+    ) {
+        User user = authService.getCurrentAuthenticatedUser();
+        DeviceClaimResponse response = deviceAuthService.claimDevice(request, user);
+        auditLogRepository.save(new AuditLog(
+                "DEVICE_CLAIMED",
+                "DEVICE",
+                response.getId().toString(),
+                user.getEmail(),
+                "Claimed and paired device " + response.getDeviceIdentifier() + " with status " + response.getPairingStatus()
+        ));
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @DeleteMapping("/{deviceIdentifier}")
+    @Operation(summary = "Unpair and revoke a hardware device (Owner or Admin only)")
+    public ResponseEntity<Map<String, Object>> unpairDevice(@PathVariable String deviceIdentifier) {
+        User user = authService.getCurrentAuthenticatedUser();
+        deviceAuthService.unpairDevice(deviceIdentifier, user);
+        auditLogRepository.save(new AuditLog(
+                "DEVICE_UNPAIRED",
+                "DEVICE",
+                deviceIdentifier,
+                user.getEmail(),
+                "Unpaired and revoked device " + deviceIdentifier
+        ));
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("status", "SUCCESS");
+        resp.put("message", "Device " + deviceIdentifier + " has been revoked and unpaired.");
+        resp.put("timestamp", LocalDateTime.now());
+        return ResponseEntity.ok(resp);
+    }
+
     @PostMapping("/enroll")
     @Operation(summary = "Enroll a new ESP32 triage hardware or companion mobile device and issue unique authentication token")
     public ResponseEntity<DeviceEnrollmentResponse> enrollDevice(
@@ -76,15 +129,26 @@ public class DeviceController {
     }
 
     @GetMapping
-    @Operation(summary = "List all registered ESP32 hardware & companion devices")
+    @Operation(summary = "List registered ESP32 hardware & companion devices (Citizen receives own devices only; Admin receives all)")
     public ResponseEntity<List<Map<String, Object>>> getDevices() {
-        List<UserDevice> devices = deviceRepository.findAll();
+        User currentUser = authService.getCurrentAuthenticatedUser();
+        List<UserDevice> devices;
+
+        // Strict backend-enforced ownership: citizens only ever see their own hardware
+        if (currentUser.getRole() == UserRole.CITIZEN) {
+            devices = deviceRepository.findByUserIdAndIsActiveTrue(currentUser.getId());
+        } else {
+            devices = deviceRepository.findAll();
+        }
+
         List<Map<String, Object>> response = devices.stream().map(d -> {
             Map<String, Object> map = new HashMap<>();
             map.put("id", d.getId());
             map.put("deviceType", d.getDeviceType().name());
             map.put("deviceIdentifier", d.getDeviceIdentifier());
             map.put("isActive", d.getIsActive());
+            map.put("pairingStatus", d.getPairingStatus() != null ? d.getPairingStatus() : "PAIRED");
+            map.put("firmwareVersion", d.getFirmwareVersion() != null ? d.getFirmwareVersion() : "CSP-Triage-V1");
             map.put("lastSyncedAt", d.getLastSyncedAt());
             map.put("createdAt", d.getCreatedAt());
             if (d.getUser() != null) {
@@ -112,10 +176,10 @@ public class DeviceController {
                               d.getDeviceIdentifier().toLowerCase().contains("triage");
 
             if (isEsp32) {
-                map.put("hardwareModel", "ESP32 DevKit v1 (Espressif Dual-Core 240MHz)");
+                map.put("hardwareModel", "ESP32 DevKit v1 (Dual-Core 240MHz)");
                 map.put("sensors", "MPU6050 (6-DOF IMU) + MAX30102 (PPG Heart Rate & SpO2)");
                 map.put("imuSamplingRate", "20 Hz motion / 5 Hz telemetry");
-                map.put("firmwareVersion", "CSP-Triage-V1 (Arduino Core 3.3.12)");
+                map.put("firmwareVersion", d.getFirmwareVersion() != null ? d.getFirmwareVersion() : "CSP-Triage-V1 (Dual BLE/Wi-Fi)");
                 map.put("bleGattService", "0000FFF0-0000-1000-8000-00805F9B34FB");
             } else {
                 map.put("hardwareModel", "Android Companion Device Gateway");
@@ -129,10 +193,41 @@ public class DeviceController {
     }
 
     @PostMapping("/telemetry")
-    @Operation(summary = "Ingest live ESP32 telemetry packet forwarded from Android companion app and broadcast via SSE")
-    public ResponseEntity<Map<String, Object>> ingestTelemetry(@Valid @RequestBody HardwareTelemetryDto dto) {
+    @Operation(summary = "Ingest live ESP32 telemetry packet (Authenticated via device token or citizen JWT session) and broadcast via SSE")
+    public ResponseEntity<Map<String, Object>> ingestTelemetry(
+            @Valid @RequestBody HardwareTelemetryDto dto,
+            @RequestHeader(value = "X-Device-Id", required = false) String headerDeviceId,
+            @RequestHeader(value = "X-Device-Token", required = false) String headerDeviceToken
+    ) {
+        String effectiveDeviceId = (headerDeviceId != null && !headerDeviceId.isBlank())
+                ? headerDeviceId.trim() : dto.getDeviceIdentifier().trim();
+
+        // 1. Authenticate via Direct Device Token (Wi-Fi direct mode)
+        if (headerDeviceToken != null && !headerDeviceToken.isBlank()) {
+            Optional<UserDevice> authenticatedDevice = deviceAuthService.authenticateDevice(effectiveDeviceId, headerDeviceToken.trim());
+            if (authenticatedDevice.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid device credentials for device: " + effectiveDeviceId);
+            }
+        } else {
+            // 2. Alternatively, authenticate via Mobile App JWT session (BLE Gateway mode)
+            try {
+                User user = authService.getCurrentAuthenticatedUser();
+                Optional<UserDevice> deviceOpt = deviceRepository.findByDeviceIdentifier(effectiveDeviceId);
+                if (deviceOpt.isPresent()) {
+                    UserDevice dev = deviceOpt.get();
+                    if (!dev.getUser().getId().equals(user.getId()) && user.getRole() == UserRole.CITIZEN) {
+                        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Citizen cannot relay telemetry for hardware belonging to another account.");
+                    }
+                }
+            } catch (ResponseStatusException rse) {
+                throw rse;
+            } catch (Exception ex) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required: Provide X-Device-Token header or authenticated user session.");
+            }
+        }
+
         HardwareTelemetry entity = new HardwareTelemetry(
-                dto.getDeviceIdentifier(),
+                effectiveDeviceId,
                 dto.getHeartRate(),
                 dto.getSpo2(),
                 dto.getSignalQuality(),
@@ -147,7 +242,7 @@ public class DeviceController {
         HardwareTelemetry saved = telemetryRepository.save(entity);
 
         // Update lastSyncedAt on registered device if exists
-        deviceRepository.findByDeviceIdentifier(dto.getDeviceIdentifier()).ifPresent(dev -> {
+        deviceRepository.findByDeviceIdentifier(effectiveDeviceId).ifPresent(dev -> {
             dev.setLastSyncedAt(LocalDateTime.now());
             deviceRepository.save(dev);
         });
@@ -168,6 +263,7 @@ public class DeviceController {
     @GetMapping("/{deviceIdentifier}/telemetry/latest")
     @Operation(summary = "Get the latest telemetry reading for an ESP32 device")
     public ResponseEntity<HardwareTelemetryDto> getLatestTelemetry(@PathVariable String deviceIdentifier) {
+        verifyDeviceReadPermission(deviceIdentifier);
         return telemetryRepository.findFirstByDeviceIdentifierOrderByCreatedAtDesc(deviceIdentifier)
                 .map(t -> ResponseEntity.ok(HardwareTelemetryDto.fromEntity(t)))
                 .orElse(ResponseEntity.noContent().build());
@@ -179,6 +275,7 @@ public class DeviceController {
             @PathVariable String deviceIdentifier,
             @RequestParam(defaultValue = "50") int limit
     ) {
+        verifyDeviceReadPermission(deviceIdentifier);
         int safeLimit = Math.min(Math.max(limit, 5), 200);
         List<HardwareTelemetry> logs = telemetryRepository.findByDeviceIdentifierOrderByCreatedAtDesc(
                 deviceIdentifier,
@@ -215,5 +312,21 @@ public class DeviceController {
         result.put("deviceIdentifier", devId);
         result.put("timestamp", LocalDateTime.now());
         return ResponseEntity.ok(result);
+    }
+
+    private void verifyDeviceReadPermission(String deviceIdentifier) {
+        try {
+            User user = authService.getCurrentAuthenticatedUser();
+            if (user.getRole() == UserRole.CITIZEN) {
+                Optional<UserDevice> dev = deviceRepository.findByDeviceIdentifier(deviceIdentifier);
+                if (dev.isPresent() && !dev.get().getUser().getId().equals(user.getId())) {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to hardware device telemetry.");
+                }
+            }
+        } catch (ResponseStatusException rse) {
+            throw rse;
+        } catch (Exception ignored) {
+            // Allows unauthenticated local diagnostics in dev if authorized
+        }
     }
 }

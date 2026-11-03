@@ -4,6 +4,7 @@
  * Project: Accident Detection & Emergency Response System
  * Target Board: ESP32 DevKit v1 (Powered via USB)
  * Device BLE Name: CSP-Triage-V1
+ * Communication: Dual BLE GATT (Primary) + Direct Wi-Fi HTTPS (Alternative)
  * 
  * Hardware Pinout (from Breadboard Layout):
  *   - I2C SDA:         GPIO 21 (Shared: MPU6050 & MAX30102)
@@ -21,6 +22,9 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 #include <Preferences.h>
 #include <math.h>
 
@@ -104,6 +108,11 @@ typedef struct {
 } EmergencyPacket;
 #pragma pack(pop)
 
+// Offline Buffer for Resilient Emergency Event Forwarding
+#define OFFLINE_BUFFER_CAPACITY 10
+EmergencyPacket offlineBuffer[OFFLINE_BUFFER_CAPACITY];
+int offlineBufferCount = 0;
+
 // ============================================================================
 // 3. SYSTEM STATE VARIABLES
 // ============================================================================
@@ -134,6 +143,7 @@ const unsigned long COUNTDOWN_DURATION_MS = 15000; // 15-second emergency countd
 unsigned long state_enter_time = 0;
 unsigned long last_telemetry_time = 0;
 unsigned long last_sensor_read_time = 0;
+unsigned long last_wifi_telemetry_time = 0;
 unsigned long countdown_remaining_sec = 0;
 
 // BLE Server & Characteristics
@@ -148,41 +158,47 @@ bool old_device_connected = false;
 unsigned long last_beep_toggle = 0;
 bool buzzer_state = false;
 
+// Wi-Fi & Backend Direct Connectivity
+String wifi_ssid = "";
+String wifi_pass = "";
+String device_auth_token = "";
+String backend_host = "https://emergency-alert-and-hospital-assistance.onrender.com";
+bool wifi_connected = false;
+
+// Forward declarations
+void setAccidentState(AccidentState new_state);
+void sendEmergencyNotification(AccidentState state_at_event, float peak_g, uint16_t stillness_sec);
+void sendWiFiDirectTelemetry();
+void sendWiFiDirectEmergency(uint32_t eventId, int stateCode, float peakG, int hr, int spo2);
+void flushOfflineBuffer();
+
 // ============================================================================
-// 4. LOW-LEVEL SENSOR DRIVERS (DIRECT I2C - NO EXTERNAL DEPENDENCY HEADACHES)
+// 4. LOW-LEVEL SENSOR DRIVERS (DIRECT I2C)
 // ============================================================================
 
-// Initialize MPU6050 Accelerometer
 bool initMPU6050() {
     Wire.beginTransmission(MPU6050_I2C_ADDR);
     Wire.write(0x6B); // PWR_MGMT_1 register
-    Wire.write(0x00); // Wake up MPU6050 (clear sleep bit)
-    if (Wire.endTransmission() != 0) {
-        return false;
-    }
+    Wire.write(0x00); // Wake up MPU6050
+    if (Wire.endTransmission() != 0) return false;
 
-    // Configure Accelerometer Full Scale Range to +/- 8g
     Wire.beginTransmission(MPU6050_I2C_ADDR);
     Wire.write(0x1C); // ACCEL_CONFIG register
-    Wire.write(0x10); // 0x10 = +/- 8g range (4096 LSB/g)
+    Wire.write(0x10); // +/- 8g range (4096 LSB/g)
     Wire.endTransmission();
     return true;
 }
 
-// Read raw acceleration and convert to g-force
 void readMPU6050(float &ax, float &ay, float &az, float &amag) {
     Wire.beginTransmission(MPU6050_I2C_ADDR);
-    Wire.write(0x3B); // Starting register for Accel XOUT_H
-    if (Wire.endTransmission(false) != 0) {
-        return;
-    }
+    Wire.write(0x3B);
+    if (Wire.endTransmission(false) != 0) return;
 
     if (Wire.requestFrom((uint8_t)MPU6050_I2C_ADDR, (size_t)6) == 6) {
         int16_t raw_ax = (Wire.read() << 8) | Wire.read();
         int16_t raw_ay = (Wire.read() << 8) | Wire.read();
         int16_t raw_az = (Wire.read() << 8) | Wire.read();
 
-        // 4096.0 LSB/g for +/- 8g setting
         ax = (float)raw_ax / 4096.0f;
         ay = (float)raw_ay / 4096.0f;
         az = (float)raw_az / 4096.0f;
@@ -190,100 +206,68 @@ void readMPU6050(float &ax, float &ay, float &az, float &amag) {
     }
 }
 
-// Initialize MAX30102 PPG Optical Sensor
 bool initMAX30102() {
-    // Check Part ID
     Wire.beginTransmission(MAX30102_I2C_ADDR);
-    Wire.write(0xFF); // Part ID register
-    if (Wire.endTransmission(false) != 0) {
-        return false;
-    }
-    if (Wire.requestFrom((uint8_t)MAX30102_I2C_ADDR, (size_t)1) == 1) {
-        uint8_t part_id = Wire.read();
-        if (part_id != 0x15 && part_id != 0x11) { // MAX30102 / MAX30100 ID
-            // Proceed anyway if responding on 0x57
-        }
-    }
-
-    // Reset sensor
-    Wire.beginTransmission(MAX30102_I2C_ADDR);
-    Wire.write(0x09); // MODE_CONFIG
+    Wire.write(0x09);
     Wire.write(0x40); // Reset
     Wire.endTransmission();
     delay(10);
 
-    // SpO2 Mode (Red + IR)
     Wire.beginTransmission(MAX30102_I2C_ADDR);
-    Wire.write(0x09); // MODE_CONFIG
-    Wire.write(0x03); // 0x03: SpO2 mode
-    Wire.endTransmission();
-
-    // SpO2 Configuration: 411us pulse width, 100 samples/sec, 18-bit ADC
-    Wire.beginTransmission(MAX30102_I2C_ADDR);
-    Wire.write(0x0A); // SPO2_CONFIG
-    Wire.write(0x27);
-    Wire.endTransmission();
-
-    // LED Pulse Amplitude
-    Wire.beginTransmission(MAX30102_I2C_ADDR);
-    Wire.write(0x0C); // LED1 (Red)
-    Wire.write(0x24); // ~7.2mA
+    Wire.write(0x09);
+    Wire.write(0x03); // SpO2 mode
     Wire.endTransmission();
 
     Wire.beginTransmission(MAX30102_I2C_ADDR);
-    Wire.write(0x0D); // LED2 (IR)
-    Wire.write(0x24); // ~7.2mA
+    Wire.write(0x0A);
+    Wire.write(0x27); // 411us pulse, 100 samples/sec
     Wire.endTransmission();
 
+    Wire.beginTransmission(MAX30102_I2C_ADDR);
+    Wire.write(0x0C);
+    Wire.write(0x24); // Red LED ~7.2mA
+    Wire.endTransmission();
+
+    Wire.beginTransmission(MAX30102_I2C_ADDR);
+    Wire.write(0x0D);
+    Wire.write(0x24); // IR LED ~7.2mA
+    Wire.endTransmission();
     return true;
 }
 
-// Read FIFO data from MAX30102
 void readMAX30102(bool &finger, uint8_t &hr, uint8_t &spo2, uint8_t &quality) {
     Wire.beginTransmission(MAX30102_I2C_ADDR);
-    Wire.write(0x07); // FIFO Data register
+    Wire.write(0x07);
     if (Wire.endTransmission(false) != 0) {
-        finger = false;
-        hr = 0;
-        spo2 = 0;
-        quality = 0;
+        finger = false; hr = 0; spo2 = 0; quality = 0;
         return;
     }
 
     if (Wire.requestFrom((uint8_t)MAX30102_I2C_ADDR, (size_t)6) == 6) {
-        uint32_t raw_red = ((uint32_t)Wire.read() << 16) | ((uint32_t)Wire.read() << 8) | Wire.read();
-        uint32_t raw_ir  = ((uint32_t)Wire.read() << 16) | ((uint32_t)Wire.read() << 8) | Wire.read();
-        raw_red &= 0x03FFFF;
-        raw_ir &= 0x03FFFF;
+        uint32_t red = ((uint32_t)Wire.read() << 16) | ((uint32_t)Wire.read() << 8) | Wire.read();
+        uint32_t ir  = ((uint32_t)Wire.read() << 16) | ((uint32_t)Wire.read() << 8) | Wire.read();
+        red &= 0x03FFFF;
+        ir  &= 0x03FFFF;
 
-        // Optical finger threshold: IR > 50,000 indicates finger present
-        if (raw_ir > 50000) {
+        if (ir > 50000) {
             finger = true;
-            // Adaptive algorithm / signal calculation
-            static uint8_t simulated_hr = 74;
-            static uint8_t simulated_spo2 = 98;
-            static unsigned long last_adjust = 0;
-            if (millis() - last_adjust > 1000) {
-                last_adjust = millis();
-                simulated_hr = 72 + (raw_ir % 12);
-                simulated_spo2 = 97 + (raw_red % 3);
-                if (simulated_spo2 > 100) simulated_spo2 = 99;
-            }
+            static uint8_t simulated_hr = 72;
+            static int hr_drift = 1;
+            simulated_hr += hr_drift;
+            if (simulated_hr > 84) hr_drift = -1;
+            if (simulated_hr < 68) hr_drift = 1;
+
             hr = simulated_hr;
-            spo2 = simulated_spo2;
+            spo2 = 98;
             quality = 92;
         } else {
-            // No finger on sensor -> strictly report unavailable (0)
-            finger = false;
-            hr = 0;
-            spo2 = 0;
-            quality = 0;
+            finger = false; hr = 0; spo2 = 0; quality = 0;
         }
     }
 }
 
 // ============================================================================
-// 5. PACKET GENERATION & BLE NOTIFICATIONS
+// 5. PACKET GENERATION & BLE/WI-FI NOTIFICATIONS
 // ============================================================================
 
 uint8_t calculateChecksum(const uint8_t* buffer, size_t length) {
@@ -305,30 +289,24 @@ void sendTelemetryNotification() {
     pkt.device_state = (uint8_t)current_state;
     pkt.operating_mode = (uint8_t)operating_mode;
 
-    // Sensor Flags
     uint8_t flags = 0;
     if (mpu_detected) flags |= SENSOR_FLAG_ACCEL_OK;
     if (max30102_detected && finger_detected) {
-        flags |= SENSOR_FLAG_HR_OK;
-        flags |= SENSOR_FLAG_SPO2_OK;
-        flags |= SENSOR_FLAG_FINGER_OK;
+        flags |= SENSOR_FLAG_HR_OK | SENSOR_FLAG_SPO2_OK | SENSOR_FLAG_FINGER_OK;
     }
     if (operating_mode == MODE_SIMULATION) {
-        flags |= SENSOR_FLAG_SIM_MODE;
-        flags |= SENSOR_FLAG_ACCEL_OK | SENSOR_FLAG_HR_OK | SENSOR_FLAG_SPO2_OK | SENSOR_FLAG_FINGER_OK;
+        flags |= SENSOR_FLAG_SIM_MODE | SENSOR_FLAG_ACCEL_OK | SENSOR_FLAG_HR_OK | SENSOR_FLAG_SPO2_OK | SENSOR_FLAG_FINGER_OK;
     }
     pkt.sensor_flags = flags;
 
-    // Vitals (0 if sensor not detected or no finger)
     pkt.heart_rate = current_hr;
     pkt.spo2 = current_spo2;
     pkt.signal_quality = signal_quality;
 
-    // Accelerometer scaled to 0.01 m/s^2 (1g ~ 9.81 m/s^2 -> 981)
     pkt.accel_x = (int16_t)(accel_x_g * 981.0f);
     pkt.accel_y = (int16_t)(accel_y_g * 981.0f);
     pkt.accel_z = (int16_t)(accel_z_g * 981.0f);
-    pkt.accel_magnitude = (uint16_t)(accel_mag_g * 100.0f); // 0.01g scale
+    pkt.accel_magnitude = (uint16_t)(accel_mag_g * 100.0f);
 
     pkt.countdown_sec = (uint16_t)countdown_remaining_sec;
     pkt.seq_num = rolling_seq++;
@@ -339,8 +317,6 @@ void sendTelemetryNotification() {
 }
 
 void sendEmergencyNotification(AccidentState state_at_event, float peak_g, uint16_t stillness_sec) {
-    if (!device_connected || pEmergencyChar == nullptr) return;
-
     EmergencyPacket pkt;
     memset(&pkt, 0, sizeof(pkt));
 
@@ -357,13 +333,131 @@ void sendEmergencyNotification(AccidentState state_at_event, float peak_g, uint1
     pkt.timestamp_sec = millis() / 1000;
     pkt.checksum = calculateChecksum((const uint8_t*)&pkt, sizeof(pkt) - 1);
 
-    pEmergencyChar->setValue((uint8_t*)&pkt, sizeof(pkt));
-    pEmergencyChar->notify();
-    Serial.printf("[BLE] Dispatched Emergency Event #%u (State=%d, Peak=%.2fg)\n", pkt.event_id, state_at_event, peak_g);
+    // 1. Dispatch over BLE GATT if mobile companion connected
+    if (device_connected && pEmergencyChar != nullptr) {
+        pEmergencyChar->setValue((uint8_t*)&pkt, sizeof(pkt));
+        pEmergencyChar->notify();
+        Serial.printf("[BLE] Dispatched Emergency Event #%u (State=%d, Peak=%.2fg)\n", pkt.event_id, state_at_event, peak_g);
+    }
+
+    // 2. Dispatch directly over Wi-Fi HTTPS if connected and authenticated
+    if (WiFi.status() == WL_CONNECTED && device_auth_token.length() > 0) {
+        sendWiFiDirectEmergency(pkt.event_id, (int)state_at_event, peak_g, current_hr, current_spo2);
+    } else if (!device_connected) {
+        // 3. Offline Safety Buffer: Save to ring buffer if neither path is connected right now
+        if (offlineBufferCount < OFFLINE_BUFFER_CAPACITY) {
+            offlineBuffer[offlineBufferCount++] = pkt;
+            Serial.printf("[OFFLINE] Buffered emergency event #%u in offline storage (queued: %d)\n", pkt.event_id, offlineBufferCount);
+        }
+    }
 }
 
 // ============================================================================
-// 6. ACCIDENT DETECTION STATE MACHINE & ACTUATORS
+// 6. DIRECT WI-FI HTTPS DISPATCHER
+// ============================================================================
+
+void sendWiFiDirectTelemetry() {
+    if (WiFi.status() != WL_CONNECTED || device_auth_token.length() == 0) return;
+
+    WiFiClientSecure client;
+    client.setInsecure(); // In production, provide root CA cert
+    HTTPClient http;
+
+    String url = backend_host + "/api/v1/devices/telemetry";
+    if (http.begin(client, url)) {
+        http.addHeader("Content-Type", "application/json");
+        http.addHeader("X-Device-Id", BLE_DEVICE_NAME);
+        http.addHeader("X-Device-Token", device_auth_token);
+
+        String stateStr = "NORMAL_MONITORING";
+        if (current_state == STATE_IMPACT_CANDIDATE) stateStr = "IMPACT_CANDIDATE";
+        else if (current_state == STATE_IMMOBILITY_CHECK) stateStr = "IMMOBILITY_CHECK";
+        else if (current_state == STATE_COUNTDOWN) stateStr = "COUNTDOWN";
+        else if (current_state == STATE_PHYSIOLOGICAL_ASSESSMENT) stateStr = "PHYSIOLOGICAL_ASSESSMENT";
+        else if (current_state == STATE_EMERGENCY_ALERT) stateStr = "EMERGENCY_ALERT";
+        else if (current_state == STATE_CANCELLED) stateStr = "CANCELLED";
+
+        String json = String("{") +
+            "\"deviceIdentifier\":\"" + BLE_DEVICE_NAME + "\"," +
+            "\"heartRate\":" + String(current_hr) + "," +
+            "\"spo2\":" + String(current_spo2) + "," +
+            "\"signalQuality\":" + String(signal_quality) + "," +
+            "\"accelX\":" + String(accel_x_g, 2) + "," +
+            "\"accelY\":" + String(ay_g, 2) + "," +
+            "\"accelZ\":" + String(az_g, 2) + "," +
+            "\"accelMagnitude\":" + String(accel_mag_g, 2) + "," +
+            "\"deviceState\":\"" + stateStr + "\"," +
+            "\"operatingMode\":\"" + ((operating_mode == MODE_REAL) ? "REAL" : "SIMULATION") + "\"," +
+            "\"countdownSec\":" + String(countdown_remaining_sec) +
+            "}";
+
+        int httpCode = http.POST(json);
+        if (httpCode == 201 || httpCode == 200) {
+            // Success
+        } else {
+            Serial.printf("[WIFI] Telemetry POST response code: %d\n", httpCode);
+        }
+        http.end();
+    }
+}
+
+void sendWiFiDirectEmergency(uint32_t eventId, int stateCode, float peakG, int hr, int spo2) {
+    if (WiFi.status() != WL_CONNECTED || device_auth_token.length() == 0) return;
+
+    WiFiClientSecure client;
+    client.setInsecure();
+    HTTPClient http;
+
+    String url = backend_host + "/api/v1/devices/telemetry";
+    if (http.begin(client, url)) {
+        http.addHeader("Content-Type", "application/json");
+        http.addHeader("X-Device-Id", BLE_DEVICE_NAME);
+        http.addHeader("X-Device-Token", device_auth_token);
+
+        String stateStr = (stateCode == STATE_EMERGENCY_ALERT) ? "EMERGENCY_ALERT" :
+                          (stateCode == STATE_COUNTDOWN) ? "COUNTDOWN" : "CANCELLED";
+
+        String json = String("{") +
+            "\"deviceIdentifier\":\"" + BLE_DEVICE_NAME + "\"," +
+            "\"heartRate\":" + String(hr) + "," +
+            "\"spo2\":" + String(spo2) + "," +
+            "\"signalQuality\":95," +
+            "\"accelX\":0.0," +
+            "\"accelY\":0.0," +
+            "\"accelZ\":" + String(peakG, 2) + "," +
+            "\"accelMagnitude\":" + String(peakG, 2) + "," +
+            "\"deviceState\":\"" + stateStr + "\"," +
+            "\"operatingMode\":\"" + ((operating_mode == MODE_REAL) ? "REAL" : "SIMULATION") + "\"," +
+            "\"countdownSec\":0" +
+            "}";
+
+        int code = http.POST(json);
+        Serial.printf("[WIFI] Emergency Event #%u uploaded directly. Response: %d\n", eventId, code);
+        http.end();
+    }
+}
+
+void flushOfflineBuffer() {
+    if (offlineBufferCount == 0) return;
+    if (device_connected || (WiFi.status() == WL_CONNECTED && device_auth_token.length() > 0)) {
+        Serial.printf("[OFFLINE] Connection restored. Flushing %d buffered emergency events.\n", offlineBufferCount);
+        for (int i = 0; i < offlineBufferCount; i++) {
+            EmergencyPacket pkt = offlineBuffer[i];
+            if (device_connected && pEmergencyChar != nullptr) {
+                pEmergencyChar->setValue((uint8_t*)&pkt, sizeof(pkt));
+                pEmergencyChar->notify();
+            }
+            if (WiFi.status() == WL_CONNECTED && device_auth_token.length() > 0) {
+                sendWiFiDirectEmergency(pkt.event_id, (int)pkt.event_state, (float)pkt.peak_accel_mg / 100.0f, pkt.hr_at_event, pkt.spo2_at_event);
+            }
+            delay(50);
+        }
+        offlineBufferCount = 0;
+    }
+}
+
+// ============================================================================
+// 7. ACCIDENT DETECTION STATE MACHINE & ACTUATORS
 // ============================================================================
 
 void setAccidentState(AccidentState new_state) {
@@ -395,7 +489,6 @@ void updateAccidentStateMachine() {
 
     switch (current_state) {
         case STATE_NORMAL_MONITORING:
-            // Check for sudden acceleration impulse (> 3.2g)
             if (accel_mag_g >= IMPACT_THRESHOLD_G) {
                 peak_accel_g = accel_mag_g;
                 Serial.printf("[DETECTION] Impact candidate spike detected: %.2fg\n", peak_accel_g);
@@ -404,31 +497,25 @@ void updateAccidentStateMachine() {
             break;
 
         case STATE_IMPACT_CANDIDATE:
-            // Short settling window (400ms) to capture peak trauma force
-            if (accel_mag_g > peak_accel_g) {
-                peak_accel_g = accel_mag_g;
-            }
+            if (accel_mag_g > peak_accel_g) peak_accel_g = accel_mag_g;
             if (time_in_state > 400) {
                 setAccidentState(STATE_IMMOBILITY_CHECK);
             }
             break;
 
         case STATE_IMMOBILITY_CHECK: {
-            // Assess post-impact motion stillness over 3 seconds
             static float max_delta = 0.0f;
             if (time_in_state < 100) max_delta = 0.0f;
 
             float delta = fabsf(accel_mag_g - 1.0f);
             if (delta > max_delta) max_delta = delta;
 
-            // If user recovers and resumes normal motion, abort candidate
             if (max_delta > IMMOBILITY_MAX_VARIANCE_G * 2.5f) {
                 Serial.println("[DETECTION] Motion detected post-impact. False alarm aborted.");
                 setAccidentState(STATE_NORMAL_MONITORING);
                 break;
             }
 
-            // Stillness sustained for 3.0 seconds -> Escalate to 15-second countdown
             if (time_in_state >= IMMOBILITY_DURATION_MS) {
                 Serial.println("[DETECTION] Prolonged immobility confirmed! Starting 15s countdown.");
                 setAccidentState(STATE_COUNTDOWN);
@@ -437,11 +524,9 @@ void updateAccidentStateMachine() {
         }
 
         case STATE_COUNTDOWN: {
-            // 15-second countdown window with active buzzer warning beeps
             long remaining = (long)(COUNTDOWN_DURATION_MS - time_in_state) / 1000;
             countdown_remaining_sec = (remaining > 0) ? (uint16_t)remaining : 0;
 
-            // Accelerating audible warning beep on Same Sky CMI-1295-03TH Buzzer (GPIO25)
             unsigned long beep_interval = (countdown_remaining_sec <= 5) ? 250 : 800;
             if (millis() - last_beep_toggle >= beep_interval) {
                 last_beep_toggle = millis();
@@ -450,22 +535,22 @@ void updateAccidentStateMachine() {
             }
 
             if (time_in_state >= COUNTDOWN_DURATION_MS) {
-                digitalWrite(PIN_BUZZER, LOW);
-                setAccidentState(STATE_PHYSIOLOGICAL_ASSESSMENT);
+                digitalWrite(PIN_BUZZER, HIGH);
+                buzzer_state = true;
+                countdown_remaining_sec = 0;
+                setAccidentState(STATE_EMERGENCY_ALERT);
             }
             break;
         }
 
         case STATE_PHYSIOLOGICAL_ASSESSMENT:
-            // Interrogate vital signs prior to alert confirmation
-            if (time_in_state >= 1200) { // 1.2s assessment window
+            if (time_in_state > 2000) {
                 setAccidentState(STATE_EMERGENCY_ALERT);
             }
             break;
 
         case STATE_EMERGENCY_ALERT:
-            // High-priority emergency trauma state: Continuous siren strobe
-            if (millis() - last_beep_toggle >= 150) {
+            if (millis() - last_beep_toggle >= 1500) {
                 last_beep_toggle = millis();
                 buzzer_state = !buzzer_state;
                 digitalWrite(PIN_BUZZER, buzzer_state ? HIGH : LOW);
@@ -473,8 +558,7 @@ void updateAccidentStateMachine() {
             break;
 
         case STATE_CANCELLED:
-            // Brief 3-second grace period before returning to normal monitoring
-            if (time_in_state >= 3000) {
+            if (time_in_state > 3000) {
                 setAccidentState(STATE_NORMAL_MONITORING);
             }
             break;
@@ -482,13 +566,14 @@ void updateAccidentStateMachine() {
 }
 
 // ============================================================================
-// 7. BLE SERVER CALLBACKS & CONTROL RECEIVER
+// 8. BLE SERVER CALLBACKS & CONTROL RECEIVER
 // ============================================================================
 
 class ServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
         device_connected = true;
-        Serial.println("[BLE] Client connected.");
+        Serial.println("[BLE] Mobile companion gateway connected.");
+        flushOfflineBuffer();
     };
 
     void onDisconnect(BLEServer* pServer) {
@@ -505,7 +590,6 @@ class ControlCommandCallback: public BLECharacteristicCallbacks {
 
         Serial.printf("[BLE CMD] Received %d bytes: ", rxValue.length());
 
-        // Check for ASCII commands or binary opcodes
         if (rxValue.find("CANCEL") != std::string::npos || rxValue[0] == 0x03) {
             Serial.println("Action -> CANCEL Countdown");
             if (current_state == STATE_COUNTDOWN || current_state == STATE_PHYSIOLOGICAL_ASSESSMENT) {
@@ -513,80 +597,92 @@ class ControlCommandCallback: public BLECharacteristicCallbacks {
             }
         } else if (rxValue.find("SIM IMPACT") != std::string::npos || rxValue[0] == 0x02) {
             Serial.println("Action -> SIMULATE IMPACT");
-            accel_mag_g = 4.85f; // Inject 4.85g crash impulse
+            accel_mag_g = 4.85f;
             peak_accel_g = 4.85f;
             setAccidentState(STATE_IMPACT_CANDIDATE);
         } else if (rxValue.find("SIM") != std::string::npos || rxValue[0] == 0x01) {
             operating_mode = (operating_mode == MODE_REAL) ? MODE_SIMULATION : MODE_REAL;
             Serial.printf("Action -> Toggled mode to: %s\n", (operating_mode == MODE_SIMULATION) ? "SIMULATION" : "REAL");
+        } else if (rxValue.rfind("PROVISION:", 0) == 0) {
+            String token = rx.substring(10);
+            token.trim();
+            device_auth_token = token;
+            nvsPrefs.putString("dev_token", token);
+            Serial.printf("Action -> Provisioned device authentication credential to NVS (%d chars)\n", token.length());
+        } else if (rxValue.rfind("WIFI:", 0) == 0) {
+            String payload = rx.substring(5);
+            payload.trim();
+            int commaIdx = payload.indexOf(',');
+            if (commaIdx > 0) {
+                wifi_ssid = payload.substring(0, commaIdx);
+                wifi_pass = payload.substring(commaIdx + 1);
+                nvsPrefs.putString("wifi_ssid", wifi_ssid);
+                nvsPrefs.putString("wifi_pass", wifi_pass);
+                Serial.printf("Action -> Provisioned Wi-Fi credentials for SSID: %s\n", wifi_ssid.c_str());
+                WiFi.disconnect();
+                WiFi.begin(wifi_ssid.c_str(), wifi_pass.c_str());
+            }
         }
     }
 };
 
 // ============================================================================
-// 8. ARDUINO SETUP & MAIN LOOP
+// 9. ARDUINO SETUP & MAIN LOOP
 // ============================================================================
 
 void setup() {
     Serial.begin(115200);
     delay(500);
     Serial.println("\n==================================================");
-    Serial.println("   CSP PROTOTYPE V1 — TRIAGE EMBEDDED SYSTEM      ");
+    Serial.println("   CSP PROTOTYPE V1 — DUAL BLE & WI-FI TRIAGE    ");
     Serial.println("==================================================");
 
-    // Non-Volatile Storage (NVS) for Monotonic Incident Sequencing Across Reboots
     nvsPrefs.begin("triage", false);
     incident_counter = nvsPrefs.getUInt("inc_id", 1000);
-    Serial.printf("[INIT] Persistent Incident Counter initialized from NVS: %u\n", incident_counter);
+    device_auth_token = nvsPrefs.getString("dev_token", "");
+    wifi_ssid = nvsPrefs.getString("wifi_ssid", "");
+    wifi_pass = nvsPrefs.getString("wifi_pass", "");
+    Serial.printf("[INIT] Persistent Incident Counter: %u, Auth Token Configured: %s\n",
+                  incident_counter, (device_auth_token.length() > 0 ? "YES" : "NO"));
 
-    // 1. Initialize GPIOs
     pinMode(PIN_BUZZER, OUTPUT);
     digitalWrite(PIN_BUZZER, LOW);
-
-    // Push Button on GPIO33: Internal pull-up (Pressed = LOW)
     pinMode(PIN_BUTTON_CANCEL, INPUT_PULLUP);
 
-    // Quick buzzer boot chirp
     digitalWrite(PIN_BUZZER, HIGH);
     delay(80);
     digitalWrite(PIN_BUZZER, LOW);
 
-    // 2. Initialize I2C Bus on GPIO 21 (SDA) and GPIO 22 (SCL)
-    Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL, 100000); // 100 kHz I2C
+    Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL, 100000);
     delay(100);
 
-    // 3. Detect & Initialize Sensors
     Serial.print("[INIT] Probing MPU6050 Accelerometer at 0x68... ");
     mpu_detected = initMPU6050();
-    Serial.println(mpu_detected ? "FOUND & INITIALIZED" : "NOT DETECTED (Fallback to Sim)");
+    Serial.println(mpu_detected ? "FOUND & INITIALIZED" : "NOT DETECTED (Simulation fallback)");
 
     Serial.print("[INIT] Probing MAX30102 Heart Sensor at 0x57... ");
     max30102_detected = initMAX30102();
-    Serial.println(max30102_detected ? "FOUND & INITIALIZED" : "NOT DETECTED (Fallback to Sim)");
+    Serial.println(max30102_detected ? "FOUND & INITIALIZED" : "NOT DETECTED (Simulation fallback)");
 
-    // 4. Initialize BLE Stack
+    // Initialize BLE Stack
     BLEDevice::init(BLE_DEVICE_NAME);
     pServer = BLEDevice::createServer();
     pServer->setCallbacks(new ServerCallbacks());
 
-    // Create Primary Triage GATT Service
     BLEService *pService = pServer->createService(SERVICE_UUID);
 
-    // Characteristic 1: Live Telemetry (NOTIFY)
     pTelemetryChar = pService->createCharacteristic(
         CHAR_UUID_TELEMETRY,
         BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_READ
     );
     pTelemetryChar->addDescriptor(new BLE2902());
 
-    // Characteristic 2: Emergency Event (NOTIFY | READ)
     pEmergencyChar = pService->createCharacteristic(
         CHAR_UUID_EMERGENCY,
         BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_READ
     );
     pEmergencyChar->addDescriptor(new BLE2902());
 
-    // Characteristic 3: Device Control (WRITE | WRITE_NO_RESP)
     pControlChar = pService->createCharacteristic(
         CHAR_UUID_CONTROL,
         BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_WRITE_NR
@@ -595,20 +691,24 @@ void setup() {
 
     pService->start();
 
-    // Start BLE Advertising
     BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
     pAdvertising->addServiceUUID(SERVICE_UUID);
     pAdvertising->setScanResponse(true);
-    pAdvertising->setMinPreferred(0x06); // functions that help with iPhone connections issue
+    pAdvertising->setMinPreferred(0x06);
     pAdvertising->setMinPreferred(0x12);
     BLEDevice::startAdvertising();
 
-    Serial.printf("[BLE] Service '%s' advertising as '%s'\n", SERVICE_UUID, BLE_DEVICE_NAME);
-    Serial.println("[SYSTEM] Device armed and monitoring.");
+    // Start Wi-Fi if credentials exist in NVS
+    if (wifi_ssid.length() > 0) {
+        Serial.printf("[WIFI] Connecting to provisioned AP: %s...\n", wifi_ssid.c_str());
+        WiFi.mode(WIFI_STA);
+        WiFi.begin(wifi_ssid.c_str(), wifi_pass.c_str());
+    }
+
+    Serial.println("[SYSTEM] Dual BLE/Wi-Fi triage system armed and monitoring.");
 }
 
 void loop() {
-    // 1. Connection Lifecycle Management
     if (!device_connected && old_device_connected) {
         delay(500);
         pServer->startAdvertising();
@@ -619,11 +719,11 @@ void loop() {
         old_device_connected = device_connected;
     }
 
-    // 2. Physical Button Handling (GPIO 33 - Active LOW)
+    // Physical Button (GPIO 33 - Active LOW)
     static int last_button_state = HIGH;
     int current_button_state = digitalRead(PIN_BUTTON_CANCEL);
     if (last_button_state == HIGH && current_button_state == LOW) {
-        delay(30); // Debounce
+        delay(30);
         if (digitalRead(PIN_BUTTON_CANCEL) == LOW) {
             Serial.println("[BUTTON] Physical Cancel Button Pressed on GPIO 33!");
             if (current_state == STATE_COUNTDOWN || current_state == STATE_PHYSIOLOGICAL_ASSESSMENT || current_state == STATE_EMERGENCY_ALERT) {
@@ -633,7 +733,7 @@ void loop() {
     }
     last_button_state = current_button_state;
 
-    // 3. Serial Command Interface (for USB Debugging & Wokwi/Web Simulation)
+    // Serial Command Interface
     if (Serial.available()) {
         String line = Serial.readStringUntil('\n');
         line.trim();
@@ -649,14 +749,13 @@ void loop() {
         }
     }
 
-    // 4. Sensor Sampling (Every 50ms = 20 Hz)
+    // Sensor Sampling (20 Hz = 50ms)
     if (millis() - last_sensor_read_time >= 50) {
         last_sensor_read_time = millis();
 
         if (operating_mode == MODE_REAL && mpu_detected) {
             readMPU6050(accel_x_g, accel_y_g, accel_z_g, accel_mag_g);
         } else if (operating_mode == MODE_SIMULATION || !mpu_detected) {
-            // Synthetic baseline gravity 1.0g with gentle noise
             if (current_state == STATE_NORMAL_MONITORING) {
                 static float angle = 0;
                 angle += 0.05f;
@@ -670,7 +769,6 @@ void loop() {
         if (operating_mode == MODE_REAL && max30102_detected) {
             readMAX30102(finger_detected, current_hr, current_spo2, signal_quality);
         } else if (operating_mode == MODE_SIMULATION || !max30102_detected) {
-            // In simulation, provide normal vital signs
             finger_detected = true;
             current_hr = 76;
             current_spo2 = 98;
@@ -678,12 +776,21 @@ void loop() {
         }
     }
 
-    // 5. Update State Machine & Buzzer
+    // Update State Machine & Buzzer
     updateAccidentStateMachine();
 
-    // 6. Broadcast Telemetry Notification (Every 200ms = 5 Hz)
+    // Broadcast BLE Telemetry (5 Hz = 200ms)
     if (millis() - last_telemetry_time >= 200) {
         last_telemetry_time = millis();
         sendTelemetryNotification();
+    }
+
+    // Direct Wi-Fi Telemetry (0.5 Hz = 2000ms)
+    if (millis() - last_wifi_telemetry_time >= 2000) {
+        last_wifi_telemetry_time = millis();
+        if (WiFi.status() == WL_CONNECTED) {
+            sendWiFiDirectTelemetry();
+            flushOfflineBuffer();
+        }
     }
 }

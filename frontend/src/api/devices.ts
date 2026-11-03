@@ -1,9 +1,46 @@
 import api from './client';
 import type { HardwareDevice, DetectionEvent, HardwareTelemetry } from '../types';
 
+export interface DevicePairingChallenge {
+  challengeToken: string;
+  deviceIdentifier: string;
+  expiresAt: string;
+}
+
+export interface DeviceClaimResponse {
+  message: string;
+  deviceIdentifier: string;
+  token: string;
+}
+
 export const deviceApi = {
   getDevices: async (): Promise<HardwareDevice[]> => {
     const response = await api.get<HardwareDevice[]>('/devices');
+    return response.data;
+  },
+
+  requestPairingChallenge: async (deviceIdentifier: string): Promise<DevicePairingChallenge> => {
+    const response = await api.post<DevicePairingChallenge>('/devices/pairing-challenge', {
+      deviceIdentifier,
+    });
+    return response.data;
+  },
+
+  claimDevice: async (
+    deviceIdentifier: string,
+    challengeToken: string,
+    secretCode: string
+  ): Promise<DeviceClaimResponse> => {
+    const response = await api.post<DeviceClaimResponse>('/devices/claim', {
+      deviceIdentifier,
+      challengeToken,
+      secretCode,
+    });
+    return response.data;
+  },
+
+  unpairDevice: async (deviceIdentifier: string): Promise<{ message: string }> => {
+    const response = await api.delete<{ message: string }>(`/devices/${deviceIdentifier}`);
     return response.data;
   },
 

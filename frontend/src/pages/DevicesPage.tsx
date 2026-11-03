@@ -19,6 +19,11 @@ import {
   Sliders,
   Sparkles,
   Wifi,
+  Plus,
+  Trash2,
+  Key,
+  ShieldCheck,
+  Link2,
 } from 'lucide-react';
 
 export const DevicesPage: React.FC = () => {
@@ -28,6 +33,16 @@ export const DevicesPage: React.FC = () => {
   const [latestTelemetry, setLatestTelemetry] = useState<HardwareTelemetry | null>(null);
   const [telemetryHistory, setTelemetryHistory] = useState<HardwareTelemetry[]>([]);
   const [selectedRawJson, setSelectedRawJson] = useState<string | null>(null);
+
+  // Pairing Modal State
+  const [showPairModal, setShowPairModal] = useState(false);
+  const [pairingDevId, setPairingDevId] = useState('CSP-Triage-V1');
+  const [pairingChallenge, setPairingChallenge] = useState<string | null>(null);
+  const [pairingSecret, setPairingSecret] = useState('123456');
+  const [pairingStep, setPairingStep] = useState<'ID' | 'CLAIM' | 'SUCCESS'>('ID');
+  const [provisionedToken, setProvisionedToken] = useState<string | null>(null);
+  const [pairingError, setPairingError] = useState<string | null>(null);
+  const [isPairingLoading, setIsPairingLoading] = useState(false);
 
   const isCitizen = user?.role === 'CITIZEN';
 
@@ -41,7 +56,7 @@ export const DevicesPage: React.FC = () => {
     deviceApi.getDevices().then((all) => {
       if (isCitizen) {
         const own = all.filter((d) => d.userId === user?.id || d.userEmail === user?.email);
-        setDevices(own.length > 0 ? own : all.slice(0, 1));
+        setDevices(own);
       } else {
         setDevices(all);
       }
@@ -61,6 +76,49 @@ export const DevicesPage: React.FC = () => {
 
     if (!isCitizen) {
       deviceApi.getDetectionEvents().then(setEvents).catch(console.error);
+    }
+  };
+
+  const handleStartPairing = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pairingDevId.trim()) return;
+    setIsPairingLoading(true);
+    setPairingError(null);
+    try {
+      const challenge = await deviceApi.requestPairingChallenge(pairingDevId.trim());
+      setPairingChallenge(challenge.challengeToken);
+      setPairingStep('CLAIM');
+    } catch (err: any) {
+      setPairingError(err.response?.data?.message || err.message || 'Failed to request pairing challenge.');
+    } finally {
+      setIsPairingLoading(false);
+    }
+  };
+
+  const handleClaimDevice = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pairingDevId.trim() || !pairingChallenge || !pairingSecret.trim()) return;
+    setIsPairingLoading(true);
+    setPairingError(null);
+    try {
+      const res = await deviceApi.claimDevice(pairingDevId.trim(), pairingChallenge, pairingSecret.trim());
+      setProvisionedToken(res.token);
+      setPairingStep('SUCCESS');
+      loadData();
+    } catch (err: any) {
+      setPairingError(err.response?.data?.message || err.message || 'Device claim failed. Verify secret code.');
+    } finally {
+      setIsPairingLoading(false);
+    }
+  };
+
+  const handleUnpair = async (deviceIdentifier: string) => {
+    if (!window.confirm(`Are you sure you want to unpair hardware device "${deviceIdentifier}"?`)) return;
+    try {
+      await deviceApi.unpairDevice(deviceIdentifier);
+      loadData();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to unpair device');
     }
   };
 
@@ -298,10 +356,26 @@ export const DevicesPage: React.FC = () => {
 
       {/* 2. Registered ESP32 Hardware Fleet */}
       <div className="space-y-4">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
-          <Cpu className="h-4 w-4 text-indigo-500" />
-          Enrolled Hardware Fleet & Companion Gateways
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+            <Cpu className="h-4 w-4 text-indigo-500" />
+            Enrolled Hardware Fleet & Companion Gateways
+          </h3>
+          <button
+            onClick={() => {
+              setPairingDevId('CSP-Triage-V1');
+              setPairingChallenge(null);
+              setPairingStep('ID');
+              setProvisionedToken(null);
+              setPairingError(null);
+              setShowPairModal(true);
+            }}
+            className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-indigo-700 transition-colors shadow-xs"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Pair Hardware Device
+          </button>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {devices.map((device) => (
@@ -326,6 +400,9 @@ export const DevicesPage: React.FC = () => {
                           ? 'ONLINE · STREAMING'
                           : (device.lastSyncedAt ? 'STANDBY' : 'ENROLLED')}
                       </span>
+                      <span className="rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2 py-0.5 text-[10px] font-semibold">
+                        {device.pairingStatus || 'PAIRED'}
+                      </span>
                     </h4>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
                       {device.hardwareModel || 'ESP32 DevKit v1'} · Type: <strong className="text-slate-700 dark:text-slate-300">{device.deviceType}</strong>
@@ -333,12 +410,21 @@ export const DevicesPage: React.FC = () => {
                   </div>
                 </div>
 
-                <button
-                  onClick={loadData}
-                  className="rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                >
-                  Refresh
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={loadData}
+                    className="rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    Refresh
+                  </button>
+                  <button
+                    onClick={() => handleUnpair(device.deviceIdentifier)}
+                    title="Unpair this device"
+                    className="rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 p-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 p-3 text-xs border border-slate-100 dark:border-slate-800">
@@ -384,6 +470,19 @@ export const DevicesPage: React.FC = () => {
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 Enroll your physical ESP32 Triage board (CSP-Triage-V1) or run Android companion app to register automatically.
               </p>
+              <button
+                onClick={() => {
+                  setPairingDevId('CSP-Triage-V1');
+                  setPairingChallenge(null);
+                  setPairingStep('ID');
+                  setProvisionedToken(null);
+                  setPairingError(null);
+                  setShowPairModal(true);
+                }}
+                className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700"
+              >
+                <Plus className="h-4 w-4" /> Pair ESP32 Device
+              </button>
             </div>
           )}
         </div>
@@ -476,6 +575,144 @@ export const DevicesPage: React.FC = () => {
               }
             })()}
           </pre>
+        </Modal>
+      )}
+
+      {/* Hardware Device Pairing Modal */}
+      {showPairModal && (
+        <Modal
+          isOpen={true}
+          onClose={() => {
+            setShowPairModal(false);
+            setPairingError(null);
+          }}
+          title="Pair ESP32 Hardware Triage Device"
+          subtitle="Cryptographically bind physical sensor band to your medical profile"
+        >
+          <div className="space-y-4">
+            {pairingError && (
+              <div className="flex items-center gap-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 p-3 text-xs text-rose-700 dark:text-rose-300">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                <span>{pairingError}</span>
+              </div>
+            )}
+
+            {pairingStep === 'ID' && (
+              <form onSubmit={handleStartPairing} className="space-y-4">
+                <p className="text-xs text-slate-600 dark:text-slate-400">
+                  Enter the Device Identifier printed on the ESP32 enclosure or broadcast over BLE GATT Service (e.g., <code className="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">CSP-Triage-V1</code>).
+                </p>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Device Identifier
+                  </label>
+                  <input
+                    type="text"
+                    value={pairingDevId}
+                    onChange={(e) => setPairingDevId(e.target.value)}
+                    placeholder="e.g. CSP-Triage-V1"
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2.5 text-xs text-slate-900 dark:text-white"
+                    required
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowPairModal(false)}
+                    className="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isPairingLoading}
+                    className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    {isPairingLoading ? 'Generating Challenge...' : 'Request Pairing Challenge'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {pairingStep === 'CLAIM' && (
+              <form onSubmit={handleClaimDevice} className="space-y-4">
+                <div className="rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 p-3 text-xs space-y-1">
+                  <span className="font-bold text-indigo-900 dark:text-indigo-200">Active Pairing Challenge Generated</span>
+                  <p className="font-mono text-[11px] text-indigo-700 dark:text-indigo-300 break-all">
+                    Challenge: {pairingChallenge}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Device Hardware Secret Code
+                  </label>
+                  <input
+                    type="text"
+                    value={pairingSecret}
+                    onChange={(e) => setPairingSecret(e.target.value)}
+                    placeholder="Enter 6-digit hardware secret code (e.g. 123456)"
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2.5 text-xs text-slate-900 dark:text-white font-mono"
+                    required
+                  />
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Default hardware test secret: <code className="font-bold">123456</code>.
+                  </p>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setPairingStep('ID')}
+                    className="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isPairingLoading}
+                    className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+                  >
+                    {isPairingLoading ? 'Verifying & Claiming...' : 'Complete Hardware Pairing'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {pairingStep === 'SUCCESS' && (
+              <div className="space-y-4 text-center py-2">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 border border-emerald-300">
+                  <CheckCircle2 className="h-6 w-6" />
+                </div>
+                <div>
+                  <h4 className="text-base font-bold text-slate-900 dark:text-white">Device Successfully Paired!</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    {pairingDevId} is now securely bound to your emergency account.
+                  </p>
+                </div>
+
+                {provisionedToken && (
+                  <div className="rounded-xl bg-slate-900 p-3 text-left space-y-1">
+                    <span className="text-[10px] uppercase font-bold text-slate-400">Provisioned Device Auth Token:</span>
+                    <p className="font-mono text-xs text-emerald-400 break-all select-all">
+                      {provisionedToken}
+                    </p>
+                    <p className="text-[10px] text-slate-500">
+                      Copy this token into ESP32 firmware NVS or flash via BLE Characteristic <code>FFF3</code> with command <code>PROVISION:{provisionedToken}</code>.
+                    </p>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setShowPairModal(false)}
+                  className="rounded-xl bg-blue-600 px-5 py-2 text-xs font-bold text-white hover:bg-blue-700"
+                >
+                  Done
+                </button>
+              </div>
+            )}
+          </div>
         </Modal>
       )}
     </div>

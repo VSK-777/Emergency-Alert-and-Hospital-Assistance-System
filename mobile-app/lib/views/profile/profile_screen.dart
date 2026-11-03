@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/user_model.dart';
+import '../../services/file_service.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -14,6 +15,50 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _minimalDataSharing = true;
+  List<MedicalDocumentItem> _documents = [];
+  bool _isLoadingDocs = false;
+  bool _isUploadingDoc = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDocuments();
+  }
+
+  Future<void> _loadDocuments() async {
+    setState(() => _isLoadingDocs = true);
+    final fileService = FileService(ref.read(apiClientProvider));
+    final docs = await fileService.getMyDocuments();
+    if (mounted) {
+      setState(() {
+        _documents = docs;
+        _isLoadingDocs = false;
+      });
+    }
+  }
+
+  Future<void> _pickAndUploadDoc() async {
+    setState(() => _isUploadingDoc = true);
+    final fileService = FileService(ref.read(apiClientProvider));
+    final doc = await fileService.pickAndUploadDocument();
+    if (mounted) {
+      setState(() => _isUploadingDoc = false);
+      if (doc != null) {
+        setState(() => _documents.insert(0, doc));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Document uploaded to Supabase S3 successfully')),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteDoc(int id) async {
+    final fileService = FileService(ref.read(apiClientProvider));
+    final ok = await fileService.deleteDocument(id);
+    if (ok && mounted) {
+      setState(() => _documents.removeWhere((d) => d.id == id));
+    }
+  }
 
   void _showEditProfileDialog(BuildContext context, UserModel user) {
     final bloodGroupController = TextEditingController(
@@ -284,6 +329,118 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     },
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Medical Documents & Attachments (Supabase S3)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.folder_shared, color: AppTheme.trustBlue, size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              'Medical Documents (S3 Storage)',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        TextButton.icon(
+                          icon: _isUploadingDoc
+                              ? const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.upload_file, size: 16),
+                          label: Text(_isUploadingDoc ? 'Uploading...' : 'Upload'),
+                          onPressed: _isUploadingDoc ? null : _pickAndUploadDoc,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Attach medical reports, prescriptions, or insurance cards for emergency personnel.',
+                      style: TextStyle(fontSize: 11, color: AppTheme.textSecondaryLight),
+                    ),
+                    const SizedBox(height: 10),
+                    if (_isLoadingDocs)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    else if (_documents.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: const Text(
+                          'No documents uploaded yet. Tap Upload to pick a PDF or image.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 11, color: Colors.grey),
+                        ),
+                      )
+                    else
+                      ..._documents.map(
+                        (doc) => Container(
+                          margin: const EdgeInsets.only(bottom: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.description, size: 20, color: AppTheme.trustBlue),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      doc.originalFileName,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      '${(doc.fileSizeBytes / 1024).toStringAsFixed(1)} KB · ${doc.fileCategory}',
+                                      style: const TextStyle(fontSize: 10, color: Colors.grey),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
+                                onPressed: () => _deleteDoc(doc.id),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 16),

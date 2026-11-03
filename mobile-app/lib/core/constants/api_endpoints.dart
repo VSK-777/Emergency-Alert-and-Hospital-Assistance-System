@@ -64,8 +64,18 @@ class ApiEndpoints {
 
   // Devices & ESP32 Hardware Triage
   static String get devices => '$baseUrl/devices';
+  static String get devicePairingChallenge => '$baseUrl/devices/pairing-challenge';
+  static String get deviceClaim => '$baseUrl/devices/claim';
+  static String get deviceTelemetry => '$baseUrl/devices/telemetry';
+  static String deviceById(String id) => '$baseUrl/devices/$id';
   static String get esp32TelemetryLatest =>
       '$baseUrl/devices/CSP-Triage-V1/telemetry/latest';
   static String get esp32TelemetryHistory =>
       '$baseUrl/devices/CSP-Triage-V1/telemetry/history';
+
+  // Files & Medical Documents (Supabase S3 Storage)
+  static String get filesUpload => '$baseUrl/files/upload';
+  static String get filesMy => '$baseUrl/files/my';
+  static String fileDownload(int id) => '$baseUrl/files/$id/download';
+  static String fileById(int id) => '$baseUrl/files/$id';
 }

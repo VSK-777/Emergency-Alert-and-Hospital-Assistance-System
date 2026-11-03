@@ -55,7 +55,6 @@
 |---|---|---|---|
 | `VITE_API_BASE_URL` | **Yes** (Prod) | `https://<your-render-app>.onrender.com` | Full HTTPS URL of your deployed Render backend. |
 | `VITE_MAP_TILE_URL` | No | `https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png` | OpenStreetMap tile server URL. |
-| `VITE_PHONE_EMAIL_CLIENT_ID`| No | `15695407177920574360` | Phone.email Client ID for OTP login verification. |
 
 ---
 

@@ -192,6 +192,7 @@ export interface HardwareDevice {
   batteryLevel?: number;
   imuSamplingRate?: string;
   firmwareVersion?: string;
+  pairingStatus?: 'PAIRED' | 'PENDING_PAIRING' | 'UNPAIRED' | string;
   hardwareModel?: string;
   sensors?: string;
   bleGattService?: string;

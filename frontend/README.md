@@ -47,7 +47,7 @@ The Web Platform serves as the central command, triage, and multi-role operation
 - **Routing:** React Router v7 with dynamic role-based redirection (`DashboardRouter`)
 - **Real-Time Communication:** Server-Sent Events (SSE) stream (`/api/v1/emergencies/stream`) with STOMP WebSocket capability
 - **GIS Mapping:** Leaflet + OpenStreetMap (`react-leaflet`) with custom emergency pulse markers
-- **Authentication:** Stateless JWT with dual login modes (Institutional Email/Password & Citizen Phone OTP)
+- **Authentication:** Stateless JWT with Email/Password & Citizen Emergency Profile registration
 - **Hosting & Deployment:** Vercel SPA with `/api` reverse-proxy routing to Render backend
 
 ---
