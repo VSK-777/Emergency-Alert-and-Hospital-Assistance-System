@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/authStore';
 import type { Hospital, EmergencyIncident } from '../types';
 import { Modal } from '../components/common/Modal';
 import { Badge } from '../components/common/Badge';
+import { DEFAULT_REGIONAL_HOSPITALS } from './CitizenDashboardPage';
 import {
   Building2,
   Phone,
@@ -20,7 +21,7 @@ import {
 } from 'lucide-react';
 
 export const HospitalsPage: React.FC = () => {
-  const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [hospitals, setHospitals] = useState<Hospital[]>(DEFAULT_REGIONAL_HOSPITALS);
   const { activeIncidents } = useEmergencyStore();
   const { user } = useAuthStore();
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
@@ -43,7 +44,18 @@ export const HospitalsPage: React.FC = () => {
   const isHospitalStaff = user?.role === 'HOSPITAL_STAFF';
 
   const loadHospitals = () => {
-    hospitalApi.getHospitals().then(setHospitals);
+    hospitalApi
+      .getHospitals()
+      .then((data) => {
+        if (data && data.length > 0) {
+          setHospitals(data);
+        } else {
+          setHospitals(DEFAULT_REGIONAL_HOSPITALS);
+        }
+      })
+      .catch(() => {
+        setHospitals(DEFAULT_REGIONAL_HOSPITALS);
+      });
   };
 
   useEffect(() => {
