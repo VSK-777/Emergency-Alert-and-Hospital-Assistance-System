@@ -50,7 +50,7 @@ React Web App (Vite SaaS) ──────────────────
 | :--- | :--- | :--- |
 | **Frontend Web App** | React 19, TypeScript, Tailwind CSS v4, Vite 8, Zustand, Lucide React, Leaflet, Recharts | Clinical-grade healthcare SaaS with Light/Dark themes and 4 role dashboards |
 | **Backend REST API** | Java 21 LTS, Spring Boot 3.3.4, Spring Security, Spring Data JPA, JJWT 0.12.5, SpringDoc OpenAPI 2.6.0 | Stateless microservices, Haversine geospatial proximity engine, SSE streams |
-| **Production Database** | Neon PostgreSQL 17 (Session Pooler via JDBC on port 5432 with SSL) | Relational persistence with 12 normalized tables, strict Flyway schema migrations |
+| **Production Database** | Neon Serverless PostgreSQL 18 (Session Pooler via JDBC on port 5432 with SSL & Channel Binding) | Relational persistence with 16 normalized tables, Flyway migrations V1–V7 |
 | **Development Database** | In-Memory H2 Database (`SPRING_PROFILES_ACTIVE=dev`) | Zero-config local development and integration testing |
 | **Mobile Client** | Flutter 3 (Dart), Android Jetpack Compose (Kotlin), BLE GATT | Citizen emergency companion, offline emergency guide, and hardware telemetry bridge |
 | **Hardware Firmware** | ESP32 C++/Arduino, MPU6050 6-axis IMU, BLE GATT Server | Real-time accident detection, impact threshold telemetry, and emergency beacon |
@@ -79,10 +79,12 @@ Emergency-Alert-and-Hospital-Assistance-System/
 │   ├── vercel.json                 # Vercel deployment configuration & reverse-proxy
 │   └── README.md                   # Frontend SaaS platform documentation
 │
-├── mobile-app/                     # Mobile applications for Citizens and Emergency Responders
-│   ├── Android_Triage_App/         # Android Kotlin companion app (Jetpack Compose, BLE GATT)
-│   ├── Emergency_Mobile_Flutter/   # Cross-platform Flutter mobile client (Citizen & Responder app)
-│   └── Docs/                       # Mobile triage documentation & specifications
+├── mobile-app/                     # Cross-platform Flutter + Android mobile application
+│   ├── lib/                        # Flutter Dart source code (screens, controllers, models, BLE)
+│   ├── android/                    # Android host project with WearMessageListenerService & BLE GATT
+│   ├── assets/                     # App branding, icons, and medical emergency illustrations
+│   ├── pubspec.yaml                # Flutter dependencies and asset registrations
+│   └── README.md                   # Mobile application architecture and build guide
 │
 ├── esp32-firmware/                 # Embedded systems & hardware sensor firmware
 │   ├── ESP32_Triage_Firmware/      # ESP32 C++/Arduino firmware (ESP32_Triage_Firmware.ino)
