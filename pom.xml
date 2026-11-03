@@ -11,6 +11,6 @@
     <name>Emergency Alert and Hospital Assistance System - Root Aggregator</name>
 
     <modules>
-        <module>Web Development/Backend</module>
+        <module>backend</module>
     </modules>
 </project>

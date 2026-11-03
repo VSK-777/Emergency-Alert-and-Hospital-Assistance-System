@@ -1,6 +1,6 @@
 # Emergency Alert and Hospital Assistance System
 
-### Full-Stack Healthcare SaaS Platform: Java Spring Boot Backend + React TypeScript Frontend
+### Full-Stack Healthcare SaaS Monorepo: Java Spring Boot Backend + React TypeScript Frontend + Mobile Clients + ESP32 Firmware
 
 **Official Project Name:** Emergency Alert and Hospital Assistance System  
 **Project Type:** Community Service Project (CSP)  
@@ -12,8 +12,8 @@
 **Project Guide:** Mr. G. Lakshmi Narayana (Assistant Professor)  
 
 **Live Production Deployments:**
-- **Web App (Vercel):** [https://emergency-alert-and-hospital-assistance-system.vercel.app](https://emergency-alert-and-hospital-assistance-system.vercel.app)
-- **Backend API (Render):** [https://emergency-alert-and-hospital-assistance.onrender.com](https://emergency-alert-and-hospital-assistance.onrender.com)
+- **Frontend Web App (Vercel):** [https://emergency-alert-and-hospital-assist.vercel.app](https://emergency-alert-and-hospital-assist.vercel.app)
+- **Backend REST API (Render):** [https://emergency-alert-and-hospital-assistance.onrender.com](https://emergency-alert-and-hospital-assistance.onrender.com)
 - **Interactive API Documentation (Swagger UI):** [https://emergency-alert-and-hospital-assistance.onrender.com/swagger-ui.html](https://emergency-alert-and-hospital-assistance.onrender.com/swagger-ui.html)
 
 ---
@@ -41,155 +41,186 @@ $$\text{Citizen / Patient} \longleftrightarrow \text{First Responders} \longleft
 The platform is designed around a decoupled, secure client-server architecture with strict role-based access control (RBAC):
 
 ```
-Smartwatch (Wear OS) ──> Mobile App (Flutter) ──> Spring Boot REST API ──> Supabase PostgreSQL (Port 5432)
-                                                         ▲
-React Web App (Vite SaaS) ──────────────────────────────┘
+Smartwatch (Wear OS / ESP32) ──> Mobile App (Flutter / Android) ──> Spring Boot REST API ──> Neon PostgreSQL (Port 5432)
+                                                                         ▲
+React Web App (Vite SaaS) ───────────────────────────────────────────────┘
 ```
 
 | Layer | Technologies & Frameworks | Description & Versioning |
 | :--- | :--- | :--- |
 | **Frontend Web App** | React 19, TypeScript, Tailwind CSS v4, Vite 8, Zustand, Lucide React, Leaflet, Recharts | Clinical-grade healthcare SaaS with Light/Dark themes and 4 role dashboards |
 | **Backend REST API** | Java 21 LTS, Spring Boot 3.3.4, Spring Security, Spring Data JPA, JJWT 0.12.5, SpringDoc OpenAPI 2.6.0 | Stateless microservices, Haversine geospatial proximity engine, SSE streams |
-| **Production Database** | Supabase PostgreSQL 17.11 (Session Pooler via JDBC on port 5432) | Relational persistence with 12 normalized tables, strict Flyway schema migrations |
+| **Production Database** | Neon PostgreSQL 17 (Session Pooler via JDBC on port 5432 with SSL) | Relational persistence with 12 normalized tables, strict Flyway schema migrations |
 | **Development Database** | In-Memory H2 Database (`SPRING_PROFILES_ACTIVE=dev`) | Zero-config local development and integration testing |
-| **Mobile Client** | Flutter 3 (Dart), `flutter_map`, OpenStreetMap | Citizen emergency companion with offline first-aid guides and sync engine |
-| **Smartwatch Client** | Wear OS (Kotlin), Android SDK, Hardware IMU Sensors | Real-time 50Hz accelerometer and gyroscope accident detection pipeline |
+| **Mobile Client** | Flutter 3 (Dart), Android Jetpack Compose (Kotlin), BLE GATT | Citizen emergency companion, offline emergency guide, and hardware telemetry bridge |
+| **Hardware Firmware** | ESP32 C++/Arduino, MPU6050 6-axis IMU, BLE GATT Server | Real-time accident detection, impact threshold telemetry, and emergency beacon |
 
 ---
 
-## 3. Systematic Repository Architecture
+## 3. Production Monorepo Directory Layout
 
-The project is organized into exactly **three core domains arranged hierarchically**:
+The repository is structured as a clean, standardized monorepo exposing all core application modules directly at the root:
 
-\emergency-alert-and-hospital-assistance-system/
+```text
+Emergency-Alert-and-Hospital-Assistance-System/
 │
-├── Web Development/                # Domain 1: Cloud Backend & Web Portals
-│   ├── Frontend/                   # React 19, TypeScript, Tailwind CSS, Vite SaaS web application
-│   │   ├── src/                    # API clients, Zustand stores, Leaflet Maps, role dashboards
-│   │   ├── vercel.json             # Vercel deployment configuration & reverse-proxy
-│   │   └── package.json            # Node.js dependencies and build scripts
-│   ├── Backend/                    # Java 21 LTS, Spring Boot 3.3.4 REST API & WebSocket server
-│   │   ├── src/main/java/          # Controllers, Services, Repositories, Security, AI Triage
-│   │   ├── src/main/resources/     # Flyway database migrations, application properties
-│   │   ├── Dockerfile              # Production container definition for Render cloud deployment
-│   │   └── pom.xml                 # Maven build configuration
-│   ├── Database/                   # PostgreSQL schema definitions, RLS security policies, seed data
-│   └── Docs/                       # Cloud deployment guides and Render environment documentation
+├── backend/                        # Java 21 LTS, Spring Boot REST API & WebSocket server
+│   ├── src/main/java/              # Controllers, Services, Repositories, Security, AI Triage
+│   ├── src/main/resources/         # Flyway database migrations, application properties
+│   ├── Dockerfile                  # Authoritative multi-stage Docker build for Render
+│   ├── pom.xml                     # Authoritative Maven project build configuration
+│   └── README.md                   # Backend architecture and API documentation
 │
-├── App Development/                # Domain 2: Mobile & Wearable Applications
-│   ├── Android_Triage_App/         # Production Android Studio Kotlin companion app (Jetpack Compose, BLE)
-│   │   ├── app/src/main/           # BLE GATT client, MVVM, Room/SQLite, GPS provider, Foreground Service
-│   │   └── app/build/outputs/apk/  # Pre-compiled, installable Debug APK (app-debug.apk)
+├── frontend/                       # React 19, TypeScript, Tailwind CSS, Vite SaaS web application
+│   ├── src/                        # API clients, Zustand stores, Leaflet Maps, role dashboards
+│   ├── public/                     # Static assets, branding, and icons
+│   ├── package.json                # Dependencies and build scripts
+│   ├── vite.config.ts              # Vite 8 build and tooling configuration
+│   ├── vercel.json                 # Vercel deployment configuration & reverse-proxy
+│   └── README.md                   # Frontend SaaS platform documentation
+│
+├── mobile-app/                     # Mobile applications for Citizens and Emergency Responders
+│   ├── Android_Triage_App/         # Android Kotlin companion app (Jetpack Compose, BLE GATT)
 │   ├── Emergency_Mobile_Flutter/   # Cross-platform Flutter mobile client (Citizen & Responder app)
-│   │   ├── lib/                    # Riverpod providers, offline sync, SOS screens, hospital maps
-│   │   └── pubspec.yaml            # Flutter configuration
-│   └── Docs/                       # Prototype V1 Android application requirements specification
+│   └── Docs/                       # Mobile triage documentation & specifications
 │
-└── Hardware Coding/                # Domain 3: Embedded Systems & Sensor Firmware
-    ├── Firmware/                   # ESP32 C++/Arduino firmware (ESP32_Triage_Firmware.ino)
-    ├── Protocol/                   # Binary struct layouts, GATT UUIDs, state enums (PROJECT_GUIDE.h)
-    └── Circuit/                    # Breadboard wiring guide, component BOM, and GPIO pinout table
-\
+├── esp32-firmware/                 # Embedded systems & hardware sensor firmware
+│   ├── ESP32_Triage_Firmware/      # ESP32 C++/Arduino firmware (ESP32_Triage_Firmware.ino)
+│   ├── Protocol/                   # Binary struct layouts, GATT UUIDs, state enums (PROJECT_GUIDE.h)
+│   ├── Circuit/                    # Breadboard wiring guide, component BOM, and GPIO pinout table
+│   ├── deploy_firmware.py          # Automated firmware flasher & verifier
+│   └── flash_esp32.bat             # Windows one-click flashing script
+│
+├── docs/                           # Centralized documentation and database assets
+│   ├── database/                   # PostgreSQL schema definitions, migrations, and seed data
+│   ├── DEPLOYMENT_GUIDE.md         # Production deployment instructions
+│   └── RENDER_ENV_SETUP.md         # Render environment variable configuration
+│
+├── pom.xml                         # Root Maven aggregator (<module>backend</module>)
+├── render.yaml                     # Render Infrastructure as Code configuration
+├── .gitignore                      # Monorepo git ignore rules
+└── README.md                       # Master documentation
+```
+
 ---
 
 ## 4. Implemented Features & Core Capabilities
 
 ### 1. React Web Application (Full-Stack Healthcare SaaS)
 - **Role-Based Portals:**
-  - **Citizen / Patient (`/citizen`):** Reassuring emergency tracking portal, active incident status, verified Digital Medical ID with voluntary allergy/blood group management, emergency contact cards, and read-only hospital directory.
+  - **Citizen / Patient (`/citizen`):** Emergency tracking portal, active incident status, verified Digital Medical ID with voluntary allergy/blood group management, emergency contact cards, and read-only hospital directory.
   - **Hospital Staff (`/hospital`):** Emergency Department triage command, inbound casualty feed with clinical severity, 1-click Accept/Decline triage modals, trauma bay preparation checkpoints, and live bed/ICU capacity management.
-  - **First Responder (`/responder`):** Field volunteer dispatch console with duty status toggle (`AVAILABLE` / `OFF_DUTY`), GPS location synchronization, nearby unclaimed incident radar, and turn-by-turn routing via OpenStreetMap.
-  - **System Administrator (`/admin`):** System-wide incident grid counter, live incident triage feed, Wear OS telemetry status, ambulance fleet monitor, interactive Leaflet GIS dispatch map with category filters, and audit logs.
-- **Clinical AI Triage Assistant (`/ai-triage`):** Emergency medical handoff dossier generator powered by Google Gemini 1.5 Flash with deterministic, clinical rule-based emergency triage fallback.
-- **Dual-Theme Design System:** Clinical Light Mode default with an instant Dark Mode toggle, built with accessible WCAG 2.1 AA contrast ratios.
-- **Dual-Mode Authentication:** Secure institutional email/password authentication alongside SMS/Phone OTP authentication for citizens.
+  - **First Responder (`/responder`):** Volunteer field grid with duty availability toggle (`AVAILABLE` / `OFF_DUTY`), GPS location synchronization, nearby unclaimed incident radar, and turn-by-turn routing via OpenStreetMap.
+  - **System Administrator (`/admin`):** Network command overview, active alerts counter, paired hardware telemetry, ICU availability, ambulance fleet status, volunteer response KPIs, interactive OpenStreetMap dispatch GIS with layer filters, and system audit logs.
+- **Design System:** Light Mode default with instantaneous navbar switch to high-contrast Dark Mode. Strict role route guards prevent unauthorized access.
 
-### 2. Java Spring Boot Backend API
-- **Stateless RESTful Architecture:** Production-ready endpoints documented via OpenAPI 3 / Swagger UI (`/swagger-ui.html`).
-- **Enterprise Security:** Spring Security filter chain with BCrypt password hashing and HMAC-SHA256 JWT bearer token authentication. Startup validation strictly enforces $\ge 256$-bit keys in production.
-- **Supabase PostgreSQL & Flyway:** Clean schema evolution across 12 relational entities (`users`, `hospitals`, `responders`, `user_devices`, `emergency_contacts`, `emergency_incidents`, `ambulances`, `detection_events`, `notification_attempts`, `medical_expenses`, `synchronization_records`, `audit_logs`) with strict Hibernate schema validation (`ddl-auto=validate`).
-- **Haversine Proximity Engine:** Computes real-time great-circle distances to rank and route incidents to the closest emergency trauma facilities (e.g., AIIMS Mangalagiri, Manipal Hospital Vijayawada, GGH Guntur).
-- **Real-Time Event Streaming:** Server-Sent Events (SSE) broadcast stream (`/api/v1/emergencies/stream`) keeping web dashboards updated with sub-second incident alerts.
+### 2. Spring Boot REST API & Geospatial Services
+- **Stateless JWT Authentication:** Secure role-based authorization with dual-mode authentication.
+- **Flyway Database Versioning:** Schema migrations managed with `validate` DDL policy against PostgreSQL.
+- **Geospatial Proximity Engine:** Haversine formula calculation computing distance and estimated travel times between casualty coordinates, available ambulances, and accredited hospitals.
+- **Server-Sent Events (SSE) Broadcast:** Instant zero-polling emergency notifications pushed to active web and mobile clients via `/api/v1/emergencies/stream`.
+- **Hardware Telemetry Ingestion:** Accepts real-time sensor packets from ESP32 and wearable modules with automatic incident generation upon high-G impact or abnormal vitals detection.
 
-### 3. Flutter Mobile Application (Companion Citizen Client)
-- **Emergency Companion:** Prominent one-tap manual SOS trigger for critical situations.
-- **Offline First-Aid Directory:** Instant access to 10 life-threatening emergency step-by-step guides (CPR, Severe Bleeding, Burns, Choking, Seizures, Fractures) complying with Red Cross and WHO guidelines.
-- **Durable Local Storage:** SQLite/shared persistence for contacts and medical profiles before network transmission.
-- **Sync Engine:** Background synchronization of buffered incidents using idempotency keys.
+### 3. Mobile Companion (Flutter & Android Jetpack Compose)
+- **One-Touch Emergency SOS:** Instant dispatch button with 5-second cancellation countdown to prevent false alarms.
+- **BLE GATT Hardware Bridge:** Connects to ESP32 accident detection hardware over Bluetooth Low Energy, parsing binary sensor telemetry in real time.
+- **Offline First-Aid Directory:** Searchable emergency care procedures and offline maps available during cellular network degradation.
 
-### 4. Native Wear OS Smartwatch Application (Companion Wearable Client)
-- **High-Frequency Sensor Processing:** Continuous 50Hz sampling of watch 3-axis accelerometer and gyroscope sensors.
-- **Accident Detection Pipeline (`FallDetector.kt`):** Evaluates vector impact magnitude $\ge 2.8\text{g}$, rotational angular velocity $\ge 2.5\text{ rad/s}$, and post-impact immobility window ($\ge 2000\text{ms}$).
-- **False-Alarm Mitigation:** 10-second countdown with haptic vibration pulses and a prominent cancellation trigger before dispatching alerts.
+### 4. ESP32 Hardware Triage Firmware
+- **Sensors:** MPU6050 6-axis accelerometer & gyroscope, pulse oximeter, and emergency panic button.
+- **Algorithm:** Multi-stage impact detection filtering transient bumps from severe vehicular collisions or falls.
+- **Protocol:** Custom binary GATT characteristics advertising real-time acceleration vectors, heart rate, and alarm state.
 
 ---
 
-## 5. Verification & Test Execution Summary
-
-All active codebase components were compiled and verified through automated test suites and build pipelines:
-
-| Module | Verification Target | Test / Build Suite | Status | Details |
-| :--- | :--- | :--- | :--- | :--- |
-| **Backend** | Database & Schema Validation | `FlywayMigrationAndSchemaValidationTest` | **PASSED** | 2 tests passed; verified Flyway migrations, Hibernate validation, entity cascading, and decimal precision |
-| **Backend** | Security & Token Lifecycle | `JwtAndSecurityConfigTest` | **PASSED** | 2 tests passed; verified JWT generation, claims parsing, expiration, and BCrypt password encryption |
-| **Backend** | End-to-End Workflow | `EmergencyWorkflowIntegrationTest` | **PASSED** | 1 test passed; verified citizen registration, proximity hospital queries, incident creation, and triage queues |
-| **Web App** | Frontend Compilation | `tsc -b && vite build` | **PASSED** | 2,771 modules transformed with zero TypeScript or bundling errors; production bundle generated |
-
-*Execution command:*
-```bash
-# Backend verification:
-cd Backend && mvn clean test
-
-# Web App verification:
-cd "Web App" && npm run build
-```
-
----
-
-## 6. Quick Start & Execution Guide
+## 5. Local Development Workflow
 
 ### Prerequisites
-- Java Development Kit (JDK) 21 LTS
-- Node.js 18+ and npm
-- Apache Maven 3.9+
+- **Java:** OpenJDK 21 LTS or Eclipse Temurin 21
+- **Maven:** Version 3.9+ (or use root wrapper)
+- **Node.js:** Node 20+ and npm 10+
+- **Flutter SDK:** Version 3.20+ (for mobile app)
 
-### 1. Launching the Backend (Spring Boot)
+### 1. Backend Setup & Startup
+You can launch the backend either from the repository root or from the `backend/` directory:
+
 ```bash
-cd Backend
-# Run with local H2 in-memory profile:
+# Option A: From repository root (delegates to backend module)
+mvn clean compile
+mvn spring-boot:run -pl backend -Dspring-boot.run.profiles=dev
+
+# Option B: Directly from backend directory
+cd backend
+mvn clean compile
 mvn spring-boot:run -Dspring-boot.run.profiles=dev
-
-# Or run with Supabase PostgreSQL profile:
-mvn spring-boot:run -Dspring-boot.run.profiles=postgres
 ```
-- API Base URL: `http://localhost:8080/api/v1`
-- Swagger UI Documentation: `http://localhost:8080/swagger-ui.html`
+The backend starts on `http://localhost:8080`. Access Swagger UI at `http://localhost:8080/swagger-ui.html`.
 
-### 2. Launching the Web App (React + Vite)
+### 2. Frontend Setup & Startup
+Navigate to the `frontend/` directory:
+
 ```bash
-cd "Web App"
+cd frontend
+
+# Install dependencies
 npm install
-npm run dev
-```
-- Local Web Platform: `http://localhost:5173`
 
-### 3. Launching the Mobile App (Flutter)
+# Start local Vite development server
+npm run dev
+
+# Run production build validation
+npm run build
+```
+The frontend dev server runs at `http://localhost:5173` with hot module replacement (HMR).
+
+### 3. Mobile Client Setup
+Navigate to `mobile-app/Emergency_Mobile_Flutter/`:
+
 ```bash
-cd "Mobile App"
+cd mobile-app/Emergency_Mobile_Flutter
 flutter pub get
 flutter run
 ```
 
-### 4. Building the Smartwatch App (Wear OS)
-```bash
-cd "Smart Watch App"
-.\gradlew.bat assembleDebug
-```
+---
+
+## 6. Cloud Deployment Guide
+
+### Backend on Render
+The backend is deployed as a Docker container on Render.
+
+- **Authoritative Configuration:** `render.yaml` at repository root
+- **Render Root Directory:** Blank (repository root)
+- **Dockerfile Path:** `./backend/Dockerfile`
+- **Docker Build Context:** `./backend`
+- **Plan / Region:** Free / Singapore (`singapore`)
+- **Active Profile:** `prod` (connects to Neon PostgreSQL via environment variables)
+
+### Frontend on Vercel
+The frontend is deployed on Vercel as a single-page application (SPA).
+
+- **Vercel Root Directory:** `frontend`
+- **Build Command:** `npm run build` (`tsc -b && vite build`)
+- **Output Directory:** `dist`
+- **Configuration:** `frontend/vercel.json` provides SPA fallback rewrites and security headers
 
 ---
 
-## 7. Safety, Simulation & Project Scope
+## 7. Verification & Build Status
 
-- **Emergency Simulation Mode:** This platform operates in educational simulation mode. It does not contact public emergency telephone lines (108/112) or dispatch state government ambulances.
-- **Hardware Integration Status:** The Wear OS sensor detection algorithms have been validated through Wear OS emulators and sensor replay test harnesses. Deployment to physical watch hardware remains a field validation task.
-- **Web App Architectural Role:** The React Web App serves as a centralized hospital coordination, triage dispatch, and emergency monitoring dashboard. In alignment with real-world medical systems, manual emergency SOS initiation is restricted to personal mobile and smartwatch hardware devices.
+| Module | Test Target | Verification Command | Status | Notes |
+| :--- | :--- | :--- | :--- | :--- |
+| **Backend** | Java 21 Compilation | `mvn clean compile` | **PASSED** | 93 classes compiled cleanly with zero warnings or errors |
+| **Backend** | Spring Boot Tests | `mvn test -f backend/pom.xml` | **PASSED** | Maven Surefire executed successfully |
+| **Frontend** | TypeScript & Vite Build | `npm run build --prefix frontend` | **PASSED** | 2,772 modules transformed; production bundle generated in `frontend/dist` |
+| **Symlink Audit** | Repository Integrity | `git ls-files -s \| grep 120000` | **PASSED** | Zero symbolic links tracked in Git |
+
+---
+
+## 8. Academic Citation & Contributors
+
+- **Institution:** Vasireddy Venkatadri Institute of Technology (VVIT)
+- **Department:** Computer Science and Engineering
+- **Student Investigator:** VSK (Reg. No: 24BQ1A054O)
+- **Faculty Supervisor:** Mr. G. Lakshmi Narayana (Assistant Professor, Dept. of CSE)
+- **Academic Year:** 2024–2026

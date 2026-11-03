@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Top Emergency Signal Arc -->
+    <path
+        android:pathData="M 44.5, 14.5 A 10.5,10.5 0 0,1 63.5, 14.5"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round" />
+    <!-- Shield Protective Contour -->
+    <path
+        android:pathData="M 54, 20 C 73, 20 88, 25 88, 43 C 88, 69 69, 87 54, 94 C 39, 87 20, 69 20, 43 C 20, 25 35, 20 54, 20 Z"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.4"
+        android:strokeLineJoin="round" />
+    <!-- Medical Cross Vertical Beam -->
+    <path
+        android:pathData="M 47, 29 H 61 V 78 H 47 Z"
+        android:fillColor="#55FFFFFF" />
+    <!-- Medical Cross Horizontal Beam -->
+    <path
+        android:pathData="M 28, 48 H 80 V 62 H 28 Z"
+        android:fillColor="#55FFFFFF" />
+    <!-- Precision Cardiac Pulse Wave -->
+    <path
+        android:pathData="M 26, 55 L 40, 55 L 45, 47 L 49, 66 L 54, 36 L 60, 72 L 64, 51 L 67, 55 L 82, 55"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <!-- Beacon Apex Node -->
+    <path
+        android:pathData="M 54, 17.5 A 2.5,2.5 0 1,1 53.9, 17.5"
+        android:fillColor="#FFFFFF" />
+</vector>

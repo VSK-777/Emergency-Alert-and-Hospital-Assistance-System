@@ -1,0 +1,45 @@
+<resources>
+    <string name="app_name">CSP Triage</string>
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_device">Device</string>
+    <string name="nav_emergency">Emergency</string>
+    <string name="nav_history">History</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Ble States -->
+    <string name="ble_disconnected">Disconnected</string>
+    <string name="ble_scanning">Scanning for CSP-Triage-V1…</string>
+    <string name="ble_connecting">Connecting…</string>
+    <string name="ble_connected">Connected</string>
+    <string name="ble_discovering">Discovering GATT Services…</string>
+    <string name="ble_subscribing">Subscribing to Telemetry…</string>
+    <string name="ble_ready">System Online &amp; Armed</string>
+    <string name="ble_reconnecting">Reconnecting with backoff…</string>
+    <string name="ble_error">Communication Error</string>
+
+    <!-- State Machine -->
+    <string name="state_normal">NORMAL MONITORING</string>
+    <string name="state_impact">IMPACT CANDIDATE</string>
+    <string name="state_immobility">IMMOBILITY CHECK</string>
+    <string name="state_countdown">EMERGENCY COUNTDOWN</string>
+    <string name="state_assessment">PHYSIOLOGICAL ASSESSMENT</string>
+    <string name="state_alert">EMERGENCY ALERT</string>
+    <string name="state_cancelled">ALERT CANCELLED</string>
+
+    <!-- Mode -->
+    <string name="mode_real">HARDWARE (REAL)</string>
+    <string name="mode_sim">DEMO (SIMULATION)</string>
+
+    <!-- Sensors -->
+    <string name="sensor_hr">Heart Rate</string>
+    <string name="sensor_spo2">Blood Oxygen (SpO2)</string>
+    <string name="sensor_accel">IMU Accelerometer</string>
+    <string name="sensor_unavailable">Unavailable / Sensor Off</string>
+    <string name="sensor_searching">Detecting pulse…</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel_id">csp_triage_monitoring</string>
+    <string name="notification_channel_name">CSP Triage Background Monitor</string>
+    <string name="notification_alert_channel_id">csp_triage_alert</string>
+    <string name="notification_alert_channel_name">CSP Triage Emergency Alarm</string>
+</resources>
