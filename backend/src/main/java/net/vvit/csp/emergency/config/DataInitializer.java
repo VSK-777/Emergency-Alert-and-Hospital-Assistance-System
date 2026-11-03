@@ -139,9 +139,9 @@ public class DataInitializer implements CommandLineRunner {
         // 3. Seed Hospitals around VVIT Nambur / Guntur / Mangalagiri
         Hospital h1 = new Hospital();
         h1.setName("AIIMS Mangalagiri");
-        h1.setAddress("NH 16, Mangalagiri, Guntur District, AP 522503");
-        h1.setLatitude(16.4357);
-        h1.setLongitude(80.5644);
+        h1.setAddress("All India Institute Of Medical Sciences (AIIMS) Road, Mangalagiri, Guntur District, AP 522503");
+        h1.setLatitude(16.446245);
+        h1.setLongitude(80.580132);
         h1.setPhoneNumber("+918645280000");
         h1.setEmergencyCapacity(50);
         h1.setAvailableIcus(15);
@@ -153,9 +153,9 @@ public class DataInitializer implements CommandLineRunner {
 
         Hospital h2 = new Hospital();
         h2.setName("Manipal Hospital Vijayawada");
-        h2.setAddress("Near Kanuru, Tadepalli, Guntur Dist, AP");
-        h2.setLatitude(16.4862);
-        h2.setLongitude(80.6124);
+        h2.setAddress("Service Road, Near Varadhi, Tadepalle, Guntur District, AP 522501");
+        h2.setLatitude(16.484436);
+        h2.setLongitude(80.616980);
         h2.setPhoneNumber("+918662499999");
         h2.setEmergencyCapacity(35);
         h2.setAvailableIcus(8);
@@ -164,9 +164,9 @@ public class DataInitializer implements CommandLineRunner {
 
         Hospital h3 = new Hospital();
         h3.setName("Government General Hospital (GGH) Guntur");
-        h3.setAddress("Sambasiva Pet, Guntur, AP 522001");
-        h3.setLatitude(16.3067);
-        h3.setLongitude(80.4365);
+        h3.setAddress("Station Road, Sambasiva Pet / Arundelpet, Guntur, AP 522001");
+        h3.setLatitude(16.299558);
+        h3.setLongitude(80.443772);
         h3.setPhoneNumber("+918632220000");
         h3.setEmergencyCapacity(60);
         h3.setAvailableIcus(20);
@@ -175,9 +175,9 @@ public class DataInitializer implements CommandLineRunner {
 
         Hospital h4 = new Hospital();
         h4.setName("NRI General Hospital & Medical College");
-        h4.setAddress("Chinakakani, Mangalagiri, AP 522503");
-        h4.setLatitude(16.4172);
-        h4.setLongitude(80.5512);
+        h4.setAddress("Mangalagiri Main Road, Chinakakani, AP 522503");
+        h4.setLatitude(16.415035);
+        h4.setLongitude(80.557396);
         h4.setPhoneNumber("+918645230101");
         h4.setEmergencyCapacity(40);
         h4.setAvailableIcus(10);
@@ -280,10 +280,10 @@ public class DataInitializer implements CommandLineRunner {
         telemetryRepo.save(initialTelem);
 
         // 7. Seed Ambulances
-        ambulanceRepo.save(new Ambulance("AP 16 TE 1081", h1, "ALS", "S. K. Naidu", "+919440123456", "ASSIGNED", 16.3530, 80.5235, "Ventilator, Defibrillator, ECG Monitor, Oxygen"));
-        ambulanceRepo.save(new Ambulance("AP 16 TE 1082", h1, "BLS", "K. Rama Rao", "+919440123457", "AVAILABLE", 16.4360, 80.5650, "First Aid Kit, Oxygen, Stretcher"));
-        ambulanceRepo.save(new Ambulance("AP 16 TE 1083", h2, "ALS", "P. Venkatesh", "+919440123458", "AVAILABLE", 16.4865, 80.6130, "Advanced Life Support Unit, Defibrillator, Syringe Pump"));
-        ambulanceRepo.save(new Ambulance("AP 16 TE 1084", h3, "ALS", "M. Suresh", "+919440123459", "AVAILABLE", 16.3070, 80.4370, "Ventilator, Suction Unit, Stretcher"));
+        ambulanceRepo.save(new Ambulance("AP 16 TE 1081", h1, "ALS", "S. K. Naidu", "+919440123456", "ASSIGNED", 16.446245, 80.580132, "Ventilator, Defibrillator, ECG Monitor, Oxygen"));
+        ambulanceRepo.save(new Ambulance("AP 16 TE 1082", h1, "BLS", "K. Rama Rao", "+919440123457", "AVAILABLE", 16.446245, 80.580132, "First Aid Kit, Oxygen, Stretcher"));
+        ambulanceRepo.save(new Ambulance("AP 16 TE 1083", h2, "ALS", "P. Venkatesh", "+919440123458", "AVAILABLE", 16.484436, 80.616980, "Advanced Life Support Unit, Defibrillator, Syringe Pump"));
+        ambulanceRepo.save(new Ambulance("AP 16 TE 1084", h3, "ALS", "M. Suresh", "+919440123459", "AVAILABLE", 16.299558, 80.443772, "Ventilator, Suction Unit, Stretcher"));
 
         // 8. Seed Audit Logs
         auditLogRepo.save(new AuditLog("SYSTEM_BOOT", "admin@vvit.net", "ADMIN", null, "Emergency Coordination System initialized successfully"));

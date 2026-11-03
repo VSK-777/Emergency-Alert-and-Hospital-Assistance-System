@@ -13,16 +13,7 @@ interface NotificationState {
 }
 
 export const useNotificationStore = create<NotificationState>((set) => ({
-  notifications: [
-    {
-      id: 'init-1',
-      title: 'Emergency Response System Ready',
-      message: 'Connected to VVIT CSP shared backend. Live telemetry listener active.',
-      type: 'system',
-      timestamp: new Date().toLocaleTimeString(),
-      read: false,
-    },
-  ],
+  notifications: [],
   isOpen: false,
 
   addNotification: (item) => {

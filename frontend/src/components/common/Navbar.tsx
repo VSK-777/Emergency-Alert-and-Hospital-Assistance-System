@@ -191,7 +191,7 @@ export const Navbar: React.FC = () => {
           >
             <Bell className="h-4 w-4" />
             {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white ring-2 ring-white dark:ring-slate-900 animate-pulse">
+              <span className={`absolute top-1.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white ring-2 ring-white dark:ring-slate-900 ${activeIncidents.length > 0 ? 'animate-pulse' : ''}`}>
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}

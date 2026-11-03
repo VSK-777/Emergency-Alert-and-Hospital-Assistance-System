@@ -214,20 +214,8 @@ export const LiveEmergencyMap: React.FC<LiveEmergencyMapProps> = ({
 
   return (
     <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 transition-colors w-full">
-      {/* Map Control and Attribution Bar */}
+      {/* Map Control and Action Bar */}
       <div className="absolute top-3 right-3 z-[1000] flex flex-wrap items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 p-1.5 backdrop-blur-md text-xs shadow-md max-w-[calc(100%-24px)]">
-        {/* OpenStreetMap Official Source Link & Policy Compliance */}
-        <a
-          href="https://www.openstreetmap.org"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 transition-all hover:bg-emerald-100"
-          title="Map service powered by OpenStreetMap contributors"
-        >
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          OpenStreetMap
-        </a>
-
         {/* Locate Me GPS Button */}
         <button
           type="button"
