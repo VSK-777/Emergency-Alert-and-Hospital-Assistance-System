@@ -38,7 +38,6 @@ export const LoginPage: React.FC = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
-  const [devOtp, setDevOtp] = useState<string | null>(null);
   const [otpError, setOtpError] = useState<string | null>(null);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
@@ -106,11 +105,8 @@ export const LoginPage: React.FC = () => {
     setOtpError(null);
     setIsSendingOtp(true);
     try {
-      const res = await sendOtp(phoneNumber.trim());
+      await sendOtp(phoneNumber.trim());
       setOtpSent(true);
-      if (res.devOtp) {
-        setDevOtp(res.devOtp);
-      }
       setResendCooldown(30);
     } catch (err: any) {
       setOtpError(err.message || 'Failed to dispatch verification OTP.');
@@ -358,30 +354,6 @@ export const LoginPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Sandbox Evaluation Helper */}
-                  {devOtp && (
-                    <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 text-xs space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-semibold text-blue-700 dark:text-blue-300">
-                          Sandbox / Evaluation OTP:
-                        </span>
-                        <span className="font-mono font-bold text-sm tracking-wider text-blue-900 dark:text-blue-100 bg-white dark:bg-slate-900 px-2.5 py-0.5 rounded-md border border-blue-200 dark:border-blue-700 shadow-2xs">
-                          {devOtp}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-                        <span>Carrier SMS Simulation Mode</span>
-                        <button
-                          type="button"
-                          onClick={() => setOtpCode(devOtp)}
-                          className="text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer"
-                        >
-                          Auto-fill Code
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
                   {otpError && (
                     <div className="flex items-center gap-2 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 p-3 text-xs text-red-700 dark:text-red-300">
                       <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
@@ -412,7 +384,6 @@ export const LoginPage: React.FC = () => {
                       type="button"
                       onClick={() => {
                         setOtpSent(false);
-                        setDevOtp(null);
                         setOtpError(null);
                         setOtpCode('');
                       }}

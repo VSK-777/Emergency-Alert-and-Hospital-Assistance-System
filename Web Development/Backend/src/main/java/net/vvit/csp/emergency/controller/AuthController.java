@@ -52,8 +52,7 @@ public class AuthController {
                 "success", true,
                 "message", "Verification OTP dispatched successfully to " + phoneNumber,
                 "phoneNumber", phoneNumber,
-                "expiresInSeconds", 300,
-                "devOtp", otp
+                "expiresInSeconds", 300
         ));
     }
 
