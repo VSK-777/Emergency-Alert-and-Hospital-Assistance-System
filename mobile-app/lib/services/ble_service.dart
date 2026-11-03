@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
@@ -146,7 +145,7 @@ class BleTriageService {
   Future<bool> connectToDevice(BluetoothDevice device) async {
     try {
       _statusController.add('Connecting to ${device.platformName.isNotEmpty ? device.platformName : device.remoteId}...');
-      await device.connect(autoConnect: false);
+      await device.connect(license: License.nonprofit, autoConnect: false);
       connectedDevice = device;
 
       _connectionSub = device.connectionState.listen((state) {
