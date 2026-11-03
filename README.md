@@ -98,9 +98,9 @@ Emergency-Alert-and-Hospital-Assistance-System/
 │   ├── DEPLOYMENT_GUIDE.md         # Production deployment instructions
 │   └── RENDER_ENV_SETUP.md         # Render environment variable configuration
 │
-├── pom.xml                         # Root Maven aggregator (<module>backend</module>)
 ├── render.yaml                     # Render Infrastructure as Code configuration
 ├── .gitignore                      # Monorepo git ignore rules
+├── .env.example                    # Environment variables template
 └── README.md                       # Master documentation
 ```
 
