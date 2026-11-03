@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
-import { PhoneEmailButton } from '../components/auth/PhoneEmailButton';
 import { BrandIcon } from '../components/common/BrandIcon';
 import {
   Activity,
@@ -23,7 +22,7 @@ import {
 import type { UserRole } from '../types';
 
 export const LoginPage: React.FC = () => {
-  const { login, sendOtp, verifyOtp, register, loginWithPhoneEmail, isLoading, error } = useAuthStore();
+  const { login, sendOtp, verifyOtp, register, isLoading, error } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
   const navigate = useNavigate();
 
@@ -41,7 +40,6 @@ export const LoginPage: React.FC = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
-  const [isVerifyingPhoneEmail, setIsVerifyingPhoneEmail] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
 
   useEffect(() => {
@@ -135,24 +133,6 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handlePhoneEmailSuccess = async (userJsonUrl: string) => {
-    setIsVerifyingPhoneEmail(true);
-    setOtpError(null);
-    try {
-      await loginWithPhoneEmail(userJsonUrl);
-      const user = useAuthStore.getState().user;
-      if (user) {
-        redirectByRole(user.role);
-      } else {
-        navigate('/citizen');
-      }
-    } catch (err: any) {
-      setOtpError(err.message || 'Phone.email authentication failed.');
-    } finally {
-      setIsVerifyingPhoneEmail(false);
-    }
-  };
-
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isRegistering) return;
@@ -230,7 +210,11 @@ export const LoginPage: React.FC = () => {
           <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 mb-5">
             <button
               type="button"
-              onClick={() => setAuthMethod('email')}
+              onClick={() => {
+                setAuthMethod('email');
+                useAuthStore.setState({ error: null });
+                setOtpError(null);
+              }}
               className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-all ${
                 authMethod === 'email'
                   ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-white shadow-xs'
@@ -242,7 +226,11 @@ export const LoginPage: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={() => setAuthMethod('phone')}
+              onClick={() => {
+                setAuthMethod('phone');
+                useAuthStore.setState({ error: null });
+                setOtpError(null);
+              }}
               className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-all ${
                 authMethod === 'phone'
                   ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-white shadow-xs'
@@ -254,11 +242,11 @@ export const LoginPage: React.FC = () => {
             </button>
           </div>
 
-          {/* Real Error Alert from Backend */}
-          {error && (
+          {/* Unified Error Alert Banner */}
+          {(authMethod === 'email' ? error : (otpError || error)) && (
             <div className="flex items-center gap-2.5 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 p-3.5 mb-4 text-xs text-rose-800 dark:text-rose-300 animate-in fade-in duration-200">
               <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
-              <span>{error}</span>
+              <span>{authMethod === 'email' ? error : (otpError || error)}</span>
             </div>
           )}
 
@@ -276,7 +264,10 @@ export const LoginPage: React.FC = () => {
                     name="email"
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (error) useAuthStore.setState({ error: null });
+                    }}
                     placeholder="Enter your registered email"
                     className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pl-10 pr-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none transition-colors"
                     required
@@ -296,7 +287,10 @@ export const LoginPage: React.FC = () => {
                     name="password"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (error) useAuthStore.setState({ error: null });
+                    }}
                     placeholder="Enter account password"
                     className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pl-10 pr-10 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none transition-colors"
                     required
@@ -324,32 +318,6 @@ export const LoginPage: React.FC = () => {
           ) : (
             /* Citizen Phone OTP Form */
             <div className="space-y-4">
-              {/* Phone.email Real Global OTP Button */}
-              <PhoneEmailButton
-                clientId="15695407177920574360"
-                onSuccess={handlePhoneEmailSuccess}
-              />
-
-              {isVerifyingPhoneEmail && (
-                <div className="flex items-center justify-center gap-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 p-3 text-xs text-blue-700 dark:text-blue-300">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-                  <span>Verifying phone authentication and logging you in...</span>
-                </div>
-              )}
-
-              {otpError && (
-                <div className="flex items-center gap-2 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 p-3 text-xs text-red-700 dark:text-red-300">
-                  <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
-                  <span>{otpError}</span>
-                </div>
-              )}
-
-              <div className="relative flex py-1 items-center">
-                <div className="flex-grow border-t border-slate-200 dark:border-slate-700"></div>
-                <span className="flex-shrink mx-3 text-[11px] text-slate-400">or verify via direct OTP</span>
-                <div className="flex-grow border-t border-slate-200 dark:border-slate-700"></div>
-              </div>
-
               {!otpSent ? (
                 <form onSubmit={handleSendOtp} className="space-y-4">
                   <div>
@@ -363,7 +331,13 @@ export const LoginPage: React.FC = () => {
                         name="phoneNumber"
                         type="tel"
                         value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        onChange={(e) => {
+                          setPhoneNumber(e.target.value);
+                          if (error || otpError) {
+                            useAuthStore.setState({ error: null });
+                            setOtpError(null);
+                          }
+                        }}
                         placeholder="+91 98765 43210"
                         className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pl-10 pr-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none"
                         required
@@ -393,13 +367,6 @@ export const LoginPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {otpError && (
-                    <div className="flex items-center gap-2 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 p-3 text-xs text-red-700 dark:text-red-300">
-                      <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
-                      <span>{otpError}</span>
-                    </div>
-                  )}
-
                   <div>
                     <label htmlFor="loginOtp" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                       6-Digit Security Code
@@ -410,7 +377,13 @@ export const LoginPage: React.FC = () => {
                       type="text"
                       maxLength={6}
                       value={otpCode}
-                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                      onChange={(e) => {
+                        setOtpCode(e.target.value.replace(/\D/g, ''));
+                        if (error || otpError) {
+                          useAuthStore.setState({ error: null });
+                          setOtpError(null);
+                        }
+                      }}
                       placeholder="e.g. 524103"
                       className="w-full text-center tracking-widest font-mono text-base rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-2.5 text-slate-900 dark:text-white"
                       required
@@ -424,6 +397,7 @@ export const LoginPage: React.FC = () => {
                       onClick={() => {
                         setOtpSent(false);
                         setOtpError(null);
+                        useAuthStore.setState({ error: null });
                         setOtpCode('');
                       }}
                       className="rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
