@@ -10,6 +10,7 @@ interface AuthState {
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
   phoneLogin: (phoneNumber: string, verificationToken?: string, fullName?: string) => Promise<void>;
+  loginWithPhoneEmail: (userJsonUrl: string) => Promise<void>;
   sendOtp: (phoneNumber: string) => Promise<{ success: boolean; message: string; devOtp?: string }>;
   verifyOtp: (phoneNumber: string, otp: string, fullName?: string) => Promise<void>;
   register: (userData: Partial<User> & { password: string }) => Promise<void>;
@@ -129,6 +130,43 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
     } catch (err: any) {
       const msg = extractAuthErrorMessage(err, 'Phone verification failed.');
+      set({ error: msg, isLoading: false, isAuthenticated: false });
+      throw new Error(msg);
+    }
+  },
+
+  loginWithPhoneEmail: async (userJsonUrl: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response: AuthResponse = await authApi.verifyPhoneEmail(userJsonUrl);
+      localStorage.setItem('vvit_csp_token', response.token);
+
+      let user: User = {
+        id: response.id,
+        email: response.email,
+        fullName: response.fullName,
+        phoneNumber: response.phoneNumber,
+        role: response.role,
+      };
+
+      try {
+        const fullProfile = await authApi.getProfile();
+        user = { ...user, ...fullProfile };
+      } catch {
+        // Fallback
+      }
+
+      localStorage.setItem('vvit_csp_user', JSON.stringify(user));
+
+      set({
+        user,
+        token: response.token,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      });
+    } catch (err: any) {
+      const msg = extractAuthErrorMessage(err, 'Sign in with Phone verification failed.');
       set({ error: msg, isLoading: false, isAuthenticated: false });
       throw new Error(msg);
     }

@@ -7,6 +7,7 @@ import net.vvit.csp.emergency.dto.AuthRequest;
 import net.vvit.csp.emergency.dto.AuthResponse;
 import net.vvit.csp.emergency.dto.RegisterRequest;
 import net.vvit.csp.emergency.dto.UserProfileDto;
+import net.vvit.csp.emergency.exception.BadRequestException;
 import net.vvit.csp.emergency.model.User;
 import net.vvit.csp.emergency.service.AuthService;
 import org.springframework.http.HttpStatus;
@@ -73,9 +74,31 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/phone-email/verify")
+    @Operation(summary = "Authenticate user via Phone.email verified user_json_url")
+    public ResponseEntity<AuthResponse> verifyPhoneEmail(@RequestBody Map<String, String> payload) {
+        String userJsonUrl = payload.get("user_json_url");
+        if (userJsonUrl == null || userJsonUrl.isBlank()) {
+            userJsonUrl = payload.get("userJsonUrl");
+        }
+        if (userJsonUrl == null || userJsonUrl.isBlank()) {
+            throw new BadRequestException("user_json_url is required.");
+        }
+        AuthResponse response = authService.verifyPhoneEmailJsonUrl(userJsonUrl);
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/phone-login")
     @Operation(summary = "Sign in or register with verified phone number (Phone.email verification)")
     public ResponseEntity<AuthResponse> phoneLogin(@RequestBody Map<String, String> payload) {
+        String userJsonUrl = payload.get("user_json_url");
+        if (userJsonUrl == null || userJsonUrl.isBlank()) {
+            userJsonUrl = payload.get("userJsonUrl");
+        }
+        if (userJsonUrl != null && !userJsonUrl.isBlank()) {
+            AuthResponse response = authService.verifyPhoneEmailJsonUrl(userJsonUrl);
+            return ResponseEntity.ok(response);
+        }
         String phoneNumber = payload.get("phoneNumber");
         String verificationToken = payload.get("verificationToken");
         String fullName = payload.get("fullName");

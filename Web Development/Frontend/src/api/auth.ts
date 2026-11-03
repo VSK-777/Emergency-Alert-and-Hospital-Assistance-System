@@ -7,8 +7,13 @@ export const authApi = {
     return response.data;
   },
 
-  phoneLogin: async (payload: { phoneNumber: string; verificationToken?: string; fullName?: string }): Promise<AuthResponse> => {
+  phoneLogin: async (payload: { phoneNumber?: string; verificationToken?: string; fullName?: string; user_json_url?: string }): Promise<AuthResponse> => {
     const response = await api.post<AuthResponse>('/auth/phone-login', payload);
+    return response.data;
+  },
+
+  verifyPhoneEmail: async (userJsonUrl: string): Promise<AuthResponse> => {
+    const response = await api.post<AuthResponse>('/auth/phone-email/verify', { user_json_url: userJsonUrl });
     return response.data;
   },
 

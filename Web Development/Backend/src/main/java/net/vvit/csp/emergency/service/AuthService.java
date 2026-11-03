@@ -130,6 +130,60 @@ public class AuthService {
         return new AuthResponse(token, user.getId(), user.getEmail(), user.getFullName(), user.getPhoneNumber(), user.getRole());
     }
 
+    public AuthResponse verifyPhoneEmailJsonUrl(String userJsonUrl) {
+        if (userJsonUrl == null || userJsonUrl.isBlank()) {
+            throw new BadRequestException("user_json_url cannot be blank.");
+        }
+        if (!userJsonUrl.startsWith("https://user.phone.email/")) {
+            throw new BadRequestException("Invalid user_json_url domain. Must originate from https://user.phone.email/");
+        }
+
+        try {
+            java.net.URI uri = java.net.URI.create(userJsonUrl);
+            java.net.HttpURLConnection connection = (java.net.HttpURLConnection) uri.toURL().openConnection();
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(10000);
+            connection.setReadTimeout(10000);
+            connection.connect();
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode != 200) {
+                throw new BadRequestException("Failed to fetch verified phone details from Phone.email (HTTP " + responseCode + ").");
+            }
+
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            com.fasterxml.jackson.databind.JsonNode root = mapper.readTree(connection.getInputStream());
+
+            String countryCode = root.path("user_country_code").asText("").trim();
+            String phone = root.path("user_phone_number").asText("").trim();
+            String firstName = root.path("user_first_name").asText("").trim();
+            String lastName = root.path("user_last_name").asText("").trim();
+
+            if (phone.isBlank()) {
+                throw new BadRequestException("Phone.email did not return a valid phone number.");
+            }
+
+            String fullPhone = phone;
+            if (!countryCode.isBlank()) {
+                String cleanCountry = countryCode.startsWith("+") ? countryCode : "+" + countryCode;
+                if (!phone.startsWith("+")) {
+                    fullPhone = cleanCountry + phone;
+                }
+            }
+
+            String fullName = (firstName + " " + lastName).trim();
+            if (fullName.isBlank()) {
+                fullName = "Citizen User";
+            }
+
+            return phoneLogin(fullPhone, userJsonUrl, fullName, UserRole.CITIZEN);
+        } catch (BadRequestException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BadRequestException("Error verifying phone verification payload: " + e.getMessage());
+        }
+    }
+
     public User getCurrentAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !(authentication.getPrincipal() instanceof UserPrincipal principal)) {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
+import { PhoneEmailButton } from '../components/auth/PhoneEmailButton';
 import { BrandIcon } from '../components/common/BrandIcon';
 import {
   Activity,
@@ -22,7 +23,7 @@ import {
 import type { UserRole } from '../types';
 
 export const LoginPage: React.FC = () => {
-  const { login, sendOtp, verifyOtp, register, isLoading, error } = useAuthStore();
+  const { login, sendOtp, verifyOtp, register, loginWithPhoneEmail, isLoading, error } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
   const navigate = useNavigate();
 
@@ -40,6 +41,7 @@ export const LoginPage: React.FC = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingPhoneEmail, setIsVerifyingPhoneEmail] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
 
   useEffect(() => {
@@ -130,6 +132,24 @@ export const LoginPage: React.FC = () => {
       }
     } catch (err: any) {
       setOtpError(err.message || 'Invalid or expired OTP code.');
+    }
+  };
+
+  const handlePhoneEmailSuccess = async (userJsonUrl: string) => {
+    setIsVerifyingPhoneEmail(true);
+    setOtpError(null);
+    try {
+      await loginWithPhoneEmail(userJsonUrl);
+      const user = useAuthStore.getState().user;
+      if (user) {
+        redirectByRole(user.role);
+      } else {
+        navigate('/citizen');
+      }
+    } catch (err: any) {
+      setOtpError(err.message || 'Phone.email authentication failed.');
+    } finally {
+      setIsVerifyingPhoneEmail(false);
     }
   };
 
@@ -304,6 +324,32 @@ export const LoginPage: React.FC = () => {
           ) : (
             /* Citizen Phone OTP Form */
             <div className="space-y-4">
+              {/* Phone.email Real Global OTP Button */}
+              <PhoneEmailButton
+                clientId="15695407177920574360"
+                onSuccess={handlePhoneEmailSuccess}
+              />
+
+              {isVerifyingPhoneEmail && (
+                <div className="flex items-center justify-center gap-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 p-3 text-xs text-blue-700 dark:text-blue-300">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                  <span>Verifying phone authentication and logging you in...</span>
+                </div>
+              )}
+
+              {otpError && (
+                <div className="flex items-center gap-2 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 p-3 text-xs text-red-700 dark:text-red-300">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
+                  <span>{otpError}</span>
+                </div>
+              )}
+
+              <div className="relative flex py-1 items-center">
+                <div className="flex-grow border-t border-slate-200 dark:border-slate-700"></div>
+                <span className="flex-shrink mx-3 text-[11px] text-slate-400">or verify via direct OTP</span>
+                <div className="flex-grow border-t border-slate-200 dark:border-slate-700"></div>
+              </div>
+
               {!otpSent ? (
                 <form onSubmit={handleSendOtp} className="space-y-4">
                   <div>
@@ -326,19 +372,12 @@ export const LoginPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {otpError && (
-                    <div className="flex items-center gap-2 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 p-3 text-xs text-red-700 dark:text-red-300">
-                      <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
-                      <span>{otpError}</span>
-                    </div>
-                  )}
-
                   <button
                     type="submit"
                     disabled={isSendingOtp || !phoneNumber.trim()}
-                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-xs font-bold text-white shadow-xs hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-700 disabled:opacity-50 transition-colors"
                   >
-                    <span>{isSendingOtp ? 'Generating Security OTP...' : 'Request OTP Verification'}</span>
+                    <span>{isSendingOtp ? 'Generating Security OTP...' : 'Request OTP Code'}</span>
                     <ArrowRight className="h-4 w-4" />
                   </button>
                 </form>
