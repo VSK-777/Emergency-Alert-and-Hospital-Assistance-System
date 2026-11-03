@@ -25,18 +25,15 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
-    private final OtpService otpService;
 
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        JwtService jwtService,
-                       AuthenticationManager authenticationManager,
-                       OtpService otpService) {
+                       AuthenticationManager authenticationManager) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
-        this.otpService = otpService;
     }
 
     @Transactional
@@ -77,111 +74,6 @@ public class AuthService {
         String token = jwtService.generateToken(principal, user.getId(), user.getRole().name());
 
         return new AuthResponse(token, user.getId(), user.getEmail(), user.getFullName(), user.getPhoneNumber(), user.getRole());
-    }
-
-    public String generateOtp(String phoneNumber) {
-        return otpService.generateAndSendOtp(phoneNumber);
-    }
-
-    @Transactional
-    public AuthResponse verifyOtpAndLogin(String phoneNumber, String otp, String fullName, UserRole role) {
-        if (phoneNumber == null || phoneNumber.isBlank()) {
-            throw new BadRequestException("Phone number is required.");
-        }
-        if (otp == null || otp.isBlank()) {
-            throw new BadRequestException("OTP code is required.");
-        }
-
-        boolean isValid = otpService.verifyOtp(phoneNumber, otp);
-        if (!isValid) {
-            throw new BadRequestException("Invalid OTP code. Please enter the correct 6-digit code.");
-        }
-
-        return phoneLogin(phoneNumber, "VERIFIED_OTP_" + otp, fullName, role);
-    }
-
-    @Transactional
-    public AuthResponse phoneLogin(String phoneNumber, String verificationToken, String fullName, UserRole role) {
-        if (phoneNumber == null || phoneNumber.isBlank()) {
-            throw new BadRequestException("Phone number is required for phone verification.");
-        }
-        String cleanPhone = phoneNumber.trim();
-        String altPhone = cleanPhone.startsWith("+91")
-                ? cleanPhone.substring(3).trim()
-                : "+91" + cleanPhone;
-
-        User user = userRepository.findByPhoneNumber(cleanPhone)
-                .or(() -> userRepository.findByPhoneNumber(altPhone))
-                .orElseGet(() -> {
-                    String name = (fullName != null && !fullName.isBlank()) ? fullName.trim() : "Citizen User";
-                    String dummyEmail = "phone." + cleanPhone.replaceAll("[^0-9]", "") + "@vvit.net";
-                    User newUser = new User(
-                            dummyEmail,
-                            passwordEncoder.encode("PhoneAuth@" + cleanPhone.hashCode()),
-                            name,
-                            cleanPhone,
-                            role != null ? role : UserRole.CITIZEN
-                    );
-                    return userRepository.save(newUser);
-                });
-
-        UserPrincipal principal = new UserPrincipal(user);
-        String token = jwtService.generateToken(principal, user.getId(), user.getRole().name());
-        return new AuthResponse(token, user.getId(), user.getEmail(), user.getFullName(), user.getPhoneNumber(), user.getRole());
-    }
-
-    public AuthResponse verifyPhoneEmailJsonUrl(String userJsonUrl) {
-        if (userJsonUrl == null || userJsonUrl.isBlank()) {
-            throw new BadRequestException("user_json_url cannot be blank.");
-        }
-        if (!userJsonUrl.startsWith("https://user.phone.email/")) {
-            throw new BadRequestException("Invalid user_json_url domain. Must originate from https://user.phone.email/");
-        }
-
-        try {
-            java.net.URI uri = java.net.URI.create(userJsonUrl);
-            java.net.HttpURLConnection connection = (java.net.HttpURLConnection) uri.toURL().openConnection();
-            connection.setRequestMethod("GET");
-            connection.setConnectTimeout(10000);
-            connection.setReadTimeout(10000);
-            connection.connect();
-
-            int responseCode = connection.getResponseCode();
-            if (responseCode != 200) {
-                throw new BadRequestException("Failed to fetch verified phone details from Phone.email (HTTP " + responseCode + ").");
-            }
-
-            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-            com.fasterxml.jackson.databind.JsonNode root = mapper.readTree(connection.getInputStream());
-
-            String countryCode = root.path("user_country_code").asText("").trim();
-            String phone = root.path("user_phone_number").asText("").trim();
-            String firstName = root.path("user_first_name").asText("").trim();
-            String lastName = root.path("user_last_name").asText("").trim();
-
-            if (phone.isBlank()) {
-                throw new BadRequestException("Phone.email did not return a valid phone number.");
-            }
-
-            String fullPhone = phone;
-            if (!countryCode.isBlank()) {
-                String cleanCountry = countryCode.startsWith("+") ? countryCode : "+" + countryCode;
-                if (!phone.startsWith("+")) {
-                    fullPhone = cleanCountry + phone;
-                }
-            }
-
-            String fullName = (firstName + " " + lastName).trim();
-            if (fullName.isBlank()) {
-                fullName = "Citizen User";
-            }
-
-            return phoneLogin(fullPhone, userJsonUrl, fullName, UserRole.CITIZEN);
-        } catch (BadRequestException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new BadRequestException("Error verifying phone verification payload: " + e.getMessage());
-        }
     }
 
     public User getCurrentAuthenticatedUser() {
