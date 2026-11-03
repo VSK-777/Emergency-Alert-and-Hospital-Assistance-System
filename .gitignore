@@ -131,3 +131,4 @@ esp32-firmware/build/
 # Workspace Agent Guidelines
 AGENTS.md
 
+.neon

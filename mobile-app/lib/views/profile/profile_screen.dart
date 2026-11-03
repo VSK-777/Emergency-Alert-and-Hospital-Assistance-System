@@ -46,7 +46,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       if (doc != null) {
         setState(() => _documents.insert(0, doc));
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Document uploaded to Supabase S3 successfully')),
+          const SnackBar(content: Text('Document uploaded to cloud storage successfully')),
         );
       }
     }
@@ -348,7 +348,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             Icon(Icons.folder_shared, color: AppTheme.trustBlue, size: 20),
                             SizedBox(width: 8),
                             Text(
-                              'Medical Documents (S3 Storage)',
+                              'Medical Documents (Cloud Storage)',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,

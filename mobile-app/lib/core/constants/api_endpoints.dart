@@ -73,7 +73,7 @@ class ApiEndpoints {
   static String get esp32TelemetryHistory =>
       '$baseUrl/devices/CSP-Triage-V1/telemetry/history';
 
-  // Files & Medical Documents (Supabase S3 Storage)
+  // Files & Medical Documents (Cloud Storage)
   static String get filesUpload => '$baseUrl/files/upload';
   static String get filesMy => '$baseUrl/files/my';
   static String fileDownload(int id) => '$baseUrl/files/$id/download';

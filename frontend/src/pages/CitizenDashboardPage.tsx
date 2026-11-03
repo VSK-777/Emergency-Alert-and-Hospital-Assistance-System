@@ -83,7 +83,7 @@ export const CitizenDashboardPage: React.FC = () => {
       const myDevice = devices.find((d) => (d.deviceType === 'ESP32_TRIAGE' || d.deviceType === 'SMARTWATCH') && d.isActive);
       setPairedDevice(myDevice || null);
 
-      // 5. Medical Documents & Reports (Supabase S3 Storage)
+      // 5. Medical Documents & Reports (Secure Cloud Storage)
       const docs = await fileApi.getMyDocuments();
       setDocuments(docs);
     } catch (err) {
@@ -430,7 +430,7 @@ export const CitizenDashboardPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Medical Documents & Reports (Supabase S3 Object Storage) */}
+          {/* Medical Documents & Reports (Secure Cloud Storage) */}
           <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 space-y-3.5 shadow-xs transition-colors">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
@@ -505,7 +505,7 @@ export const CitizenDashboardPage: React.FC = () => {
               )}
             </div>
             <p className="text-[10px] text-slate-400">
-              Files are securely encrypted in Supabase S3 Object Storage with signed access URLs.
+              Files are securely encrypted in cloud storage with signed access URLs.
             </p>
           </div>
         </div>
