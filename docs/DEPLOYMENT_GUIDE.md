@@ -54,7 +54,7 @@
 | Environment Variable | Required | Default Value | Description |
 |---|---|---|---|
 | `VITE_API_BASE_URL` | **Yes** (Prod) | `https://<your-render-app>.onrender.com` | Full HTTPS URL of your deployed Render backend. |
-| `VITE_MAP_TILE_URL` | No | `https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png` | OpenStreetMap tile server URL. |
+| `VITE_MAP_TILE_URL` | No | `https://tile.openstreetmap.org/{z}/{x}/{y}.png` | OpenStreetMap tile server URL (optional, defaults automatically). |
 
 ---
 

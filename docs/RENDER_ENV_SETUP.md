@@ -228,7 +228,7 @@ The React Web App is hosted separately on Vercel. In your Vercel Dashboard (**Pr
 | Variable Name | Sample Value | Description |
 | :--- | :--- | :--- |
 | `VITE_API_BASE_URL` | `https://emergency-alert-and-hospital-assistance.onrender.com` | Live backend API URL on Render. |
-| `VITE_MAP_TILE_URL` | `https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png` | Leaflet OpenStreetMap tile server. |
+| `VITE_MAP_TILE_URL` | `https://tile.openstreetmap.org/{z}/{x}/{y}.png` | Standard OpenStreetMap tile server (optional, defaults automatically). |
 
 > **Security Boundary Enforcement:** Vercel MUST NEVER be given `SPRING_DATASOURCE_PASSWORD`, `APP_JWT_SECRET`, or `SUPABASE_SECRET_KEY`.
 
