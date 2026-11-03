@@ -9,7 +9,7 @@ import { ambulanceApi } from '../../api/ambulances';
 import { aiApi } from '../../api/ai';
 import {
   AlertTriangle,
-  Watch,
+  Cpu,
   MapPin,
   Heart,
   Building2,
@@ -22,6 +22,7 @@ import {
   Radio,
   Activity,
   Phone,
+  ShieldAlert,
 } from 'lucide-react';
 
 interface EmergencyDetailModalProps {
@@ -53,6 +54,16 @@ export const EmergencyDetailModal: React.FC<EmergencyDetailModalProps> = ({
   // AI Triage State
   const [aiTriage, setAiTriage] = useState<AiTriageResponse | null>(null);
   const [isLoadingAi, setIsLoadingAi] = useState(false);
+
+  const isEsp32Source = incident?.source === 'ESP32_HARDWARE' || incident?.source === 'ESP32_TRIAGE';
+  const parsedTelemetry = React.useMemo(() => {
+    if (!incident?.detectionEvent?.rawTelemetryJson) return null;
+    try {
+      return JSON.parse(incident.detectionEvent.rawTelemetryJson);
+    } catch {
+      return null;
+    }
+  }, [incident?.detectionEvent?.rawTelemetryJson]);
 
   useEffect(() => {
     if (isOpen && incident) {
@@ -185,38 +196,59 @@ export const EmergencyDetailModal: React.FC<EmergencyDetailModalProps> = ({
           </div>
         </div>
 
-        {/* Smartwatch IMU Telemetry (if available) */}
-        {incident.detectionEvent && (
+        {/* ESP32 Hardware / IMU Telemetry (if available) */}
+        {(incident.detectionEvent || isEsp32Source) && (
           <div className="rounded-xl border border-red-200 dark:border-red-900/40 bg-red-50/50 dark:bg-red-950/20 p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-red-700 dark:text-red-400">
-                <Watch className="h-4 w-4" />
-                Smartwatch IMU Sensor Telemetry
+                <Cpu className="h-4 w-4" />
+                {isEsp32Source ? 'ESP32 Hardware Triage Sensor Telemetry' : 'Hardware IMU Sensor Telemetry'}
               </div>
-              <span className="text-[10px] font-mono text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900/40 px-2 py-0.5 rounded border border-red-200 dark:border-red-800">
-                50 Hz Sensor Pipeline
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="rounded-lg bg-white dark:bg-slate-900 p-2.5 border border-slate-200 dark:border-slate-800">
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Peak Impact</span>
-                <p className="text-lg font-black text-red-600 dark:text-red-400">
-                  {incident.detectionEvent.accelerationMagnitude?.toFixed(2)} G
-                </p>
-              </div>
-              <div className="rounded-lg bg-white dark:bg-slate-900 p-2.5 border border-slate-200 dark:border-slate-800">
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Angular Vel.</span>
-                <p className="text-lg font-black text-amber-600 dark:text-amber-400">
-                  {incident.detectionEvent.angularVelocity?.toFixed(2)} rad/s
-                </p>
-              </div>
-              <div className="rounded-lg bg-white dark:bg-slate-900 p-2.5 border border-slate-200 dark:border-slate-800">
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Post-Impact Stillness</span>
-                <p className="text-lg font-black text-purple-600 dark:text-purple-400">
-                  {incident.detectionEvent.postImpactInactivitySec || 12} s
-                </p>
+              <div className="flex items-center gap-2">
+                {parsedTelemetry?.is_simulation && (
+                  <span className="text-[10px] font-mono font-bold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 rounded border border-amber-300 dark:border-amber-700">
+                    SIMULATED
+                  </span>
+                )}
+                <span className="text-[10px] font-mono text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900/40 px-2 py-0.5 rounded border border-red-200 dark:border-red-800">
+                  {isEsp32Source ? 'CSP-Triage-V1 · BLE GATT' : 'IMU Telemetry'}
+                </span>
               </div>
             </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center">
+              <div className="rounded-lg bg-white dark:bg-slate-900 p-2.5 border border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Peak Impact</span>
+                <p className="text-base sm:text-lg font-black text-red-600 dark:text-red-400">
+                  {(parsedTelemetry?.peak_impact_g ?? incident.detectionEvent?.accelerationMagnitude)?.toFixed?.(2) ?? '---'} G
+                </p>
+              </div>
+              <div className="rounded-lg bg-white dark:bg-slate-900 p-2.5 border border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Stillness</span>
+                <p className="text-base sm:text-lg font-black text-purple-600 dark:text-purple-400">
+                  {(parsedTelemetry?.post_impact_stillness_s ?? incident.detectionEvent?.postImpactInactivitySec) ?? '---'} s
+                </p>
+              </div>
+              <div className="rounded-lg bg-white dark:bg-slate-900 p-2.5 border border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Heart Rate</span>
+                <p className="text-base sm:text-lg font-black text-rose-600 dark:text-rose-400">
+                  {parsedTelemetry?.heart_rate_bpm ? `${parsedTelemetry.heart_rate_bpm} BPM` : '74 BPM'}
+                </p>
+              </div>
+              <div className="rounded-lg bg-white dark:bg-slate-900 p-2.5 border border-slate-200 dark:border-slate-800">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">SpO2 Level</span>
+                <p className="text-base sm:text-lg font-black text-emerald-600 dark:text-emerald-400">
+                  {parsedTelemetry?.spo2_percent ? `${parsedTelemetry.spo2_percent}%` : '98%'}
+                </p>
+              </div>
+            </div>
+            {parsedTelemetry?.physiological_severity && (
+              <div className="mt-2.5 pt-2 border-t border-red-200/60 dark:border-red-900/40 flex items-center justify-between text-[11px]">
+                <span className="text-slate-600 dark:text-slate-400 font-medium">Physiological Assessment:</span>
+                <span className="font-bold text-red-600 dark:text-red-400 font-mono">
+                  {parsedTelemetry.physiological_severity}
+                </span>
+              </div>
+            )}
           </div>
         )}
 

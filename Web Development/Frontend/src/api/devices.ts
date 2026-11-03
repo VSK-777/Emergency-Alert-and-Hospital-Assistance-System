@@ -1,9 +1,21 @@
 import api from './client';
-import type { SmartwatchDevice, DetectionEvent } from '../types';
+import type { HardwareDevice, DetectionEvent, HardwareTelemetry } from '../types';
 
 export const deviceApi = {
-  getDevices: async (): Promise<SmartwatchDevice[]> => {
-    const response = await api.get<SmartwatchDevice[]>('/devices');
+  getDevices: async (): Promise<HardwareDevice[]> => {
+    const response = await api.get<HardwareDevice[]>('/devices');
+    return response.data;
+  },
+
+  getLatestTelemetry: async (deviceIdentifier: string): Promise<HardwareTelemetry | null> => {
+    const response = await api.get<HardwareTelemetry>(`/devices/${deviceIdentifier}/telemetry/latest`);
+    return response.data;
+  },
+
+  getTelemetryHistory: async (deviceIdentifier: string, limit = 50): Promise<HardwareTelemetry[]> => {
+    const response = await api.get<HardwareTelemetry[]>(`/devices/${deviceIdentifier}/telemetry/history`, {
+      params: { limit },
+    });
     return response.data;
   },
 

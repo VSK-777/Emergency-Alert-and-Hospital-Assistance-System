@@ -106,4 +106,23 @@ public class LiveEmergencyBroadcastService {
             }
         }
     }
+
+    /**
+     * Broadcasts live ESP32 hardware telemetry to authorized connected clients.
+     */
+    public void broadcastTelemetry(net.vvit.csp.emergency.dto.HardwareTelemetryDto telemetry) {
+        if (subscribers.isEmpty()) {
+            return;
+        }
+
+        for (ClientSubscriber sub : subscribers) {
+            try {
+                sub.emitter().send(SseEmitter.event()
+                        .name("HARDWARE_TELEMETRY")
+                        .data(telemetry));
+            } catch (Exception ex) {
+                subscribers.remove(sub);
+            }
+        }
+    }
 }

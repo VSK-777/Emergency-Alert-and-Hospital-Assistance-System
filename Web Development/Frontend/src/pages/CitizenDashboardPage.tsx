@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   HeartPulse,
-  Watch,
+  Cpu,
   Building2,
   Phone,
   MapPin,
@@ -22,7 +22,7 @@ import { hospitalApi } from '../api/hospitals';
 import { contactApi } from '../api/contacts';
 import { deviceApi } from '../api/devices';
 import { useAuthStore } from '../store/authStore';
-import type { EmergencyIncident, Hospital, EmergencyContact, SmartwatchDevice } from '../types';
+import type { EmergencyIncident, Hospital, EmergencyContact, HardwareDevice } from '../types';
 import { Badge } from '../components/common/Badge';
 
 export const CitizenDashboardPage: React.FC = () => {
@@ -31,7 +31,7 @@ export const CitizenDashboardPage: React.FC = () => {
   const [activeEmergency, setActiveEmergency] = useState<EmergencyIncident | null>(null);
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [contacts, setContacts] = useState<EmergencyContact[]>([]);
-  const [pairedDevice, setPairedDevice] = useState<SmartwatchDevice | null>(null);
+  const [pairedDevice, setPairedDevice] = useState<HardwareDevice | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>({
     lat: 16.3533,
     lng: 80.5238,
@@ -69,10 +69,10 @@ export const CitizenDashboardPage: React.FC = () => {
       const userContacts = await contactApi.getContacts();
       setContacts(userContacts);
 
-      // 4. Paired Smartwatch Devices
+      // 4. Paired ESP32 Hardware Triage Devices
       const devices = await deviceApi.getDevices();
-      const myWatch = devices.find((d) => d.deviceType === 'SMARTWATCH' && d.isActive);
-      setPairedDevice(myWatch || null);
+      const myDevice = devices.find((d) => (d.deviceType === 'ESP32_TRIAGE' || d.deviceType === 'SMARTWATCH') && d.isActive);
+      setPairedDevice(myDevice || null);
     } catch (err) {
       console.error('Failed to load citizen dashboard data:', err);
     }
@@ -131,30 +131,30 @@ export const CitizenDashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Smartwatch Connection State Indicator (Realistic Reporting) */}
+        {/* ESP32 Hardware Connection State Indicator */}
         {pairedDevice ? (
           <div className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-50 text-purple-600 dark:bg-purple-950/50 dark:text-purple-400 border border-purple-200 dark:border-purple-800/40">
-              <Watch className="h-5 w-5" />
+              <Cpu className="h-5 w-5" />
             </div>
             <div className="text-xs">
               <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white">
                 <span>{pairedDevice.deviceIdentifier}</span>
                 <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">IMU 50Hz Monitoring Active</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">ESP32 Triage BLE Active · MPU6050 + MAX30102</p>
             </div>
           </div>
         ) : (
           <div className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 border border-slate-200 dark:border-slate-700">
-              <Watch className="h-5 w-5" />
+              <Cpu className="h-5 w-5" />
             </div>
             <div className="text-xs">
               <div className="flex items-center gap-1.5 font-bold text-slate-600 dark:text-slate-400">
-                <span>Smartwatch not connected</span>
+                <span>ESP32 Hardware Standby</span>
               </div>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500">Monitoring status unavailable</p>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500">CSP-Triage-V1 companion offline</p>
             </div>
           </div>
         )}
@@ -238,7 +238,7 @@ export const CitizenDashboardPage: React.FC = () => {
             </div>
 
             <p className="text-xs text-slate-500 dark:text-slate-400 max-w-2xl leading-relaxed">
-              Your emergency monitoring grid is operational. Automated accident and high-impact fall detection is handled continuously by your paired <strong>VVIT CSP Wear OS Smartwatch</strong>. In the event of an accident or when manual SOS is triggered via the <strong>Flutter Mobile App</strong>, real-time hospital trauma ward alerts and volunteer responder dispatch will be coordinated here immediately.
+              Your emergency monitoring grid is operational. Automated accident, impact, and physiological distress detection is handled continuously by your <strong>ESP32 Hardware Triage Device (CSP-Triage-V1)</strong> connected via Bluetooth Low Energy to the Android app. In the event of an accident or when manual SOS is triggered via the <strong>Flutter Mobile App</strong>, real-time hospital trauma ward alerts and volunteer responder dispatch will be coordinated here immediately.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
@@ -247,8 +247,8 @@ export const CitizenDashboardPage: React.FC = () => {
                   Automatic Detection
                 </span>
                 <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                  <Watch className="h-3.5 w-3.5 text-purple-600" />
-                  Wear OS IMU (50Hz)
+                  <Cpu className="h-3.5 w-3.5 text-purple-600" />
+                  ESP32 MPU6050 + MAX30102
                 </span>
               </div>
               <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">

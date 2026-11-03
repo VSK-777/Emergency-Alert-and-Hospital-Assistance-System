@@ -17,7 +17,7 @@ import {
   Building2,
   Ambulance as AmbulanceIcon,
   HeartHandshake,
-  Watch,
+  Cpu,
   Timer,
   ExternalLink,
   Radio,
@@ -67,10 +67,10 @@ export const DashboardPage: React.FC = () => {
           trend={{ value: activeIncidents.length > 0 ? '+1 active' : 'Stable', isPositive: false }}
         />
         <StatCard
-          title="Wear OS Watches"
+          title="ESP32 Hardware"
           value={devices.length > 0 ? devices.length : 1}
-          subtitle="IMU 50Hz active"
-          icon={Watch}
+          subtitle="CSP-Triage-V1"
+          icon={Cpu}
           color="purple"
         />
         <StatCard

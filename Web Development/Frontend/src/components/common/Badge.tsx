@@ -49,6 +49,9 @@ export const Badge: React.FC<BadgeProps> = ({ status = 'PENDING', className = ''
         return 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 font-semibold';
 
       // Sources
+      case 'ESP32_HARDWARE':
+      case 'ESP32_TRIAGE':
+        return 'bg-rose-50 text-rose-800 border-rose-300 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-600/60 font-black animate-pulse';
       case 'SMARTWATCH_SENSOR':
       case 'SMARTWATCH_AUTO':
         return 'bg-red-50 text-red-800 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-600/40 font-bold';

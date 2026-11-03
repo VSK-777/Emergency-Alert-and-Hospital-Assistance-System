@@ -45,6 +45,8 @@ export type IncidentStatus =
   | 'CANCELLED';
 
 export type IncidentSource = 
+  | 'ESP32_HARDWARE'
+  | 'ESP32_TRIAGE'
   | 'SMARTWATCH_SENSOR'
   | 'MOBILE_MANUAL_SOS'
   | 'MANUAL_SOS'
@@ -177,9 +179,9 @@ export interface MedicalExpense {
   createdAt: string;
 }
 
-export interface SmartwatchDevice {
+export interface HardwareDevice {
   id: number;
-  deviceType: 'SMARTWATCH' | 'MOBILE';
+  deviceType: 'ESP32_TRIAGE' | 'SMARTWATCH' | 'MOBILE' | string;
   deviceIdentifier: string;
   isActive: boolean;
   lastSyncedAt?: string;
@@ -190,6 +192,35 @@ export interface SmartwatchDevice {
   batteryLevel?: number;
   imuSamplingRate?: string;
   firmwareVersion?: string;
+  hardwareModel?: string;
+  sensors?: string;
+  bleGattService?: string;
+  latestHeartRate?: number;
+  latestSpo2?: number;
+  latestSignalQuality?: number;
+  latestAccelMagnitude?: number;
+  latestDeviceState?: string;
+  operatingMode?: string;
+  lastTelemetryAt?: string;
+}
+
+export type SmartwatchDevice = HardwareDevice;
+
+export interface HardwareTelemetry {
+  id?: number;
+  deviceIdentifier: string;
+  deviceState: string;
+  operatingMode: string;
+  heartRate?: number;
+  spo2?: number;
+  signalQuality?: number;
+  accelX?: number;
+  accelY?: number;
+  accelZ?: number;
+  accelMagnitude?: number;
+  countdownSec?: number;
+  timestampMillis?: number;
+  createdAt?: string;
 }
 
 export interface AiTriageRequest {

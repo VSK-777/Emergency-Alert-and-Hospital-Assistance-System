@@ -26,6 +26,7 @@ public class DataInitializer implements CommandLineRunner {
     private final DetectionEventRepository detectionEventRepo;
     private final MedicalExpenseRepository expenseRepo;
     private final DeviceRepository deviceRepo;
+    private final HardwareTelemetryRepository telemetryRepo;
     private final AmbulanceRepository ambulanceRepo;
     private final AuditLogRepository auditLogRepo;
     private final PasswordEncoder passwordEncoder;
@@ -38,6 +39,7 @@ public class DataInitializer implements CommandLineRunner {
                            DetectionEventRepository detectionEventRepo,
                            MedicalExpenseRepository expenseRepo,
                            DeviceRepository deviceRepo,
+                           HardwareTelemetryRepository telemetryRepo,
                            AmbulanceRepository ambulanceRepo,
                            AuditLogRepository auditLogRepo,
                            PasswordEncoder passwordEncoder) {
@@ -49,6 +51,7 @@ public class DataInitializer implements CommandLineRunner {
         this.detectionEventRepo = detectionEventRepo;
         this.expenseRepo = expenseRepo;
         this.deviceRepo = deviceRepo;
+        this.telemetryRepo = telemetryRepo;
         this.ambulanceRepo = ambulanceRepo;
         this.auditLogRepo = auditLogRepo;
         this.passwordEncoder = passwordEncoder;
@@ -262,15 +265,31 @@ public class DataInitializer implements CommandLineRunner {
         exp1.setStatus(ExpenseStatus.VERIFIED);
         expenseRepo.save(exp1);
 
-        // 6. Seed Smartwatch Device
-        UserDevice watch = new UserDevice();
-        watch.setUser(patient);
-        watch.setDeviceType(DeviceType.SMARTWATCH);
-        watch.setDeviceIdentifier("VVIT-WEAROS-ROUND-5554");
-        watch.setFcmToken("fcm-wearos-round-token-vvit-001");
-        watch.setIsActive(true);
-        watch.setLastSyncedAt(LocalDateTime.now().minusMinutes(2));
-        deviceRepo.save(watch);
+        // 6. Seed ESP32 Triage Hardware Device & Baseline Telemetry
+        UserDevice esp32 = new UserDevice();
+        esp32.setUser(patient);
+        esp32.setDeviceType(DeviceType.ESP32_TRIAGE);
+        esp32.setDeviceIdentifier("CSP-Triage-V1");
+        esp32.setFcmToken("fcm-esp32-triage-v1-token");
+        esp32.setIsActive(true);
+        esp32.setLastSyncedAt(LocalDateTime.now().minusSeconds(15));
+        deviceRepo.save(esp32);
+
+        // Seed initial telemetry sample
+        HardwareTelemetry initialTelem = new HardwareTelemetry(
+                "CSP-Triage-V1",
+                76,    // Heart Rate BPM
+                98,    // SpO2 %
+                95,    // Signal Quality %
+                0.02,  // Accel X (m/s^2)
+                -0.05, // Accel Y (m/s^2)
+                9.81,  // Accel Z (m/s^2)
+                1.00,  // Vector Magnitude |A| (g)
+                "NORMAL_MONITORING",
+                "REAL",
+                0
+        );
+        telemetryRepo.save(initialTelem);
 
         // 7. Seed Ambulances
         ambulanceRepo.save(new Ambulance("AP 16 TE 1081", h1, "ALS", "S. K. Naidu", "+919440123456", "ASSIGNED", 16.3530, 80.5235, "Ventilator, Defibrillator, ECG Monitor, Oxygen"));
@@ -280,7 +299,7 @@ public class DataInitializer implements CommandLineRunner {
 
         // 8. Seed Audit Logs
         auditLogRepo.save(new AuditLog("SYSTEM_BOOT", "admin@vvit.net", "ADMIN", null, "Emergency Coordination System initialized successfully"));
-        auditLogRepo.save(new AuditLog("INCIDENT_DISPATCH", "system@vvit.net", "SYSTEM", incident.getId(), "Smartwatch fall detection automatically dispatched to AIIMS Mangalagiri"));
+        auditLogRepo.save(new AuditLog("INCIDENT_DISPATCH", "system@vvit.net", "SYSTEM", incident.getId(), "ESP32 trauma triage detection automatically dispatched to AIIMS Mangalagiri"));
 
         log.info("Development seeding completed successfully.");
     }
@@ -296,14 +315,14 @@ public class DataInitializer implements CommandLineRunner {
         }
         if (deviceRepo.count() == 0 && userRepo.count() > 0) {
             User patient = userRepo.findByEmail("patient.vsk@vvit.net").orElse(userRepo.findAll().get(0));
-            UserDevice watch = new UserDevice();
-            watch.setUser(patient);
-            watch.setDeviceType(DeviceType.SMARTWATCH);
-            watch.setDeviceIdentifier("VVIT-WEAROS-ROUND-5554");
-            watch.setFcmToken("fcm-wearos-round-token-vvit-001");
-            watch.setIsActive(true);
-            watch.setLastSyncedAt(LocalDateTime.now());
-            deviceRepo.save(watch);
+            UserDevice esp32 = new UserDevice();
+            esp32.setUser(patient);
+            esp32.setDeviceType(DeviceType.ESP32_TRIAGE);
+            esp32.setDeviceIdentifier("CSP-Triage-V1");
+            esp32.setFcmToken("fcm-esp32-triage-v1-token");
+            esp32.setIsActive(true);
+            esp32.setLastSyncedAt(LocalDateTime.now());
+            deviceRepo.save(esp32);
         }
     }
 }

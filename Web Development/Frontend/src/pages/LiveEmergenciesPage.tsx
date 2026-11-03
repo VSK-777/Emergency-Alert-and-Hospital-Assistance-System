@@ -44,7 +44,11 @@ export const LiveEmergenciesPage: React.FC = () => {
     const matchesSource =
       sourceFilter === 'ALL' ||
       inc.source === sourceFilter ||
-      (sourceFilter === 'SMARTWATCH_AUTO' && inc.source === 'SMARTWATCH_SENSOR') ||
+      (sourceFilter === 'ESP32_HARDWARE' &&
+        (inc.source === 'ESP32_HARDWARE' ||
+          inc.source === 'ESP32_TRIAGE' ||
+          inc.source === 'SMARTWATCH_AUTO' ||
+          inc.source === 'SMARTWATCH_SENSOR')) ||
       (sourceFilter === 'MOBILE_SOS' && inc.source === 'MANUAL_SOS');
     const matchesSearch =
       searchQuery.trim() === '' ||
@@ -67,7 +71,7 @@ export const LiveEmergenciesPage: React.FC = () => {
           <p className="text-xs text-slate-500 dark:text-slate-400">
             {isCitizen
               ? 'Real-time feed and response status of your personal emergency alerts and SOS activations'
-              : 'Real-time feed of all incoming smartwatch accident alerts and manual SOS requests'}
+              : 'Real-time feed of all incoming ESP32 hardware accident alerts and manual SOS requests'}
           </p>
         </div>
 
@@ -118,7 +122,7 @@ export const LiveEmergenciesPage: React.FC = () => {
           {/* Source Tabs */}
           <div className="flex items-center gap-1 border-l border-slate-200 dark:border-slate-700 pl-3">
             <span className="text-[11px] text-slate-400 font-semibold mr-1">Source:</span>
-            {['ALL', 'SMARTWATCH_AUTO', 'MOBILE_SOS'].map((src) => (
+            {['ALL', 'ESP32_HARDWARE', 'MOBILE_SOS'].map((src) => (
               <button
                 key={src}
                 onClick={() => setSourceFilter(src)}
@@ -128,7 +132,7 @@ export const LiveEmergenciesPage: React.FC = () => {
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
-                {src === 'SMARTWATCH_AUTO' ? 'Smartwatch' : src === 'MOBILE_SOS' ? 'Manual SOS' : 'All'}
+                {src === 'ESP32_HARDWARE' ? 'ESP32 Hardware' : src === 'MOBILE_SOS' ? 'Manual SOS' : 'All'}
               </button>
             ))}
           </div>
