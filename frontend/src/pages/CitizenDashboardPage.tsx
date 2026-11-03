@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   HeartPulse,
   Cpu,
@@ -17,10 +17,7 @@ import {
   UserCheck,
   Activity,
   FileText,
-  Upload,
-  Trash2,
-  Download,
-  Paperclip,
+  ArrowRight,
 } from 'lucide-react';
 import { emergencyApi } from '../api/emergencies';
 import { hospitalApi } from '../api/hospitals';
@@ -40,8 +37,6 @@ export const CitizenDashboardPage: React.FC = () => {
   const [contacts, setContacts] = useState<EmergencyContact[]>([]);
   const [pairedDevice, setPairedDevice] = useState<HardwareDevice | null>(null);
   const [documents, setDocuments] = useState<MedicalDocument[]>([]);
-  const [isUploadingFile, setIsUploadingFile] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const [isTriggeringSos, setIsTriggeringSos] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>({
     lat: OSM_TEST_LOCATION.lat,
@@ -91,37 +86,6 @@ export const CitizenDashboardPage: React.FC = () => {
       setDocuments(docs);
     } catch (err) {
       console.error('Failed to load citizen dashboard data:', err);
-    }
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      setUploadError('File exceeds 10MB limit.');
-      return;
-    }
-    setIsUploadingFile(true);
-    setUploadError(null);
-    try {
-      await fileApi.uploadFile(file, 'MEDICAL_RECORD');
-      const docs = await fileApi.getMyDocuments();
-      setDocuments(docs);
-    } catch (err: any) {
-      setUploadError(err.response?.data?.message || 'Failed to upload document.');
-    } finally {
-      setIsUploadingFile(false);
-      e.target.value = '';
-    }
-  };
-
-  const handleDeleteDocument = async (id: number) => {
-    if (!window.confirm('Delete this medical document from cloud storage?')) return;
-    try {
-      await fileApi.deleteFile(id);
-      setDocuments((prev) => prev.filter((d) => d.id !== id));
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to delete file');
     }
   };
 
@@ -528,83 +492,31 @@ export const CitizenDashboardPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Medical Documents & Reports (Secure Cloud Storage) */}
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 space-y-3.5 shadow-xs transition-colors">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+          {/* Medical Documents & Prescriptions Quick Card (Directs to My Medical ID Page) */}
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-3 shadow-xs transition-colors">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">
                   Medical Documents & Prescriptions
                 </h4>
               </div>
-              <label className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-700 cursor-pointer shadow-xs transition-colors">
-                <Upload className="h-3.5 w-3.5" />
-                <span>{isUploadingFile ? 'Uploading...' : 'Upload File'}</span>
-                <input
-                  type="file"
-                  accept=".pdf,image/png,image/jpeg,image/webp"
-                  onChange={handleFileUpload}
-                  disabled={isUploadingFile}
-                  className="hidden"
-                />
-              </label>
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                {documents.length > 0 ? `${documents.length} File(s)` : '0 Files'}
+              </span>
             </div>
 
-            {uploadError && (
-              <div className="flex items-center gap-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 p-2.5 text-xs text-rose-700 dark:text-rose-300">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                <span>{uploadError}</span>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              {documents.length === 0 ? (
-                <div className="py-4 text-center text-xs text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
-                  <Paperclip className="h-5 w-5 mx-auto text-slate-400 mb-1" />
-                  No medical reports uploaded yet. Upload PDF reports or photos (&lt;10MB).
-                </div>
-              ) : (
-                documents.map((doc) => (
-                  <div
-                    key={doc.id}
-                    className="flex items-center justify-between rounded-xl bg-slate-50 dark:bg-slate-800/50 p-2.5 border border-slate-200 dark:border-slate-800 text-xs"
-                  >
-                    <div className="flex items-center gap-2 min-w-0 pr-2">
-                      <FileText className="h-4 w-4 shrink-0 text-indigo-500" />
-                      <div className="truncate">
-                        <p className="font-semibold text-slate-800 dark:text-slate-200 truncate">
-                          {doc.originalFileName || doc.fileName}
-                        </p>
-                        <p className="text-[10px] text-slate-400">
-                          {((doc.fileSizeBytes || 0) / 1024).toFixed(1)} KB · {new Date(doc.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <a
-                        href={doc.fileUrl || fileApi.getDownloadUrl(doc.id)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="rounded-lg p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50"
-                        title="View / Download"
-                      >
-                        <Download className="h-3.5 w-3.5" />
-                      </a>
-                      <button
-                        onClick={() => handleDeleteDocument(doc.id)}
-                        className="rounded-lg p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50"
-                        title="Delete Document"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-            <p className="text-[10px] text-slate-400">
-              Files are securely encrypted in cloud storage with signed access URLs.
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Manage your encrypted health records, hospital discharge summaries, and prescription uploads on your Medical ID page.
             </p>
+
+            <Link
+              to="/patients"
+              className="flex items-center justify-between w-full rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 p-2.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-950/80 transition-colors"
+            >
+              <span>Manage in My Medical ID</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
         </div>
       </div>

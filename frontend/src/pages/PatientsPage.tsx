@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { patientApi } from '../api/patients';
 import { contactApi } from '../api/contacts';
+import { fileApi, type MedicalDocument } from '../api/files';
 import { useAuthStore } from '../store/authStore';
 import type { User, MedicalExpense, ExpenseStatus, EmergencyContact } from '../types';
 import { Modal } from '../components/common/Modal';
@@ -19,6 +20,10 @@ import {
   Edit3,
   UserPlus,
   Activity,
+  Upload,
+  Download,
+  Paperclip,
+  AlertCircle,
 } from 'lucide-react';
 
 export const PatientsPage: React.FC = () => {
@@ -45,6 +50,11 @@ export const PatientsPage: React.FC = () => {
   const [contactPhone, setContactPhone] = useState('');
   const [isAddingContact, setIsAddingContact] = useState(false);
 
+  // Medical Documents & Prescriptions states
+  const [documents, setDocuments] = useState<MedicalDocument[]>([]);
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
   // New expense form (Staff/Admin)
   const [expenseDesc, setExpenseDesc] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('1200.00');
@@ -68,8 +78,48 @@ export const PatientsPage: React.FC = () => {
     } else {
       patientApi.getMyExpenses().then(setExpenses).catch(console.error);
       loadContacts();
+      loadDocuments();
     }
   }, [isCitizen]);
+
+  const loadDocuments = async () => {
+    try {
+      const data = await fileApi.getMyDocuments();
+      setDocuments(data);
+    } catch (err) {
+      console.error('Failed to load medical documents:', err);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError('File exceeds 10MB limit.');
+      return;
+    }
+    setIsUploadingFile(true);
+    setUploadError(null);
+    try {
+      await fileApi.uploadFile(file, 'MEDICAL_RECORD');
+      await loadDocuments();
+    } catch (err: any) {
+      setUploadError(err.response?.data?.message || 'Failed to upload document.');
+    } finally {
+      setIsUploadingFile(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleDeleteDocument = async (id: number) => {
+    if (!window.confirm('Delete this medical document from cloud storage?')) return;
+    try {
+      await fileApi.deleteFile(id);
+      setDocuments((prev) => prev.filter((d) => d.id !== id));
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to delete file');
+    }
+  };
 
   const loadContacts = async () => {
     try {
@@ -302,12 +352,94 @@ export const PatientsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Transparent Medical Expenses History */}
-          <div className="lg:col-span-6 space-y-4">
-            <h3 className="text-xs font-bold tracking-wider uppercase text-slate-700 dark:text-slate-300 flex items-center gap-2">
-              <CreditCard className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              Transparent Emergency Care Costs & Invoices
-            </h3>
+          {/* Right Column: Medical Documents & Care Costs */}
+          <div className="lg:col-span-6 space-y-5">
+            {/* Medical Documents & Prescriptions Section */}
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 space-y-3.5 shadow-xs transition-colors">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+                    Medical Documents & Prescriptions
+                  </h3>
+                </div>
+                <label className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-700 cursor-pointer shadow-xs transition-colors">
+                  <Upload className="h-3.5 w-3.5" />
+                  <span>{isUploadingFile ? 'Uploading...' : 'Upload File'}</span>
+                  <input
+                    type="file"
+                    accept=".pdf,image/png,image/jpeg,image/webp"
+                    onChange={handleFileUpload}
+                    disabled={isUploadingFile}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              {uploadError && (
+                <div className="flex items-center gap-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 p-2.5 text-xs text-rose-700 dark:text-rose-300">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{uploadError}</span>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                {documents.length === 0 ? (
+                  <div className="py-6 text-center text-xs text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                    <Paperclip className="h-5 w-5 mx-auto text-slate-400 mb-1" />
+                    No medical reports uploaded yet. Upload PDF reports, scans, or prescriptions (&lt;10MB).
+                  </div>
+                ) : (
+                  documents.map((doc) => (
+                    <div
+                      key={doc.id}
+                      className="flex items-center justify-between rounded-xl bg-slate-50 dark:bg-slate-800/50 p-2.5 border border-slate-200 dark:border-slate-800 text-xs"
+                    >
+                      <div className="flex items-center gap-2 min-w-0 pr-2">
+                        <FileText className="h-4 w-4 shrink-0 text-indigo-500" />
+                        <div className="truncate">
+                          <p className="font-semibold text-slate-800 dark:text-slate-200 truncate">
+                            {doc.originalFileName || doc.fileName}
+                          </p>
+                          <p className="text-[10px] text-slate-400">
+                            {((doc.fileSizeBytes || 0) / 1024).toFixed(1)} KB · {new Date(doc.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <a
+                          href={doc.fileUrl || fileApi.getDownloadUrl(doc.id)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="rounded-lg p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50"
+                          title="View / Download"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                        </a>
+                        <button
+                          onClick={() => handleDeleteDocument(doc.id)}
+                          className="rounded-lg p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50"
+                          title="Delete Document"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                Files are securely encrypted in cloud storage with signed access URLs for emergency handoffs.
+              </p>
+            </div>
+
+            {/* Transparent Medical Expenses History */}
+            <div className="space-y-4">
+              <h3 className="text-xs font-bold tracking-wider uppercase text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                <CreditCard className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                Transparent Emergency Care Costs & Invoices
+              </h3>
 
             {expenses.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-8 text-center bg-white dark:bg-slate-900">
@@ -350,6 +482,7 @@ export const PatientsPage: React.FC = () => {
                 ))}
               </div>
             )}
+            </div>
           </div>
         </div>
 
