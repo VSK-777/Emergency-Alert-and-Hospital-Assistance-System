@@ -27,11 +27,15 @@ export const DevicesPage: React.FC = () => {
   const [events, setEvents] = useState<DetectionEvent[]>([]);
   const [latestTelemetry, setLatestTelemetry] = useState<HardwareTelemetry | null>(null);
   const [telemetryHistory, setTelemetryHistory] = useState<HardwareTelemetry[]>([]);
-  const [isPinging, setIsPinging] = useState(false);
-  const [pingMessage, setPingMessage] = useState<string | null>(null);
   const [selectedRawJson, setSelectedRawJson] = useState<string | null>(null);
 
   const isCitizen = user?.role === 'CITIZEN';
+
+  const isTelemetryLive = React.useMemo(() => {
+    if (!latestTelemetry?.createdAt) return false;
+    const elapsedMs = Date.now() - new Date(latestTelemetry.createdAt).getTime();
+    return elapsedMs < 20000;
+  }, [latestTelemetry]);
 
   const loadData = () => {
     deviceApi.getDevices().then((all) => {
@@ -86,19 +90,7 @@ export const DevicesPage: React.FC = () => {
     };
   }, [isCitizen, user, token]);
 
-  const handlePing = async (id: number) => {
-    setIsPinging(true);
-    setPingMessage(null);
-    try {
-      const res = await deviceApi.pingDevice(id);
-      setPingMessage(res.message);
-      loadData();
-    } catch {
-      setPingMessage('Diagnostic Ping Acknowledged: ESP32 hardware responding on BLE GATT.');
-    } finally {
-      setIsPinging(false);
-    }
-  };
+
 
   const getStateBadge = (state?: string) => {
     switch (state) {
@@ -153,10 +145,17 @@ export const DevicesPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-            Live BLE / SSE Sync Active
-          </span>
+          {isTelemetryLive ? (
+            <span className="flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
+              Live Hardware Feed Active
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1 text-xs font-medium text-slate-600 dark:text-slate-400">
+              <span className="h-2 w-2 rounded-full bg-slate-400" />
+              Gateway Standby (Cached Data)
+            </span>
+          )}
           <button
             onClick={loadData}
             className="flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-xs transition-colors"
@@ -167,20 +166,7 @@ export const DevicesPage: React.FC = () => {
         </div>
       </div>
 
-      {pingMessage && (
-        <div className="flex items-center justify-between rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 p-4 text-xs text-indigo-800 dark:text-indigo-300">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-indigo-600 shrink-0" />
-            <span>{pingMessage}</span>
-          </div>
-          <button
-            onClick={() => setPingMessage(null)}
-            className="text-xs font-bold text-indigo-600 hover:underline"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
+
 
       {/* 1. Live Physiological & Motion Sensor Dashboard */}
       <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-4">
@@ -331,8 +317,14 @@ export const DevicesPage: React.FC = () => {
                   <div>
                     <h4 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                       {device.deviceIdentifier}
-                      <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 text-[10px] font-bold">
-                        {device.isActive ? 'ACTIVE' : 'INACTIVE'}
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                        device.lastSyncedAt && (Date.now() - new Date(device.lastSyncedAt).getTime() < 30000)
+                          ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                      }`}>
+                        {device.lastSyncedAt && (Date.now() - new Date(device.lastSyncedAt).getTime() < 30000)
+                          ? 'ONLINE · STREAMING'
+                          : (device.lastSyncedAt ? 'STANDBY' : 'ENROLLED')}
                       </span>
                     </h4>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -342,11 +334,10 @@ export const DevicesPage: React.FC = () => {
                 </div>
 
                 <button
-                  onClick={() => handlePing(device.id)}
-                  disabled={isPinging}
-                  className="rounded-lg bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 px-3 py-1.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors disabled:opacity-50"
+                  onClick={loadData}
+                  className="rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                 >
-                  {isPinging ? 'Pinging…' : 'Diagnostic Ping'}
+                  Refresh
                 </button>
               </div>
 
