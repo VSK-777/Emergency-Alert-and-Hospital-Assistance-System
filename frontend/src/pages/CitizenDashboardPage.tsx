@@ -30,6 +30,7 @@ import { fileApi, type MedicalDocument } from '../api/files';
 import { useAuthStore } from '../store/authStore';
 import type { EmergencyIncident, Hospital, EmergencyContact, HardwareDevice } from '../types';
 import { Badge } from '../components/common/Badge';
+import { LiveEmergencyMap, OSM_TEST_LOCATION } from '../components/map/LiveEmergencyMap';
 
 export const CitizenDashboardPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -41,22 +42,24 @@ export const CitizenDashboardPage: React.FC = () => {
   const [documents, setDocuments] = useState<MedicalDocument[]>([]);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isTriggeringSos, setIsTriggeringSos] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>({
-    lat: 16.3533,
-    lng: 80.5238,
+    lat: OSM_TEST_LOCATION.lat,
+    lng: OSM_TEST_LOCATION.lng,
   });
 
-  // Load user GPS location
+  // Load user GPS location with graceful fallback to OpenStreetMap initial test coordinates
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         },
-        () => {
-          // Default to VVIT Nambur coordinates
-          setUserLocation({ lat: 16.3533, lng: 80.5238 });
-        }
+        (error) => {
+          console.warn('Geolocation unavailable/denied, falling back to VVIT test coordinates:', error.message);
+          setUserLocation({ lat: OSM_TEST_LOCATION.lat, lng: OSM_TEST_LOCATION.lng });
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 10000 }
       );
     }
   }, []);
@@ -127,6 +130,55 @@ export const CitizenDashboardPage: React.FC = () => {
     const interval = setInterval(loadData, 8000);
     return () => clearInterval(interval);
   }, [userLocation]);
+
+  const handleTriggerEmergencySos = async () => {
+    setIsTriggeringSos(true);
+
+    const dispatchSos = async (coords: { lat: number; lng: number; accuracy?: number }) => {
+      try {
+        const incident = await emergencyApi.createIncident({
+          source: 'MOBILE_SOS',
+          latitude: coords.lat,
+          longitude: coords.lng,
+          accuracyMeters: coords.accuracy || 15,
+          detectionReason: 'Citizen Manual SOS Alert Activation (OpenStreetMap GPS)',
+        });
+        setActiveEmergency(incident);
+        setUserLocation({ lat: coords.lat, lng: coords.lng });
+        await loadData();
+      } catch (err: any) {
+        console.error('Failed to dispatch SOS alert:', err);
+        alert(err.response?.data?.message || 'Failed to dispatch SOS alert. Please try again.');
+      } finally {
+        setIsTriggeringSos(false);
+      }
+    };
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          dispatchSos({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+          });
+        },
+        (error) => {
+          console.warn('GPS location retrieval error, using initial testing coordinates:', error.message);
+          dispatchSos({
+            lat: userLocation.lat || OSM_TEST_LOCATION.lat,
+            lng: userLocation.lng || OSM_TEST_LOCATION.lng,
+          });
+        },
+        { enableHighAccuracy: true, timeout: 6000, maximumAge: 10000 }
+      );
+    } else {
+      dispatchSos({
+        lat: userLocation.lat || OSM_TEST_LOCATION.lat,
+        lng: userLocation.lng || OSM_TEST_LOCATION.lng,
+      });
+    }
+  };
 
   const handleCancelIncident = async () => {
     if (!activeEmergency) return;
@@ -314,8 +366,54 @@ export const CitizenDashboardPage: React.FC = () => {
                 </span>
               </div>
             </div>
+
+            {/* Direct Emergency SOS Trigger with Live GPS */}
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-red-50/70 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50">
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-red-900 dark:text-red-200 flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-red-600 animate-pulse" />
+                  Need Immediate Emergency Medical Assistance?
+                </h4>
+                <p className="text-xs text-red-700/80 dark:text-red-300/80">
+                  Triggering SOS captures your GPS location ({userLocation.lat.toFixed(5)}, {userLocation.lng.toFixed(5)}), sends an alert to the Spring Boot backend, and immediately notifies nearby hospital trauma centers.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleTriggerEmergencySos}
+                disabled={isTriggeringSos}
+                className="w-full sm:w-auto shrink-0 flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-red-700 active:scale-95 transition-all shadow-md hover:shadow-red-600/20 disabled:opacity-50"
+              >
+                <AlertCircle className={`h-4 w-4 ${isTriggeringSos ? 'animate-spin' : ''}`} />
+                {isTriggeringSos ? 'Dispatched GPS SOS...' : 'TRIGGER EMERGENCY SOS (GPS)'}
+              </button>
+            </div>
           </div>
         )}
+      </div>
+
+      {/* Interactive OpenStreetMap Container */}
+      <div className="space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Radio className="h-4 w-4 text-red-600 animate-pulse" />
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+              Live Regional Emergency & Hospital Assistance Map (OpenStreetMap)
+            </h3>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <span>Testing Anchor: VVIT Nambur ({OSM_TEST_LOCATION.lat}, {OSM_TEST_LOCATION.lng})</span>
+          </div>
+        </div>
+
+        <LiveEmergencyMap
+          incidents={activeEmergency ? [activeEmergency] : []}
+          hospitals={hospitals}
+          userLocation={userLocation}
+          height="420px"
+          initialCenter={[userLocation.lat, userLocation.lng]}
+          initialZoom={OSM_TEST_LOCATION.zoom}
+        />
       </div>
 
       {/* Grid: Nearby Hospitals + Digital Medical ID */}

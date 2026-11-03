@@ -16,12 +16,14 @@ import {
   Edit2,
   RefreshCw,
   ArrowRight,
+  Radio,
 } from 'lucide-react';
 import { hospitalApi } from '../api/hospitals';
 import { useEmergencyStore } from '../store/emergencyStore';
 import type { Hospital, EmergencyIncident } from '../types';
 import { Modal } from '../components/common/Modal';
 import { Badge } from '../components/common/Badge';
+import { LiveEmergencyMap, OSM_TEST_LOCATION } from '../components/map/LiveEmergencyMap';
 
 export const HospitalDashboardPage: React.FC = () => {
   const [hospital, setHospital] = useState<Hospital | null>(null);
@@ -227,6 +229,36 @@ export const HospitalDashboardPage: React.FC = () => {
           </p>
           <span className="text-[11px] text-slate-500 dark:text-slate-400">Units ready for dispatch</span>
         </div>
+      </div>
+
+      {/* Interactive OpenStreetMap: Live Emergency & Trauma Center Radar */}
+      <div className="space-y-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Radio className="h-4 w-4 text-red-600 animate-pulse" />
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+              Live Trauma Triage Map (OpenStreetMap)
+            </h3>
+          </div>
+          <span className="text-xs text-slate-500 dark:text-slate-400">
+            {incidents.filter((i) => i.latitude && i.longitude).length} active casualties plotted on map
+          </span>
+        </div>
+
+        <LiveEmergencyMap
+          incidents={incidents}
+          hospitals={hospital ? [hospital] : []}
+          height="380px"
+          initialCenter={
+            selectedIncident?.latitude && selectedIncident?.longitude
+              ? [selectedIncident.latitude, selectedIncident.longitude]
+              : hospital?.latitude && hospital?.longitude
+              ? [hospital.latitude, hospital.longitude]
+              : [OSM_TEST_LOCATION.lat, OSM_TEST_LOCATION.lng]
+          }
+          initialZoom={OSM_TEST_LOCATION.zoom}
+          onSelectIncident={(inc) => setSelectedIncident(inc)}
+        />
       </div>
 
       {/* Main Grid: Incoming Alerts + Patient Care Preparation Detail */}
