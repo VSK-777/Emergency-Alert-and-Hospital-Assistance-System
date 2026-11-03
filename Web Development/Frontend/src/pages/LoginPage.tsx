@@ -246,45 +246,6 @@ export const LoginPage: React.FC = () => {
             </div>
           )}
 
-          {/* Quick Demo Credentials */}
-          {authMethod === 'email' && (
-            <div className="mb-4 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 text-[11px]">
-              <span className="font-semibold text-slate-500 dark:text-slate-400 block mb-1.5">
-                Quick Fill Demo Roles (Password: <code className="font-mono text-blue-600 dark:text-blue-400">Password@123</code>):
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => { setEmail('vajjhasaikrishna@gmail.com'); setPassword('Password@123'); }}
-                  className="rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 px-2 py-1 font-medium hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors cursor-pointer"
-                >
-                  Citizen (Sai Krishna)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setEmail('admin@vvit.net'); setPassword('Password@123'); }}
-                  className="rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 px-2 py-1 font-medium hover:bg-purple-100 dark:hover:bg-purple-900/60 transition-colors cursor-pointer"
-                >
-                  Admin
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setEmail('hospital.admin@aiims.edu.in'); setPassword('Password@123'); }}
-                  className="rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-2 py-1 font-medium hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors cursor-pointer"
-                >
-                  Hospital Staff
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setEmail('responder@vvit.net'); setPassword('Password@123'); }}
-                  className="rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 px-2 py-1 font-medium hover:bg-amber-100 dark:hover:bg-amber-900/60 transition-colors cursor-pointer"
-                >
-                  Responder
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* Email / Password Form */}
           {authMethod === 'email' ? (
             <form onSubmit={handleEmailSubmit} className="space-y-4">
