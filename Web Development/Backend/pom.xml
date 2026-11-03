@@ -106,6 +106,7 @@
     </dependencies>
 
     <build>
+        <finalName>emergency-assistance-backend</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

@@ -17,7 +17,7 @@ RUN addgroup -S spring && adduser -S spring -G spring
 USER spring:spring
 
 # Copy built jar from build stage
-COPY --from=build /app/target/emergency-assistance-backend-*.jar app.jar
+COPY --from=build /app/target/emergency-assistance-backend.jar app.jar
 
 # Default port and JVM memory tuning optimized for Render free tier (512MB RAM)
 ENV PORT=8080
