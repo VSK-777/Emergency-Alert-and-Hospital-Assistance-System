@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import '../core/constants/api_endpoints.dart';
 import '../core/network/api_client.dart';
 
@@ -49,6 +49,8 @@ class MedicalDocumentItem {
 
 class FileService {
   final ApiClient apiClient;
+  final ImagePicker _picker = ImagePicker();
+
   FileService(this.apiClient);
 
   Future<List<MedicalDocumentItem>> getMyDocuments() async {
@@ -69,20 +71,17 @@ class FileService {
     String category = 'MEDICAL_RECORD',
     String? incidentId,
   }) async {
-    final result = await FilePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'webp'],
+    final XFile? picked = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 90,
     );
 
-    if (result == null || result.files.isEmpty) {
+    if (picked == null) {
       return null;
     }
 
-    final path = result.files.single.path;
-    if (path == null) return null;
-
-    final file = File(path);
-    final fileName = result.files.single.name;
+    final file = File(picked.path);
+    final fileName = picked.name.isNotEmpty ? picked.name : 'medical_document.jpg';
 
     final formData = FormData.fromMap({
       'file': await MultipartFile.fromFile(file.path, filename: fileName),
