@@ -21,8 +21,23 @@ export const OSM_TEST_LOCATION = {
 };
 
 // OpenStreetMap Standard Tile Layer Endpoint
-export const OSM_TILE_ENDPOINT =
-  import.meta.env.VITE_MAP_TILE_URL || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+// Validates that any configured URL contains proper OpenStreetMap {z}, {x}, and {y} coordinate placeholders.
+// If missing, unconfigured, or accidentally pointing to a non-tile API endpoint, safely defaults to the official OpenStreetMap tile server.
+export const getOsmTileEndpoint = (): string => {
+  const envUrl = import.meta.env.VITE_MAP_TILE_URL;
+  if (
+    typeof envUrl === 'string' &&
+    envUrl.trim().length > 0 &&
+    envUrl.includes('{z}') &&
+    envUrl.includes('{x}') &&
+    envUrl.includes('{y}')
+  ) {
+    return envUrl.trim();
+  }
+  return 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+};
+
+export const OSM_TILE_ENDPOINT = getOsmTileEndpoint();
 
 // High-Precision Vector Leaflet Markers (Self-contained SVG, avoids broken bundler asset URLs)
 const createVectorIcon = (
@@ -92,11 +107,34 @@ const responderIcon = createVectorIcon(
   false
 );
 
+// Helper component to ensure Leaflet recalculates dimensions when container mounts or changes
+const MapResizer: React.FC = () => {
+  const map = useMap();
+  useEffect(() => {
+    map.invalidateSize();
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 250);
+    const handleResize = () => {
+      map.invalidateSize();
+    };
+    window.addEventListener('resize', handleResize);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [map]);
+  return null;
+};
+
 // Helper component for smooth panning when center coordinate updates
 const MapRecenter: React.FC<{ center: [number, number]; zoom?: number }> = ({ center, zoom }) => {
   const map = useMap();
   useEffect(() => {
-    map.flyTo(center, zoom ?? map.getZoom(), { duration: 1.2 });
+    if (center && typeof center[0] === 'number' && !isNaN(center[0]) && typeof center[1] === 'number' && !isNaN(center[1])) {
+      map.flyTo(center, zoom ?? map.getZoom(), { duration: 1.2 });
+      map.invalidateSize();
+    }
   }, [center, zoom, map]);
   return null;
 };
@@ -256,11 +294,16 @@ export const LiveEmergencyMap: React.FC<LiveEmergencyMapProps> = ({
       {/* Interactive Map Container */}
       <div style={{ height }} className="w-full">
         <MapContainer
-          center={mapCenter}
+          center={
+            mapCenter && !isNaN(mapCenter[0]) && !isNaN(mapCenter[1])
+              ? mapCenter
+              : [OSM_TEST_LOCATION.lat, OSM_TEST_LOCATION.lng]
+          }
           zoom={initialZoom}
           scrollWheelZoom={true}
           style={{ height: '100%', width: '100%' }}
         >
+          <MapResizer />
           <MapRecenter center={mapCenter} zoom={initialZoom} />
 
           {/* Standard OpenStreetMap Tile Layer */}
@@ -268,6 +311,7 @@ export const LiveEmergencyMap: React.FC<LiveEmergencyMapProps> = ({
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url={OSM_TILE_ENDPOINT}
             maxZoom={19}
+            minZoom={2}
           />
 
           {/* Current User GPS Location Marker */}

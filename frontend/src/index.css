@@ -82,7 +82,7 @@
   animation: radar-pulse 2s infinite;
 }
 
-/* Leaflet container fixes */
+/* Leaflet container and tile rendering fixes */
 .leaflet-container {
   width: 100%;
   height: 100%;
@@ -92,6 +92,33 @@
 }
 .dark .leaflet-container {
   background: #090D16;
+}
+
+/* Ensure Leaflet tiles are never constrained or warped by Tailwind img resets */
+.leaflet-container img.leaflet-tile {
+  max-width: none !important;
+  max-height: none !important;
+  width: 256px !important;
+  height: 256px !important;
+  display: block !important;
+  visibility: visible !important;
+}
+
+/* Stacking order: Keep tile layer cleanly below markers, vectors, and popups */
+.leaflet-pane.leaflet-tile-pane {
+  z-index: 200;
+}
+.leaflet-pane.leaflet-overlay-pane {
+  z-index: 400;
+}
+.leaflet-pane.leaflet-marker-pane {
+  z-index: 600;
+}
+.leaflet-pane.leaflet-tooltip-pane {
+  z-index: 650;
+}
+.leaflet-pane.leaflet-popup-pane {
+  z-index: 700;
 }
 .leaflet-popup-content-wrapper, .leaflet-popup-tip {
   background: #FFFFFF !important;
