@@ -1,11 +1,9 @@
 import axios from 'axios';
 
-// Prefer same-origin relative base URL '/api/v1' for web production (Vercel edge rewrite)
-// and development (Vite server proxy) to eliminate browser CORS preflight overhead.
+// Resolve base URL: use configured VITE_API_BASE_URL if present, otherwise fall back to relative '/api/v1'
 const envUrl = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '');
-const forceDirect = import.meta.env.VITE_FORCE_DIRECT_API === 'true';
 
-export const API_BASE_URL = (forceDirect && envUrl)
+export const API_BASE_URL = envUrl
   ? (envUrl.endsWith('/api/v1') ? envUrl : `${envUrl}/api/v1`)
   : '/api/v1';
 
