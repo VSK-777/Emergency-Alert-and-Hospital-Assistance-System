@@ -26,7 +26,7 @@ The **Emergency Alert and Hospital Assistance System** establishes a real-time, 
 
 ```mermaid
 flowchart LR
-    A["Citizen / Patient<br/>(Mobile & Smartwatch)"] <--> B["First Responders<br/>(Volunteer Field Grid)"]
+    A["Citizen / Patient<br/>(Mobile & Web Portal)"] <--> B["First Responders<br/>(Volunteer Field Grid)"]
     B <--> C["Hospital Staff<br/>(Trauma & ER Triage)"]
     C <--> D["System Administrator<br/>(Central Command)"]
     A <--> C
@@ -40,17 +40,17 @@ $$\text{Citizen / Patient} \longleftrightarrow \text{First Responders} \longleft
 
 The platform is designed around a decoupled, secure client-server architecture with strict role-based access control (RBAC):
 
-```
-Smartwatch (Wear OS / ESP32) ──> Mobile App (Flutter / Android) ──> Spring Boot REST API ──> Neon PostgreSQL (Port 5432)
-                                                                         ▲
-React Web App (Vite SaaS) ───────────────────────────────────────────────┘
+```text
+ESP32 Firmware (IMU & BLE GATT) ──> Mobile App (Flutter / Android) ──> Spring Boot REST API ──> Cloud PostgreSQL (Port 5432)
+                                                                               ▲
+React Web App (Vite SaaS Portal) ──────────────────────────────────────────────┘
 ```
 
 | Layer | Technologies & Frameworks | Description & Versioning |
 | :--- | :--- | :--- |
-| **Frontend Web App** | React 19, TypeScript, Tailwind CSS v4, Vite 8, Zustand, Lucide React, Leaflet, Recharts | Clinical-grade healthcare SaaS with Light/Dark themes and 4 role dashboards |
-| **Backend REST API** | Java 21 LTS, Spring Boot 3.3.4, Spring Security, Spring Data JPA, JJWT 0.12.5, SpringDoc OpenAPI 2.6.0 | Stateless microservices, Haversine geospatial proximity engine, SSE streams |
-| **Production Database** | Neon Serverless PostgreSQL 18 (Session Pooler via JDBC on port 5432 with SSL & Channel Binding) | Relational persistence with 16 normalized tables, Flyway migrations V1–V7 |
+| **Frontend Web App** | React 19, TypeScript, Tailwind CSS v4, Vite 8, Zustand, Lucide React, Leaflet, Recharts | Clinical-grade healthcare SaaS deployed on Vercel (`https://frontend-seven-zeta-99.vercel.app`) with Light/Dark themes and 4 role dashboards |
+| **Backend REST API** | Java 21 LTS, Spring Boot 3.3.4, Spring Security, Spring Data JPA, JJWT 0.12.5, SpringDoc OpenAPI 2.6.0 | Stateless microservices, Haversine geospatial proximity engine, SSE streams deployed on Render |
+| **Production Database** | Cloud PostgreSQL (Supabase IPv4 Session Pooler / Neon PostgreSQL via JDBC on port 5432 with SSL) | Relational persistence with normalized tables, Flyway migrations V1–V8 |
 | **Development Database** | In-Memory H2 Database (`SPRING_PROFILES_ACTIVE=dev`) | Zero-config local development and integration testing |
 | **Mobile Client** | Flutter 3 (Dart), Android Jetpack Compose (Kotlin), BLE GATT | Citizen emergency companion, offline emergency guide, and hardware telemetry bridge |
 | **Hardware Firmware** | ESP32 C++/Arduino, MPU6050 6-axis IMU, BLE GATT Server | Real-time accident detection, impact threshold telemetry, and emergency beacon |
@@ -81,7 +81,7 @@ Emergency-Alert-and-Hospital-Assistance-System/
 │
 ├── mobile-app/                     # Cross-platform Flutter + Android mobile application
 │   ├── lib/                        # Flutter Dart source code (screens, controllers, models, BLE)
-│   ├── android/                    # Android host project with WearMessageListenerService & BLE GATT
+│   ├── android/                    # Android host project with BLE GATT & background telemetry bridge
 │   ├── assets/                     # App branding, icons, and medical emergency illustrations
 │   ├── pubspec.yaml                # Flutter dependencies and asset registrations
 │   └── README.md                   # Mobile application architecture and build guide
@@ -121,7 +121,7 @@ Emergency-Alert-and-Hospital-Assistance-System/
 - **Flyway Database Versioning:** Schema migrations managed with `validate` DDL policy against PostgreSQL.
 - **Geospatial Proximity Engine:** Haversine formula calculation computing distance and estimated travel times between casualty coordinates, available ambulances, and accredited hospitals.
 - **Server-Sent Events (SSE) Broadcast:** Instant zero-polling emergency notifications pushed to active web and mobile clients via `/api/v1/emergencies/stream`.
-- **Hardware Telemetry Ingestion:** Accepts real-time sensor packets from ESP32 and wearable modules with automatic incident generation upon high-G impact or abnormal vitals detection.
+- **Hardware Telemetry Ingestion:** Accepts real-time sensor packets from ESP32 hardware modules with automatic incident generation upon high-G impact or abnormal vitals detection.
 
 ### 3. Mobile Companion (Flutter & Android Jetpack Compose)
 - **One-Touch Emergency SOS:** Instant dispatch button with 5-second cancellation countdown to prevent false alarms.
@@ -196,11 +196,12 @@ The backend is deployed as a Docker container on Render.
 - **Dockerfile Path:** `./backend/Dockerfile`
 - **Docker Build Context:** `./backend`
 - **Plan / Region:** Free / Singapore (`singapore`)
-- **Active Profile:** `prod` (connects to Neon PostgreSQL via environment variables)
+- **Active Profile:** `postgres` or `prod` (connects to Supabase / Neon PostgreSQL via environment variables)
 
 ### Frontend on Vercel
 The frontend is deployed on Vercel as a single-page application (SPA).
 
+- **Production URL:** [https://frontend-seven-zeta-99.vercel.app](https://frontend-seven-zeta-99.vercel.app)
 - **Vercel Root Directory:** `frontend`
 - **Build Command:** `npm run build` (`tsc -b && vite build`)
 - **Output Directory:** `dist`
@@ -212,7 +213,7 @@ The frontend is deployed on Vercel as a single-page application (SPA).
 
 | Module | Test Target | Verification Command | Status | Notes |
 | :--- | :--- | :--- | :--- | :--- |
-| **Backend** | Java 21 Compilation | `mvn clean compile` | **PASSED** | 93 classes compiled cleanly with zero warnings or errors |
+| **Backend** | Java 21 Compilation | `mvn clean compile` | **PASSED** | 105 classes compiled cleanly with zero warnings or errors |
 | **Backend** | Spring Boot Tests | `mvn test -f backend/pom.xml` | **PASSED** | Maven Surefire executed successfully |
 | **Frontend** | TypeScript & Vite Build | `npm run build --prefix frontend` | **PASSED** | 2,772 modules transformed; production bundle generated in `frontend/dist` |
 | **Symlink Audit** | Repository Integrity | `git ls-files -s \| grep 120000` | **PASSED** | Zero symbolic links tracked in Git |

@@ -73,9 +73,44 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), message));
     }
 
+    @ExceptionHandler(jakarta.persistence.PersistenceException.class)
+    public ResponseEntity<ErrorResponse> handlePersistence(jakarta.persistence.PersistenceException ex) {
+        String message = "Database operation failed. Please verify that all input values are within valid limits.";
+        String exMsg = ex.getMessage() != null ? ex.getMessage().toLowerCase() : "";
+        if (exMsg.contains("too long") || exMsg.contains("truncation") || exMsg.contains("varying(20)")) {
+            message = "Input value exceeds maximum allowable length for the field (e.g. phone number must be 20 characters or fewer).";
+        }
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), message));
+    }
+
+    @ExceptionHandler(org.springframework.transaction.TransactionSystemException.class)
+    public ResponseEntity<ErrorResponse> handleTransactionSystem(org.springframework.transaction.TransactionSystemException ex) {
+        String message = "Transaction failed due to a data constraint or validation error.";
+        Throwable root = ex.getRootCause();
+        if (root != null && root.getMessage() != null) {
+            String rootMsg = root.getMessage().toLowerCase();
+            if (rootMsg.contains("too long") || rootMsg.contains("truncation") || rootMsg.contains("varying(20)")) {
+                message = "Input value exceeds maximum allowable length for the field (e.g. phone number must be 20 characters or fewer).";
+            }
+        }
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), message));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneral(Exception ex) {
+        String exMsg = ex.getMessage() != null ? ex.getMessage() : "";
+        String lowerMsg = exMsg.toLowerCase();
+        if (lowerMsg.contains("too long") || lowerMsg.contains("value too long") || lowerMsg.contains("character varying")) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Input value exceeds maximum allowable length for the field (e.g. phone number must be 20 characters or fewer)."));
+        }
+        if (lowerMsg.contains("could not execute statement") || lowerMsg.contains("sql statement")) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Database constraint violation. Please verify that all submitted fields meet system requirements."));
+        }
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), "An unexpected server error occurred: " + ex.getMessage()));
+                .body(new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), "An unexpected server error occurred. Please try again later."));
     }
 }

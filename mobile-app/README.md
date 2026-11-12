@@ -12,7 +12,7 @@
 **Project Guide:** Mr. G. Lakshmi Narayana (Assistant Professor)  
 
 **Live Production Deployments:**
-- **Web App (Vercel):** [https://emergency-alert-and-hospital-assistance-system.vercel.app](https://emergency-alert-and-hospital-assistance-system.vercel.app)
+- **Web App (Vercel):** [https://frontend-seven-zeta-99.vercel.app](https://frontend-seven-zeta-99.vercel.app)
 - **Backend API (Render):** [https://emergency-alert-and-hospital-assistance.onrender.com](https://emergency-alert-and-hospital-assistance.onrender.com)
 - **Swagger UI:** [https://emergency-alert-and-hospital-assistance.onrender.com/swagger-ui.html](https://emergency-alert-and-hospital-assistance.onrender.com/swagger-ui.html)
 
@@ -22,10 +22,10 @@
 
 The **Emergency Alert and Hospital Assistance System Mobile App** serves as the citizen's primary field companion. Engineered in Flutter (Dart), it provides an offline-first emergency response pipeline, an interactive first-aid reference guide, and automatic synchronization with the Spring Boot backend on Render.
 
-```
-Smartwatch (Wear OS) ──Bluetooth/WiFi──> Mobile App (Flutter) ──HTTPS──> Spring Boot API
-                                                 │
-                                                 └──Local Persistence (Offline Buffer)
+```text
+ESP32 Firmware (IMU & BLE GATT) ──Bluetooth LE──> Mobile App (Flutter) ──HTTPS──> Spring Boot API
+                                                         │
+                                                         └──Local Persistence (Offline Buffer)
 ```
 
 - **Framework:** Flutter 3.x (Dart 3.x)
@@ -37,7 +37,7 @@ Smartwatch (Wear OS) ──Bluetooth/WiFi──> Mobile App (Flutter) ──HTTP
   - `shared_preferences` for offline pending emergency incident queues, cached emergency contacts, and medical profiles
 - **Mapping:** OpenStreetMap (`flutter_map` 7.0 + `latlong2`) with fallback coordinates for VVIT / Guntur / Vijayawada trauma network
 - **Offline First Aid:** Authoritative emergency first-aid knowledge base (`assets/first_aid.json`) complying with Red Cross and WHO guidelines
-- **Wear OS Integration:** Real-time sensor telemetry listener and test replay harness for smartwatch accident detection
+- **ESP32 Hardware Integration:** Real-time sensor telemetry listener over BLE GATT and automated emergency dispatch upon high-G impact / crash detection
 
 ---
 
@@ -71,17 +71,17 @@ Smartwatch (Wear OS) ──Bluetooth/WiFi──> Mobile App (Flutter) ──HTTP
 - Haversine-based proximity listing of nearby participating emergency centers.
 - Real-time visibility into available ICU beds, trauma facilities, and ambulance fleets.
 
-### 5. Smartwatch Hub & Sensor Telemetry
-- Active connection health indicator with the paired Wear OS smartwatch.
+### 5. Hardware Sensor Hub & Telemetry
+- Active connection health indicator with paired ESP32 accident detection hardware over BLE GATT.
 - Real-time IMU sensor monitoring (accelerometer G-force magnitude and gyroscope angular velocity).
-- One-tap `"Simulate Wear OS Accident Spike"` test harness for validation without physical hazard.
+- One-tap `"Simulate Hardware Accident Spike"` test harness for validation without physical hazard.
 
 ---
 
 ## 3. Directory Structure
 
 ```
-Mobile App/
+mobile-app/
 |-- android/                        # Android platform project & Gradle build
 |-- ios/                            # iOS platform project & Xcode workspace
 |-- assets/                         # Curated emergency first-aid guides & icon assets
@@ -107,7 +107,7 @@ Mobile App/
 
 ### Step 1: Install Dependencies
 ```bash
-cd "Mobile App"
+cd mobile-app
 flutter pub get
 ```
 

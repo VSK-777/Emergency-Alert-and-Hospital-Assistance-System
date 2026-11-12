@@ -7,7 +7,7 @@
 **Project Guide:** Mr. G. Lakshmi Narayana (Assistant Professor)  
 
 **Live Production Deployments:**
-- **Frontend Web App (Vercel):** [https://emergency-alert-and-hospital-assist.vercel.app](https://emergency-alert-and-hospital-assist.vercel.app)
+- **Frontend Web App (Vercel):** [https://frontend-seven-zeta-99.vercel.app](https://frontend-seven-zeta-99.vercel.app)
 - **Backend API (Render):** [https://emergency-alert-and-hospital-assistance.onrender.com](https://emergency-alert-and-hospital-assistance.onrender.com)
 - **Swagger UI:** [https://emergency-alert-and-hospital-assistance.onrender.com/swagger-ui.html](https://emergency-alert-and-hospital-assistance.onrender.com/swagger-ui.html)  
 
@@ -15,18 +15,17 @@
 
 ## 1. Database & Persistence Architecture
 
-The backend utilizes **Neon Serverless PostgreSQL** as its production relational database, managed exclusively through version-controlled **Flyway** database migrations.
+The backend utilizes **Cloud PostgreSQL** (via Supabase IPv4 Session Pooler / Neon PostgreSQL) as its production relational database, managed exclusively through version-controlled **Flyway** database migrations.
 
-```
-Smartwatch (Wear OS) ──> Mobile App (Flutter) ──> Spring Boot REST API ──> Neon PostgreSQL (Port 5432)
-                                                        ▲
-React Web App (Vite SaaS) ──────────────────────────────┘
+```text
+ESP32 Firmware (IMU & BLE GATT) ──> Mobile App (Flutter) ──> Spring Boot REST API ──> Cloud PostgreSQL (Port 5432)
+                                                                    ▲
+React Web App (Vite SaaS) ──────────────────────────────────────────┘
 ```
 
-- **Database:** Neon Serverless PostgreSQL 18.6 (Region: AWS `ap-southeast-1` Singapore)
-- **Connection Mode:** Neon Connection Pooler via JDBC (Port `5432` with `sslmode=require&channelBinding=require`)
-- **Neon Data API:** `https://ep-odd-art-b3wr3a72.apirest.c-4.ap-southeast-1.aws.neon.tech/neondb/rest/v1`
-- **Schema Management:** Flyway 10.x versioned migrations (`classpath:db/migration`)
+- **Database:** Cloud PostgreSQL (Supabase IPv4 Session Pooler on port 5432 with `sslmode=require` / Neon PostgreSQL)
+- **Connection Mode:** Session Connection Pooler via JDBC (Port `5432` with SSL enabled)
+- **Schema Management:** Flyway 10.x versioned migrations (`classpath:db/migration`, V1 through V8)
 - **Hibernate DDL Policy:** `spring.jpa.hibernate.ddl-auto=validate` (Strict validation against Flyway migrations)
 - **Security Boundary:** The Spring Boot backend is the sole authority communicating with PostgreSQL. Neither the browser nor mobile apps hold database credentials.
 
@@ -36,7 +35,7 @@ React Web App (Vite SaaS) ──────────────────
 
 | Profile | Purpose | Database | Schema Management | Data Seeding |
 | :--- | :--- | :--- | :--- | :--- |
-| **`postgres`** | **Production & Staging** | Neon Serverless PostgreSQL | Flyway (`ddl-auto=validate`) | **None** (Clean schema, voluntary user registration) |
+| **`postgres`** / **`prod`** | **Production & Staging** | Cloud PostgreSQL (Supabase / Neon) | Flyway (`ddl-auto=validate`) | Clean schema with verified partner hospitals (V8) |
 | **`dev`** | **Local Development** | In-Memory H2 | Auto-create with seeds | `DataInitializer.java` (Demonstration records for testing) |
 | **`test`** | **Automated CI/CD** | H2 (PostgreSQL mode) | Flyway (`ddl-auto=validate`) | Isolated transactional test cases |
 
@@ -48,13 +47,13 @@ For production deployment on Render, configure the following environment variabl
 
 | Variable | Description | Example / Format |
 | :--- | :--- | :--- |
-| `SPRING_PROFILES_ACTIVE` | Active Spring profile | `postgres` |
-| `SPRING_DATASOURCE_URL` | Neon Connection Pooler JDBC URL | `jdbc:postgresql://ep-odd-art-b3wr3a72-pooler.c-4.ap-southeast-1.aws.neon.tech:5432/neondb?sslmode=require&channelBinding=require` |
-| `SPRING_DATASOURCE_USERNAME` | Neon Database Role Username | `neondb_owner` |
-| `SPRING_DATASOURCE_PASSWORD` | Neon Database Password | *(Secure database password)* |
+| `SPRING_PROFILES_ACTIVE` | Active Spring profile | `postgres` or `prod` |
+| `SPRING_DATASOURCE_URL` | Cloud Pooler JDBC URL | `jdbc:postgresql://aws-0-ap-northeast-2.pooler.supabase.com:5432/postgres?sslmode=require` |
+| `SPRING_DATASOURCE_USERNAME` | Database Role Username | `postgres.ludglhsoseisgqbpylae` |
+| `SPRING_DATASOURCE_PASSWORD` | Database Password | *(Secure database password)* |
 | `APP_JWT_SECRET` | 256-bit Base64-encoded secret key | *(Base64 string generated via `openssl rand -base64 32`)* |
 | `APP_JWT_EXPIRATION_MS` | JWT expiration duration in ms | `86400000` (24 hours) |
-| `APP_CORS_ALLOWED_ORIGINS` | Comma-separated frontend origins | `https://emergency-alert-and-hospital-assist.vercel.app` |
+| `APP_CORS_ALLOWED_ORIGINS` | Comma-separated frontend origins | `https://frontend-seven-zeta-99.vercel.app` |
 | `PORT` | Web server listening port | `8080` |
 | `GEMINI_API_KEY` | Google Gemini AI API key | *(Optional API Key for Online Clinical Triage)* |
 
@@ -73,8 +72,9 @@ Database schema evolution is maintained in `src/main/resources/db/migration/`:
 - `V5__add_detection_event_timestamps.sql` — Adds `detection_source`, `confidence_score`, and telemetry sync timestamps to `detection_events`.
 - `V6__synchronize_passwords.sql` — Synchronizes default BCrypt hashes for pre-seeded demonstration accounts.
 - `V7__create_file_storage_and_pairing_tables.sql` — Creates `medical_documents` and `device_pairing_challenges` tables for medical attachments and secure hardware pairing.
+- `V8__seed_regional_partner_hospitals.sql` — Seeds authentic verified regional trauma centers and multi-speciality partner hospitals with precise OpenStreetMap coordinates.
 
-To apply new schema changes, always add sequential version files (e.g. `V3__description.sql`). Never edit already-applied migrations.
+To apply new schema changes, always add sequential version files (e.g. `V9__description.sql`). Never edit already-applied migrations.
 
 ---
 
@@ -83,7 +83,7 @@ To apply new schema changes, always add sequential version files (e.g. `V3__desc
 Run the automated test suite locally:
 
 ```bash
-cd Backend
+cd backend
 mvn clean test
 ```
 
@@ -104,13 +104,13 @@ mvn clean test
 
 1. Open Render Dashboard: Service `emergency-alert-and-hospital-assistance-backend` (Region: Singapore).
 2. Set Environment Variables:
-   - `SPRING_PROFILES_ACTIVE`: `postgres`
-   - `SPRING_DATASOURCE_URL`: `jdbc:postgresql://ep-odd-art-b3wr3a72-pooler.c-4.ap-southeast-1.aws.neon.tech:5432/neondb?sslmode=require&channelBinding=require`
-   - `SPRING_DATASOURCE_USERNAME`: `neondb_owner`
-   - `SPRING_DATASOURCE_PASSWORD`: `<NEON_DATABASE_PASSWORD>`
+   - `SPRING_PROFILES_ACTIVE`: `postgres` (or `prod`)
+   - `SPRING_DATASOURCE_URL`: `jdbc:postgresql://aws-0-ap-northeast-2.pooler.supabase.com:5432/postgres?sslmode=require`
+   - `SPRING_DATASOURCE_USERNAME`: `postgres.ludglhsoseisgqbpylae`
+   - `SPRING_DATASOURCE_PASSWORD`: `<DATABASE_PASSWORD>`
    - `APP_JWT_SECRET`: `<STRONG_RANDOM_SECRET>`
    - `APP_JWT_EXPIRATION_MS`: `86400000`
-   - `APP_CORS_ALLOWED_ORIGINS`: `https://emergency-alert-and-hospital-assist.vercel.app`
+   - `APP_CORS_ALLOWED_ORIGINS`: `https://frontend-seven-zeta-99.vercel.app`
 3. Trigger Manual Deploy with Clear Build Cache from branch `main`.
 4. Monitor deployment logs for Flyway schema migrations and successful startup.
 

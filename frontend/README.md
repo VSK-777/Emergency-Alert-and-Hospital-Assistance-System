@@ -8,7 +8,7 @@
 **Project Guide:** Mr. G. Lakshmi Narayana, Assistant Professor  
 
 **Live Production Deployments:**
-- **Frontend Web App (Vercel):** [https://emergency-alert-and-hospital-assist.vercel.app](https://emergency-alert-and-hospital-assist.vercel.app)  
+- **Frontend Web App (Vercel):** [https://frontend-seven-zeta-99.vercel.app](https://frontend-seven-zeta-99.vercel.app)  
 - **Backend API (Render):** [https://emergency-alert-and-hospital-assistance.onrender.com](https://emergency-alert-and-hospital-assistance.onrender.com)  
 - **Swagger UI:** [https://emergency-alert-and-hospital-assistance.onrender.com/swagger-ui.html](https://emergency-alert-and-hospital-assistance.onrender.com/swagger-ui.html)  
 
@@ -16,12 +16,12 @@
 
 ## Overview
 
-The Web Platform serves as the central command, triage, and multi-role operations portal for the Emergency Alert and Hospital Assistance System. Designed with a clinical-grade Healthcare SaaS aesthetic, it features **Light Mode as default**, full **Dark Mode support** with an instant navbar switch, and four dedicated role dashboards:
+The Web Platform serves as the central command, triage, and multi-role operations portal for the Emergency Alert and Hospital Assistance System. Deployed on Vercel at `https://frontend-seven-zeta-99.vercel.app`, it is designed with a clinical-grade Healthcare SaaS aesthetic, featuring **Light Mode as default**, full **Dark Mode support** with an instant navbar switch, and four dedicated role dashboards:
 
-1. **System Administrator (`/admin`):** Network command overview, active alerts counter, Wear OS telemetry, ICU availability, ambulance fleet status, volunteer response KPIs, interactive OpenStreetMap dispatch GIS with layer filters, and system audit logs.
+1. **System Administrator (`/admin`):** Network command overview, active alerts counter, ESP32 sensor telemetry, ICU availability, ambulance fleet status, volunteer response KPIs, interactive OpenStreetMap dispatch GIS with layer filters, and system audit logs.
 2. **Hospital Staff (`/hospital`):** Emergency department triage center, inbound incident queue with clinical details, 1-click Accept / Decline (with clinical reason modal), trauma bay preparation milestones, and live bed/ICU capacity management.
 3. **First Responder (`/responder`):** Volunteer field command with duty toggle (`AVAILABLE` / `OFF_DUTY`), GPS location synchronization, nearby unclaimed incident radar, and turn-by-turn routing with OpenStreetMap directions.
-4. **Citizen / Patient (`/citizen`):** Reassuring emergency portal, real-time active incident tracking, paired Wear OS smartwatch telemetry (IMU 50Hz, battery, algorithm health), read-only nearby ER hospital directory, and personal Digital Medical ID card with voluntary profile fields and transparent emergency care invoices.
+4. **Citizen / Patient (`/citizen`):** Reassuring emergency portal, real-time active incident tracking, paired ESP32 triage sensor telemetry, read-only nearby ER hospital directory, and personal Digital Medical ID card with voluntary profile fields and transparent emergency care invoices.
 
 ---
 
@@ -34,7 +34,7 @@ The Web Platform serves as the central command, triage, and multi-role operation
   - Emergency Alert Red: `#D32F2F`
   - Success Indicator Green: `#16865C`
   - Warning Status Amber: `#D97706`
-  - Wear OS Accent Purple: `#7C3AED`
+  - Telemetry & Sensor Accent Purple: `#7C3AED`
 - **Role Isolation:** Strict role-based navigation and route guards. Citizens cannot access other citizens' medical records or administrative device fleets; Hospital Staff and Responders only access their respective operational workflows.
 
 ---
@@ -48,7 +48,7 @@ The Web Platform serves as the central command, triage, and multi-role operation
 - **Real-Time Communication:** Server-Sent Events (SSE) stream (`/api/v1/emergencies/stream`) with STOMP WebSocket capability
 - **GIS Mapping:** Leaflet + OpenStreetMap (`react-leaflet`) with custom emergency pulse markers
 - **Authentication:** Stateless JWT with Email/Password & Citizen Emergency Profile registration
-- **Hosting & Deployment:** Vercel SPA with `/api` reverse-proxy routing to Render backend
+- **Hosting & Deployment:** Vercel SPA (`https://frontend-seven-zeta-99.vercel.app`) with `/api` reverse-proxy routing to Render backend
 
 ---
 
