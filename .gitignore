@@ -132,3 +132,8 @@ esp32-firmware/build/
 AGENTS.md
 
 .neon
+
+# Survey Assets and Presentations
+CSP Survey Photos/
+*.pptx
+matrix.png
