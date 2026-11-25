@@ -53,7 +53,7 @@ React Web App (Vite SaaS Portal) ───────────────�
 | **Production Database** | Cloud PostgreSQL (Supabase IPv4 Session Pooler / Neon PostgreSQL via JDBC on port 5432 with SSL) | Relational persistence with normalized tables, Flyway migrations V1–V8 |
 | **Development Database** | In-Memory H2 Database (`SPRING_PROFILES_ACTIVE=dev`) | Zero-config local development and integration testing |
 | **Mobile Client** | Flutter 3 (Dart), Android Jetpack Compose (Kotlin), BLE GATT | Citizen emergency companion, offline emergency guide, and hardware telemetry bridge |
-| **Hardware Firmware** | ESP32 C++/Arduino, MPU6050 6-axis IMU, BLE GATT Server | Real-time accident detection, impact threshold telemetry, and emergency beacon |
+| **Hardware Firmware** | ESP32 DevKit v1 C++/Arduino, MPU6050 6-axis IMU, MAX30102 PPG, BLE GATT Server | Real-time accident detection, NPN BJT buzzer driver, vitals telemetry, and emergency beacon |
 
 ---
 
@@ -129,7 +129,7 @@ Emergency-Alert-and-Hospital-Assistance-System/
 - **Offline First-Aid Directory:** Searchable emergency care procedures and offline maps available during cellular network degradation.
 
 ### 4. ESP32 Hardware Triage Firmware
-- **Sensors:** MPU6050 6-axis accelerometer & gyroscope, pulse oximeter, and emergency panic button.
+- **Sensors & Actuators:** ESP32 DevKit v1 (powered via 5V USB), DFRobot MPU6050 6-axis IMU (`0x68`), MAX30102 optical heart/SpO2 sensor (`0x57`), Same Sky active buzzer on `GPIO 25` via NPN BJT low-side driver with flyback diode & base/pull-down resistors, and manual cancel push button on `GPIO 33`.
 - **Algorithm:** Multi-stage impact detection filtering transient bumps from severe vehicular collisions or falls.
 - **Protocol:** Custom binary GATT characteristics advertising real-time acceleration vectors, heart rate, and alarm state.
 

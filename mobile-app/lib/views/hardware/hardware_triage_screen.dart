@@ -514,7 +514,7 @@ class _HardwareTriageScreenState extends ConsumerState<HardwareTriageScreen> {
                   ),
                   const SizedBox(height: 6),
                   const Text(
-                    '[OK] MPU6050 Accelerometer & Gyroscope calibrated at 50Hz.\n'
+                    '[OK] MPU6050 Accelerometer & Gyroscope calibrated at 20Hz.\n'
                     '[OK] MAX30102 Optical PPG Vitals sensor streaming.\n'
                     '[OK] BLE UUID 0000FFF0 GATT Triage Service broadcast active.',
                     style: TextStyle(

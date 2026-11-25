@@ -6,13 +6,15 @@
  * Device BLE Name: CSP-Triage-V1
  * Communication: Dual BLE GATT (Primary) + Direct Wi-Fi HTTPS (Alternative)
  * 
- * Hardware Pinout (from Breadboard Layout):
- *   - I2C SDA:         GPIO 21 (Shared: MPU6050 & MAX30102)
- *   - I2C SCL:         GPIO 22 (Shared: MPU6050 & MAX30102)
- *   - Active Buzzer:   GPIO 25 (Same Sky CMI-1295-03TH, Active High)
- *   - Cancel/SOS Btn:  GPIO 33 (Tactile Button with Internal Pull-Up, Active Low)
- *   - VCC:             3V3 Rail
- *   - GND:             GND Rail
+ * Hardware Pinout (Final Cirkit Breadboard Layout):
+ *   - I2C SDA:         GPIO 21 (Shared: DFRobot MPU6050 [0x68] & MAX30102 [0x57])
+ *   - I2C SCL:         GPIO 22 (Shared: DFRobot MPU6050 [0x68] & MAX30102 [0x57])
+ *   - Active Buzzer:   GPIO 25 -> Series Base Resistor -> NPN BJT Low-Side Switch
+ *                      (with Base Pull-Down Resistor to GND) driving Same Sky
+ *                      CMI-1295-03TH Active Buzzer (POS to 3V3, NEG to Collector,
+ *                      Flyback Protection Diode in reverse-parallel); Active HIGH
+ *   - Cancel/SOS Btn:  GPIO 33 (4-Pin Tactile Button with Internal Pull-Up, Active Low to GND)
+ *   - Power Supply:    ESP32 DevKit v1 Powered via 5V USB (Onboard 3.3V LDO to 3V3/GND Rails)
  * ============================================================================
  */
 
@@ -185,7 +187,7 @@ bool initMPU6050() {
     Wire.beginTransmission(MPU6050_I2C_ADDR);
     Wire.write(0x1C); // ACCEL_CONFIG register
     Wire.write(0x10); // +/- 8g range (4096 LSB/g)
-    Wire.endTransmission();
+    if (Wire.endTransmission() != 0) return false;
     return true;
 }
 
@@ -210,13 +212,13 @@ bool initMAX30102() {
     Wire.beginTransmission(MAX30102_I2C_ADDR);
     Wire.write(0x09);
     Wire.write(0x40); // Reset
-    Wire.endTransmission();
+    if (Wire.endTransmission() != 0) return false;
     delay(10);
 
     Wire.beginTransmission(MAX30102_I2C_ADDR);
     Wire.write(0x09);
     Wire.write(0x03); // SpO2 mode
-    Wire.endTransmission();
+    if (Wire.endTransmission() != 0) return false;
 
     Wire.beginTransmission(MAX30102_I2C_ADDR);
     Wire.write(0x0A);
@@ -383,8 +385,8 @@ void sendWiFiDirectTelemetry() {
             "\"spo2\":" + String(current_spo2) + "," +
             "\"signalQuality\":" + String(signal_quality) + "," +
             "\"accelX\":" + String(accel_x_g, 2) + "," +
-            "\"accelY\":" + String(ay_g, 2) + "," +
-            "\"accelZ\":" + String(az_g, 2) + "," +
+            "\"accelY\":" + String(accel_y_g, 2) + "," +
+            "\"accelZ\":" + String(accel_z_g, 2) + "," +
             "\"accelMagnitude\":" + String(accel_mag_g, 2) + "," +
             "\"deviceState\":\"" + stateStr + "\"," +
             "\"operatingMode\":\"" + ((operating_mode == MODE_REAL) ? "REAL" : "SIMULATION") + "\"," +

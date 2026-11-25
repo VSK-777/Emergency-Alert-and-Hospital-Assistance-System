@@ -23,7 +23,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 ARDUINO_CLI = r"C:\Program Files\Arduino CLI\arduino-cli.exe"
 SKETCH_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "ESP32_Triage_Firmware"))
-FQBN = "esp32:esp32:esp32" # Standard ESP32 Dev Module / DevKit v1
+FQBN = "esp32:esp32:esp32:PartitionScheme=huge_app" # Standard ESP32 Dev Module / DevKit v1 (3MB App for Dual BLE+Wi-Fi)
 
 def banner():
     print("=" * 65)

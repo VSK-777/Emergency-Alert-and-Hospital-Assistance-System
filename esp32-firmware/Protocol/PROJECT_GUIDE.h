@@ -9,6 +9,14 @@
  * This header defines the exact BLE GATT architecture, 128-bit UUIDs,
  * packet byte layouts, sensor telemetry structures, emergency event payloads,
  * device control commands, and state machine enums for the CSP Triage hardware.
+ *
+ * Hardware Pinout (Final Cirkit Breadboard Layout):
+ *   - Power Supply:   ESP32 DevKit v1 Powered via USB (5V USB -> 3.3V Onboard LDO)
+ *   - Shared I2C:     GPIO 21 (SDA), GPIO 22 (SCL) -> MPU6050 (0x68) & MAX30102 (0x57)
+ *   - Buzzer Driver:  GPIO 25 -> Base Resistor -> NPN Transistor Low-Side Switch
+ *                     (with Base Pull-Down Resistor to GND & Flyback Diode across
+ *                     Same Sky CMI-1295-03TH Active Buzzer; Buzzer POS to 3V3)
+ *   - Cancel Button:  GPIO 33 (Tactile Switch with Internal Pull-Up, Active LOW to GND)
  */
 
 #ifndef PROJECT_GUIDE_H
@@ -47,7 +55,7 @@ extern "C" {
 
 typedef enum {
     STATE_NORMAL_MONITORING       = 0, // Baseline normal physiological & motion monitoring
-    STATE_IMPACT_CANDIDATE        = 1, // Acceleration spike detected (>= 2.8g); candidate impact
+    STATE_IMPACT_CANDIDATE        = 1, // Acceleration spike detected (>= 3.2g); candidate impact
     STATE_IMMOBILITY_CHECK        = 2, // Post-impact motion stillness check in progress
     STATE_COUNTDOWN               = 3, // Active 15-second emergency countdown warning
     STATE_PHYSIOLOGICAL_ASSESSMENT= 4, // Assessing patient vitals (HR, SpO2)
@@ -96,13 +104,13 @@ typedef struct {
 #pragma pack(pop)
 
 // ============================================================================
-// 4. EMERGENCY EVENT PACKET FORMAT (18 BYTES BINARY, LITTLE-ENDIAN)
+// 4. EMERGENCY EVENT PACKET FORMAT (19 BYTES BINARY, LITTLE-ENDIAN)
 // ============================================================================
 // Transmitted immediately on accident trigger / escalation via UUID_CHAR_EMERGENCY_EVENT.
 
 #define EMERGENCY_PACKET_HEADER       0xEE
 #define EMERGENCY_PACKET_TYPE         0x02
-#define EMERGENCY_PACKET_LENGTH       18
+#define EMERGENCY_PACKET_LENGTH       19
 
 #pragma pack(push, 1)
 typedef struct {
@@ -115,8 +123,8 @@ typedef struct {
     uint16_t stillness_sec_x10;// Bytes 10-11: Post-impact stillness duration in 0.1s units (uint16 LE)
     uint8_t  hr_at_event;      // Byte 12: Heart rate at event time (BPM, 0 if unavailable)
     uint8_t  spo2_at_event;    // Byte 13: SpO2 at event time (%, 0 if unavailable)
-    uint32_t timestamp_sec;    // Bytes 14-16: Firmware uptime / timestamp in seconds (uint24/32 LE)
-    uint8_t  checksum;         // Byte 17: XOR checksum of bytes 0..16
+    uint32_t timestamp_sec;    // Bytes 14-17: Firmware uptime / timestamp in seconds (uint32 LE)
+    uint8_t  checksum;         // Byte 18: XOR checksum of bytes 0..17
 } EmergencyEventPacket_t;
 #pragma pack(pop)
 

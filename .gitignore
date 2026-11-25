@@ -121,6 +121,7 @@ build/
 .DS_Store
 Thumbs.db
 *.pdf
+~$*
 
 # Firmware build artifacts
 esp32-firmware/build/
